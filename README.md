@@ -14,9 +14,7 @@ Designed to help gamers quantify their hobby and intuitively analyze their time 
 
 ### 📸 截图预览 (Screenshot)
 
-*(建议在此处添加一张你的仪表盘截图 / A screenshot of your dashboard is recommended here)*
-
-![Dashboard Screenshot](在这里替换为截图的URL)
+[Dashboard Screenshot](https://github.com/Tedi-Dino/game-data-dashboard/blob/main/Screenshot.png)
 
 ### 🚀 主要功能 (Features)
 
