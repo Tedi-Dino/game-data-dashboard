@@ -1,93 +1,138 @@
-# 游戏数据仪表盘 (Game Data Dashboard)
+# 🎮 游戏数据仪表盘 - Game Data Dashboard
 
-一个纯粹基于浏览器、无需后端的个人游戏数据仪表盘。
-A pure browser-based, serverless dashboard for personal game data.
+想看看我的游戏库里有多少“电子骨灰”吗？来这里**视奸**我的实时游戏记录吧：tedi-dino.github.io/game-data-dashboard/
+Want to see how many "digital ashes" are in my game library? Come **stalk** my real-time gaming records here:
 
-旨在帮助游戏爱好者量化自己的游戏爱好，直观地分析在游戏上的时间与资金投入。
-Designed to help gamers quantify their hobby and intuitively analyze their time and financial investment in gaming.
+本项目是一个开源的游戏数据仪表盘，旨在量化你的游戏生涯。它有两个版本：功能强大的 **Firebase 云同步版**，使用Google账号登录，数据实时同步，可以安全地分享给朋友围观；以及一个极其纯粹的**纯净本地版** (`index.html`)，所有数据仅保存在你的浏览器中，完全离线，即开即用。无论你是数据控还是只想简单记个账，总有一款适合你。
 
----
+This project is an open-source game data dashboard designed to quantify your gaming career. It comes in two versions: a powerful **Firebase cloud-synced version** that uses Google accounts for login, syncs data in real-time, and can be safely shared for friends to spectate; and an extremely pure **purely local version** (`index.html`), where all data is saved only in your browser, works completely offline, and is ready to use instantly. Whether you're a data enthusiast or just want a simple ledger, there's a version for you.
 
-### ✨ 在线演示 (Live Demo)
+-----
 
-**[点击这里访问在线应用 / Click here for Live Demo](https://tedi-dino.github.io/game-data-dashboard/))**
+## `index.html` - 纯净本地版：你的私人游戏秘书 💻
 
-### 📸 截图预览 (Screenshot)
+## `index.html` - The Pure Local Version: Your Private Gaming Secretary 💻
 
-[Dashboard Screenshot](https://github.com/Tedi-Dino/game-data-dashboard/blob/main/Screenshot.png)
+这是最纯粹、最简单的版本。所有数据都安全地存储在你自己的浏览器（LocalStorage）里，无需联网，即开即用！
+This is the purest and simplest version. All your data is securely stored in your own browser (using LocalStorage), no internet connection required, ready to use right out of the box\!
 
-### 🚀 主要功能 (Features)
+### ✨ 特性 (Features)
 
-* **📈 关键指标总览 (KPIs Overview)**
-    * 一眼看清总支出、总游戏时长、单位时间成本等核心数据。
-    * Get a clear view of core metrics like total cost, total playtime, and cost per hour.
+  - **多维度数据统计**: 消费总览、时间总览、性价比分析等一应俱全。
+  - **Multi-dimensional Statistics**: Comprehensive overviews of spending, time, cost-effectiveness, and more.
+  - **数据可视化**: 通过多种图表（饼图、条形图）直观展示你的消费分布、时间分配和游戏类型偏好。
+  - **Data Visualization**: Intuitive charts (doughnuts, bars) display your spending distribution, time allocation, and favorite game genres.
+  - **增删改查**: 方便地添加、编辑、删除你的游戏或硬件记录。
+  - **CRUD Operations**: Easily add, edit, and delete your game or hardware records.
+  - **导入/导出**: 支持CSV格式的数据导入和导出，方便迁移和备份。
+  - **Import/Export**: Supports data import and export in CSV format for easy migration and backup.
 
-* **📊 数据可视化 (Data Visualization)**
-    * **消费分布**: 按平台（硬件、Switch、Steam等）分析你的消费构成。
-    * **Cost Distribution**: Analyze your spending breakdown by platform (Hardware, Switch, Steam, etc.).
-    * **时间分布**: 了解你在哪个平台上投入的时间最多。
-    * **Time Distribution**: Understand on which platforms you spend the most time.
-    * **游戏类型偏好**: 根据游玩时长，分析你最喜欢的游戏类型。
-    * **Genre Preference**: Analyze your favorite game genres based on playtime.
-    * **月度趋势**: 以时间线的方式，同时观察每月的消费和游戏时长变化。
-    * **Monthly Trends**: Observe monthly spending and playtime changes on a timeline.
-    * **性价比排行**: 找出哪些游戏是你的“时间杀手”，最具性价比。
-    * **Cost-Effectiveness Ranking**: Identify which games offer the best value in terms of cost per hour.
+### 🚀 如何使用 (How to Use)
 
-* **💾 数据持久化 (Data Persistence)**
-    * 所有数据均安全地存储在你的浏览器 `localStorage` 中，无需担心数据丢失。
-    * All data is securely stored in your browser's `localStorage`, so there's no need to worry about data loss.
+1.  直接下载仓库中的 `index.html` 文件。
+    Simply download the `index.html` file from the repository.
+2.  用你的浏览器（推荐Chrome或Edge）打开它。
+    Open it with your browser (Chrome or Edge is recommended).
+3.  开始记录你的游戏吧！就是这么简单！
+    Start logging your games\! It's that easy\!
+4.  或者，你也可以直接访问我们的 GitHub Pages 链接来体验：[https://tedi-dino.github.io/game-data-dashboard/](https://tedi-dino.github.io/game-data-dashboard/)
+    Alternatively, you can try it out directly by visiting our GitHub Pages link: [https://tedi-dino.github.io/game-data-dashboard/](https://tedi-dino.github.io/game-data-dashboard/)
 
-* **💼 便捷的数据管理 (Data Management)**
-    * 轻松添加、编辑、删除每一条游戏或硬件记录。
-    * Easily add, edit, and delete records for each game or piece of hardware.
-    * 支持**CSV文件导入和导出**，方便备份和迁移数据。
-    * Supports **CSV import and export** for easy data backup and migration.
+-----
 
-* **📱 响应式设计 (Responsive Design)**
-    * 在桌面和移动设备上均有良好的视觉和使用体验。
-    * Provides a great visual and user experience on both desktop and mobile devices.
+## Firebase版：你的云端游戏金库 ☁️
 
-* **🌐 纯前端，零依赖 (Pure Frontend, Zero Backend)**
-    * 下载 `index.html` 文件，用浏览器打开即可使用，完全离线。
-    * Download the `index.html` file and open it with a browser to use it completely offline.
+## The Firebase Version: Your Gaming Vault in the Cloud ☁️
 
-### 🛠️ 如何使用 (How to Use)
+想要在任何设备上访问你的数据吗？想要和朋友分享你的游戏成就（或者“忏悔”清单）吗？Firebase版就是为你准备的！
+Want to access your data from any device? Want to share your gaming achievements (or your "list of shame") with friends? The Firebase version is for you\!
 
-#### 方式一：直接使用在线版本 (Method 1: Use the Live Version)
-1.  访问 [在线演示链接](https://tedi-dino.github.io/game-data-dashboard/))。
-    Visit the [Live Demo Link](https://tedi-dino.github.io/game-data-dashboard/).
-2.  开始添加你的游戏数据！数据会自动保存在你当前的浏览器中。
-    Start adding your game data! It's saved automatically in your current browser.
+它使用 Google Firebase 作为强大的后端，在本地版所有功能的基础上，增加了以下酷炫功能：
+It uses Google Firebase as a powerful backend, adding the following cool features on top of everything the local version offers:
 
-#### 方式二：本地离线使用 (Method 2: Use Locally Offline)
-1.  下载本仓库中的 `index.html` 文件。
-    Download the `index.html` file from this repository.
-2.  直接用你的浏览器（如 Chrome, Firefox, Edge）打开该文件。
-    Open the file directly with your browser (e.g., Chrome, Firefox, Edge).
-3.  即可开始使用。
-    You can start using it right away.
+### ✨ 新增特性 (New Features)
 
-### 💻 技术栈 (Tech Stack)
+  - **Google账号登录**: 一键使用你的Google账号登录，无需注册。
+  - **Google Account Login**: One-click sign-in with your Google account, no registration needed.
+  - **数据云同步**: 所有数据实时保存在云端（Firestore），永不丢失，多设备同步。
+  - **Cloud Data Sync**: All data is saved in the cloud (Firestore) in real-time, never get lost, and syncs across multiple devices.
+  - **管理员模式**: 设置你自己的账号为管理员，拥有写入（增删改）权限，而其他访客则为只读模式，可以安全地分享你的仪表盘给朋友看！
+  - **Admin Mode**: Set your own account as the administrator with write access (add, delete, modify), while other visitors are in read-only mode. Share your dashboard with friends securely\!
 
-* **HTML**
-* **[Tailwind CSS](https://tailwindcss.com/)**: 用于快速构建用户界面 / For rapid UI development.
-* **[Chart.js](https://www.chartjs.org/)**: 用于生成交互式图表 / For creating interactive charts.
-* **[Font Awesome](https://fontawesome.com/)**: 提供高质量的图标 / For high-quality icons.
-* **原生 JavaScript (ES6+)**: 实现所有交互逻辑 / For all interaction logic.
+### 🔧 如何配置 (How to Set Up)
 
-### 🤝 贡献与反馈 (Contributing & Feedback)
+1.  你需要一个自己的 Google Firebase 项目。别怕，免费的“Spark”套餐就够用了！
+    You'll need your own Google Firebase project. Don't worry, the free "Spark" plan is more than enough\!
+2.  在你的 Firebase 项目控制台中，启用 **Firestore Database** 和 **Authentication**。在 Authentication 中，启用 **Google** 作为登录提供商。
+    In your Firebase project console, enable **Firestore Database** and **Authentication**. In Authentication, enable **Google** as a sign-in provider.
+3.  在 `fb.html` 文件中找到 `firebaseConfig` 部分，将其中的配置信息替换成你自己项目的配置。
+    Find the `firebaseConfig` section in the `fb.html` file and replace the configuration details with your own project's credentials.
+4.  **关键一步**: 登录一次你的应用后，在 Firebase 控制台的 Authentication -\> Users 页面找到你的账号对应的 `UID`。
+    **Crucial Step**: After signing into your application once, find the `UID` corresponding to your account on the Authentication -\> Users page in the Firebase console.
+5.  将你的 `UID` 填入 `fb.html` 文件顶部的 `ADMIN_UIDS` 数组里，这样你就是管理员啦！
+    Add your `UID` to the `ADMIN_UIDS` array at the top of the `fb.html` file. This makes you the administrator\!
+6.  部署这个 `fb.html` 文件到 Firebase Hosting 或其他任何静态网站托管服务上。
+    Deploy this `fb.html` file to Firebase Hosting or any other static website hosting service.
 
-欢迎提出任何问题 (Issue) 或改进建议 (Pull Request)。
-Issues and Pull Requests are welcome.
+-----
 
-如果你喜欢这个项目，请给一个 ⭐ Star！
-If you like this project, please give it a ⭐ Star!
+## 🆚 版本对比 (Version Comparison)
 
-### 📄 许可证 (License)
+| 功能 (Feature) | `index.html` (本地版 / Local) | Firebase (云端版 / Cloud) |
+| :--- | :---: | :---: |
+| 数据存储 (Data Storage) | 浏览器本地 (Browser LocalStorage) | 云端数据库 (Cloud Firestore) |
+| 联网要求 (Internet Requirement) | 离线可用 (Offline Capable) | 需要在线 (Online Required) |
+| 多设备同步 (Multi-device Sync) | ❌ | ✅ |
+| 用户认证 (User Authentication) | ❌ | ✅ (Google Login) |
+| 共享与权限 (Sharing & Permissions) | ❌ | ✅ (管理员/只读) |
+| 部署 (Deployment) | 打开文件即可 (Just open the file) | 需要配置和托管 (Needs configuration & hosting) |
 
-本项目采用 [MIT License](LICENSE) / This project is licensed under the [MIT License](LICENSE).
+-----
 
-### 🙏 致谢 (Acknowledgements)
+## 📥 关于数据导入与Steam API (About Data Import & Steam API)
 
-* 本项目由 Tedi-Dino 与 Gemini 合作开发 / Co-developed by Tedi-Dino & Gemini.
+### CSV 导入要求 (CSV Import Requirements)
+
+CSV导入是快速填充数据的强大功能！为确保顺利导入，请务- 必保证你的CSV文件满足以下格式：
+CSV import is a powerful feature for quickly populating your data\! To ensure a successful import, please make sure your CSV file meets the following format requirements:
+
+  * **必须包含表头 (header row)**。
+    **Must include a header row**.
+  * 表头中**必须包含** `id`, `name`, 和 `type` 这三列。
+    The header **must contain** the columns: `id`, `name`, and `type`.
+  * 每一行的 `id` **必须是独一无二的**，不能重复。
+    The `id` for each row **must be unique** and cannot be duplicated.
+
+一个标准的表头行看起来像这样：
+A standard header row looks like this:
+`id,name,short,type,sort,purchaseDate,purchasePrice,from,playTime,pass,passDate,sellDate,sellPrice`
+
+**小贴士 (Tip):** 你可以先手动添加一条数据，然后**导出CSV**，以此作为你创建批量导入文件的完美模板！
+You can first add one record manually and then **export it as a CSV** to use as a perfect template for creating your bulk import file\!
+
+### Steam API 高手提示 (Steam API Pro-Tip)
+
+懒得手动输入成百上千个Steam游戏数据？我们给你个高手提示！
+Too lazy to manually enter hundreds of Steam games? Here's a pro-tip for you\!
+
+你可以使用 **Steam Web API** 来程序化地获取你的个人游戏库列表和每个游戏的游玩时长。
+You can use the **Steam Web API** to programmatically get your list of games and the playtime for each one.
+
+虽然本项目没有直接集成该功能，但你可以通过API获取数据后，整理成符合上述要求的CSV文件，然后一键导入。这样可以大大减少手动输入的工作量，让数据更精准！
+Although this project does not directly integrate this feature, you can fetch the data via the API, format it into a CSV file that meets the requirements above, and then import it with one click. This can significantly reduce manual data entry and make your data more accurate\!
+
+-----
+
+## ❗ 免责声明 (Disclaimer)
+
+**郑重声明：代码不是我写的！**
+**A Solemn Declaration: I didn't write the code\!**
+
+本项目所有代码，包括HTML, CSS, 和 JavaScript，完全由 **Google 的 Gemini 2.5 Pro** 模型生成。包括这份 README 文档本身，也是AI的杰作！
+All code in this project, including HTML, CSS, and JavaScript, was entirely generated by **Google's Gemini 2.5 Pro** model. And this README document itself is also a masterpiece from the AI\!
+
+我本人对编程一窍不通，纯粹是出于兴趣，提供了一个想法和不断调试的耐心。
+I, myself, am a complete novice in programming. This project was born purely out of interest, my contribution being the idea and the patience for continuous debugging.
+
+因此，如果代码有任何bug、安全漏洞或改进建议，请不要问我...**去问AI吧！**
+Therefore, if there are any bugs, security vulnerabilities, or suggestions for improvement in the code, please don't ask me... **go ask an AI\!**
