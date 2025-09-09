@@ -1,7 +1,10 @@
 # 🎮 游戏数据仪表盘 - Game Data Dashboard
 
-想看看我的游戏库里有多少“电子骨灰”吗？来这里**视奸**我的实时游戏记录吧：tedi-dino.github.io/game-data-dashboard/
+想看看我的游戏库里有多少“电子骨灰”吗？来这里**视奸**我的实时游戏记录吧：
 Want to see how many "digital ashes" are in my game library? Come **stalk** my real-time gaming records here:
+
+  * **云同步版 (推荐 / Recommended)**: **[https://netizen-dino.fun/](https://www.google.com/search?q=https://netizen-dino.fun/)** 或 (or) **[https://game-data-dashboard.web.app/](https://www.google.com/search?q=https://game-data-dashboard.web.app/)**
+  * **纯净本地版 (Pure Local Version)**: **[https://tedi-dino.github.io/game-data-dashboard/](https://tedi-dino.github.io/game-data-dashboard/)**
 
 本项目是一个开源的游戏数据仪表盘，旨在量化你的游戏生涯。它有两个版本：功能强大的 **Firebase 云同步版**，使用Google账号登录，数据实时同步，可以安全地分享给朋友围观；以及一个极其纯粹的**纯净本地版** (`index.html`)，所有数据仅保存在你的浏览器中，完全离线，即开即用。无论你是数据控还是只想简单记个账，总有一款适合你。
 
@@ -61,18 +64,35 @@ It uses Google Firebase as a powerful backend, adding the following cool feature
 
 ### 🔧 如何配置 (How to Set Up)
 
-1.  你需要一个自己的 Google Firebase 项目。别怕，免费的“Spark”套餐就够用了！
-    You'll need your own Google Firebase project. Don't worry, the free "Spark" plan is more than enough\!
-2.  在你的 Firebase 项目控制台中，启用 **Firestore Database** 和 **Authentication**。在 Authentication 中，启用 **Google** 作为登录提供商。
-    In your Firebase project console, enable **Firestore Database** and **Authentication**. In Authentication, enable **Google** as a sign-in provider.
-3.  在 `fb.html` 文件中找到 `firebaseConfig` 部分，将其中的配置信息替换成你自己项目的配置。
-    Find the `firebaseConfig` section in the `fb.html` file and replace the configuration details with your own project's credentials.
-4.  **关键一步**: 登录一次你的应用后，在 Firebase 控制台的 Authentication -\> Users 页面找到你的账号对应的 `UID`。
-    **Crucial Step**: After signing into your application once, find the `UID` corresponding to your account on the Authentication -\> Users page in the Firebase console.
-5.  将你的 `UID` 填入 `fb.html` 文件顶部的 `ADMIN_UIDS` 数组里，这样你就是管理员啦！
-    Add your `UID` to the `ADMIN_UIDS` array at the top of the `fb.html` file. This makes you the administrator\!
-6.  部署这个 `fb.html` 文件到 Firebase Hosting 或其他任何静态网站托管服务上。
-    Deploy this `fb.html` file to Firebase Hosting or any other static website hosting service.
+1.  **创建Firebase项目**: 前往 [Firebase 控制台](https://console.firebase.google.com/) 创建一个新项目。免费的“Spark”套餐就够用了！
+    **Create a Firebase Project**: Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project. The free "Spark" plan is sufficient\!
+2.  **创建Web应用**: 在你的项目设置中，点击 `</>` 图标来创建一个新的Web应用，并记下生成的 `firebaseConfig` 对象。
+    **Create a Web App**: In your project settings, click the `</>` icon to create a new Web App and copy the generated `firebaseConfig` object.
+3.  **启用服务**: 在控制台左侧菜单中，启用 **Firestore Database** (使用默认安全规则即可开始) 和 **Authentication**。在 Authentication 的 “Sign-in method” 标签页中，启用 **Google** 作为登录提供商。
+    **Enable Services**: In the console menu, enable **Firestore Database** (start with default security rules) and **Authentication**. In the "Sign-in method" tab of Authentication, enable **Google** as a provider.
+4.  **填写配置**: 打开 `fb.html` 文件，将第2步中复制的 `firebaseConfig` 对象粘贴到对应的位置。
+    **Fill in the Configuration**: Open the `fb.html` file and paste the `firebaseConfig` object you copied in step 2 into the designated placeholder.
+    ```javascript
+    //...
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY", // 粘贴你的配置
+        authDomain: "YOUR_AUTH_DOMAIN", // Paste your config here
+        projectId: "YOUR_PROJECT_ID",
+        // ...
+    };
+    //...
+    ```
+5.  **成为管理员**: 部署或在本地打开 `fb.html`，使用你的Google账号**登录一次**。然后回到 Firebase 控制台的 Authentication -\> Users 页面，找到你的账号对应的 `UID` 并复制它。
+    **Become an Admin**: Deploy or open `fb.html` locally and **sign in once** with your Google account. Then, go back to the Authentication -\> Users page in your Firebase Console, find the `UID` corresponding to your account, and copy it.
+6.  **设置管理员UID**: 将你复制的 `UID` 粘贴到 `fb.html` 文件顶部的 `ADMIN_UIDS` 数组里。
+    **Set Admin UID**: Paste your copied `UID` into the `ADMIN_UIDS` array at the top of the `fb.html` file.
+    ```javascript
+    //...
+    const ADMIN_UIDS = ['YOUR_ADMIN_UID_HERE']; // <-- 替换成你自己的UID
+    //...
+    ```
+7.  **部署**: 部署这个配置好的 `fb.html` 文件到 Firebase Hosting 或其他任何静态网站托管服务上。大功告成！
+    **Deploy**: Deploy the configured `fb.html` file to Firebase Hosting or any other static site hosting service. You're all set\!
 
 -----
 
