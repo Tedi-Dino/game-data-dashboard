@@ -377,7 +377,24 @@
     import { getFirestore, collection, doc, addDoc, setDoc, deleteDoc, onSnapshot, writeBatch, getDocs, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // --- 【重要】请在此处配置您的管理员UID列表 ---
-    const ADMIN_UIDS = ['ZPyHfPGUI4elNvRN2Q30ZqfzT6X2'];
+    // --- [IMPORTANT] Configure your administrator UID list here ---
+    // 登录你的应用后，在 Firebase 控制台的 Authentication -> Users 页面找到你的UID并替换下面的占位符
+    // After logging into your app, find your UID on the Authentication -> Users page in the Firebase console and replace the placeholder below
+    const ADMIN_UIDS = ['YOUR_ADMIN_UID_HERE'];
+
+    // --- 【重要】请在此处配置您的 Firebase 项目信息 ---
+    // --- [IMPORTANT] Configure your Firebase project details here ---
+    // 你可以在你的 Firebase 项目设置中找到这些信息
+    // You can find this information in your Firebase project settings
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        measurementId: "YOUR_MEASUREMENT_ID" // 可选 / Optional
+    };
 
     // --- Firebase Initialization ---
     let app, auth, db;
@@ -386,23 +403,13 @@
     let unsubscribe = null; 
 
     try {
-        const firebaseConfig = {
-         apiKey: "AIzaSyAE7weH2hOhhswg8x51Uz0TMxn-jO_Ap0k",
-         authDomain: "game-data-dashboard.firebaseapp.com",
-         projectId: "game-data-dashboard",
-         storageBucket: "game-data-dashboard.firebasestorage.app",
-         messagingSenderId: "84289557335",
-         appId: "1:84289557335:web:f31479532875af0558a412",
-         measurementId: "G-P9L1V42JK6"
-        };
-    
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
 
     } catch (e) {
         console.error("Error initializing Firebase:", e);
-        document.body.innerHTML = '<div class="text-white text-center p-8">Firebase initialization failed. Please check the configuration.</div>';
+        document.getElementById('dashboard-subtitle').innerHTML = '<span class="text-red-500">Firebase 初始化失败, 请检查 firebaseConfig 配置是否正确。</span>';
     }
 
 
@@ -450,15 +457,30 @@
         
         // --- Authentication Functions ---
         const signInWithGoogle = async () => {
+            if (!auth) {
+                console.error("Auth is not initialized");
+                return;
+            }
             const provider = new GoogleAuthProvider();
             try {
                 await signInWithPopup(auth, provider);
             } catch (error) {
                 console.error("Google Sign-In Error:", error);
+                if (error.code === 'auth/popup-closed-by-user') {
+                    // User closed the popup, do nothing.
+                } else if (error.code === 'auth/cancelled-popup-request') {
+                    // Another popup request was made before this one completed.
+                } else {
+                    elements.dashboardSubtitle.textContent = '登录失败，请检查控制台信息。';
+                }
             }
         };
 
         const signOutUser = async () => {
+            if (!auth) {
+                console.error("Auth is not initialized");
+                return;
+            }
             try {
                 await signOut(auth);
             } catch (error) {
@@ -468,6 +490,10 @@
 
         // --- Firestore Data Listener ---
         const setupFirestoreListener = () => {
+            if (!db) {
+                console.error("Firestore DB is not initialized");
+                return;
+            }
             if (unsubscribe) unsubscribe();
             itemsCollectionRef = collection(db, "items");
             unsubscribe = onSnapshot(itemsCollectionRef, (snapshot) => {
@@ -482,8 +508,7 @@
             }, (error) => {
                 console.error("Error fetching data from Firestore: ", error);
                 elements.lastUpdated.textContent = '数据加载失败';
-                elements.dashboardSubtitle.textContent = '加载数据失败，请检查Firebase安全规则。';
-                elements.dashboardSubtitle.classList.add('text-red-500');
+                elements.dashboardSubtitle.innerHTML = '<span class="text-red-500">加载数据失败，请检查Firebase安全规则。</span>';
             });
         };
         
@@ -578,7 +603,9 @@
             updateUIAccess(null); // Start in read-only mode
             setupChartDefaults();
             setupEventListeners();
-            setupFirestoreListener(); 
+            if (db) {
+                setupFirestoreListener(); 
+            }
             document.querySelectorAll('.card-animation').forEach((card, index) => {
                 setTimeout(() => {
                     card.style.opacity = '1';
