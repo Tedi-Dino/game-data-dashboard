@@ -1,10 +1,10 @@
 # 🎮 游戏数据仪表盘 - Game Data Dashboard
 
-想看看我的游戏库里有多少“电子骨灰”吗？来这里**视奸**我的实时游戏记录吧：
-Want to see how many "digital ashes" are in my game library? Come **stalk** my real-time gaming records here:
+来这里**视奸**我的游戏记录吧：
+Come **stalk** my gaming records here:
 
-  * **云同步版 (推荐 / Recommended)**: **[https://netizen-dino.fun/](https://www.google.com/search?q=https://netizen-dino.fun/)** 或 (or) **[https://game-data-dashboard.web.app/](https://www.google.com/search?q=https://game-data-dashboard.web.app/)**
-  * **纯净本地版 (Pure Local Version)**: **[https://tedi-dino.github.io/game-data-dashboard/](https://tedi-dino.github.io/game-data-dashboard/)**
+  * **云同步版**: **[https://netizen-dino.fun/](https://www.google.com/search?q=https://netizen-dino.fun/)** 或 (or) **[https://game-data-dashboard.web.app/](https://www.google.com/search?q=https://game-data-dashboard.web.app/)**
+
 
 本项目是一个开源的游戏数据仪表盘，旨在量化你的游戏生涯。它有两个版本：功能强大的 **Firebase 云同步版**，使用Google账号登录，数据实时同步，可以安全地分享给朋友围观；以及一个极其纯粹的**纯净本地版** (`index.html`)，所有数据仅保存在你的浏览器中，完全离线，即开即用。无论你是数据控还是只想简单记个账，总有一款适合你。
 
