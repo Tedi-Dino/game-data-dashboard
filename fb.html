@@ -22,34 +22,26 @@
             min-height: 0; /* 关键修复，允许flex/grid的子项收缩 */
         }
 
-        /* 定义仪表盘网格布局 */
+        /* 定义仪表盘网格布局 - 默认为单列 */
         .dashboard-grid {
             display: grid;
             gap: 1rem; /* 统一所有网格间距 */
             grid-template-columns: repeat(1, minmax(0, 1fr));
         }
 
-        @media (min-width: 1280px) { /* xl breakpoint */
+        /* 在大屏幕（lg）及以上应用多列布局 */
+        @media (min-width: 1024px) { /* lg breakpoint */
             .dashboard-grid {
                 grid-template-columns: repeat(6, minmax(0, 1fr));
             }
         }
-
-        /* 控制第一行和第二行的高度 */
-        .first-row {
-            height: 45%;
-        }
-        .second-row {
-            height: 55%;
-        }
-
-        /* 确保行内卡片充满其分配的高度，并使用flex布局 */
-        .first-row > .dark-card, .second-row > .dark-card {
-            height: 100%;
+        
+        /* 确保卡片在任何情况下都是flex布局 */
+        .dark-card {
             display: flex;
             flex-direction: column;
         }
-        
+
         /* 强制Canvas元素填满其父容器，防止裁切 */
         .flex-grow.relative > canvas {
             position: absolute;
@@ -96,7 +88,7 @@
             height: 1.25rem;
         }
         /* 滚动条样式 */
-        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #1f2937; }
         ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
@@ -120,6 +112,7 @@
         .fab-container.open .fab-secondary { opacity: 1; pointer-events: auto; }
         .fab-container.open .fab-secondary:nth-child(1) { transform: translateY(-4.5rem); transition-delay: 0.1s; }
         .fab-container.open .fab-secondary:nth-child(2) { transform: translateY(-9rem); transition-delay: 0.2s; }
+        .fab-container.open .fab-main { transform: rotate(135deg); background-color: #4338ca; }
         
         /* 表头固定 */
         #list-modal .overflow-auto, #full-chart-modal .overflow-auto { max-height: 70vh; }
@@ -138,15 +131,16 @@
 
     <!-- Main App Container -->
     <div id="app-container" class="max-w-screen-2xl mx-auto flex flex-col flex-grow w-full min-h-0">
-        <header class="mb-4 flex flex-wrap justify-between items-center gap-4 flex-shrink-0">
-            <div>
+        <!-- 响应式 Header -->
+        <header class="mb-4 flex flex-col sm:flex-row sm:flex-wrap justify-between items-center gap-4 flex-shrink-0">
+            <div class="text-center sm:text-left">
                 <h1 class="text-3xl font-bold text-white">游戏数据仪表盘</h1>
                 <p id="dashboard-subtitle" class="text-gray-400 mt-1">量化您的游戏爱好：时间与资金投入分析</p>
             </div>
-            <div class="flex items-center space-x-4">
+            <div class="flex flex-wrap justify-center items-center gap-4">
                  <input type="file" id="csv-import-input" class="hidden" accept=".csv">
                  
-                 <div class="text-right">
+                 <div class="text-center sm:text-right">
                     <p id="last-updated" class="text-sm text-gray-400">正在加载数据...</p>
                     <p class="text-xs text-gray-500 mt-1">Co-Developed by Tedi-Dino & Gemini</p>
                  </div>
@@ -177,118 +171,128 @@
             </div>
         </header>
 
-        <main class="flex-grow flex flex-col gap-4">
-            <!-- First Row -->
-            <div class="dashboard-grid first-row">
-                <div id="kpi-card-1" class="dark-card p-4 card-animation flex flex-col xl:col-span-1">
-                    <h3 class="text-lg font-semibold text-gray-200 mb-2">消费总览</h3>
-                    <div class="space-y-2 flex-grow">
-                        <div>
-                            <p class="text-sm text-gray-300">实际总支出</p>
-                            <p id="total-actual-cost" class="text-2xl font-bold text-green-400">¥0.00</p>
-                        </div>
-                        <div class="relative group">
-                            <p class="text-sm text-gray-300">游戏总消费</p>
-                            <div class="flex items-center">
-                                <p id="game-actual-cost" class="text-xl font-semibold text-white">¥0.00</p>
-                                <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
-                            </div>
-                            <div id="game-cost-tooltip" class="absolute bottom-full mb-2 left-0 w-72 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 z-40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-                        </div>
-                         <div>
-                            <p class="text-sm text-gray-300">硬件总投入</p>
-                            <p id="hardware-actual-cost" class="text-xl font-semibold text-white">¥0.00</p>
-                        </div>
-                        <div class="relative group">
-                            <p class="text-sm text-gray-300">未通关游戏价值</p>
-                            <div class="flex items-center">
-                                <p id="unfinished-games-cost" class="text-xl font-semibold text-orange-400">¥0.00</p>
-                                <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
-                            </div>
-                            <div id="unfinished-cost-tooltip" class="absolute bottom-full mb-2 left-0 w-80 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 z-40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-                        </div>
+        <!-- 主内容区：修改了padding以调整底部留白 -->
+        <main class="dashboard-grid pb-28 lg:pb-2">
+            <!-- 模块1: 消费总览 (移动端第1) -->
+            <div id="kpi-card-1" class="dark-card p-4 card-animation lg:col-span-1 lg:row-start-1">
+                <h3 class="text-lg font-semibold text-gray-200 mb-2">消费总览</h3>
+                <div class="space-y-2 flex-grow">
+                    <div>
+                        <p class="text-sm text-gray-300">实际总支出</p>
+                        <p id="total-actual-cost" class="text-2xl font-bold text-green-400">¥0.00</p>
                     </div>
-                </div>
-                <div id="chart-card-all-doughnuts" class="dark-card p-4 card-animation relative flex flex-col xl:col-span-3">
-                    <h3 class="text-lg font-semibold text-gray-200 mb-1">消费、时间与爱好统计</h3>
-                    <div class="flex-grow grid grid-cols-1 md:grid-cols-3 gap-2">
-                        <div class="relative flex flex-col">
-                            <div class="flex-grow relative"><canvas id="cost-distribution-chart"></canvas></div>
-                            <h4 class="text-center text-sm font-medium text-gray-300 mt-1">金额分布</h4>
+                    <div class="relative group">
+                        <p class="text-sm text-gray-300">游戏总消费</p>
+                        <div class="flex items-center">
+                            <p id="game-actual-cost" class="text-xl font-semibold text-white">¥0.00</p>
+                            <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
-                        <div class="relative flex flex-col">
-                            <div class="flex-grow relative"><canvas id="time-distribution-chart"></canvas></div>
-                             <h4 class="text-center text-sm font-medium text-gray-300 mt-1">时间分布</h4>
-                        </div>
-                        <div class="relative flex flex-col">
-                            <div class="flex-grow relative"><canvas id="game-sort-chart"></canvas></div>
-                            <h4 class="text-center text-sm font-medium text-gray-300 mt-1">喜欢的游戏类型</h4>
-                        </div>
+                        <div id="game-cost-tooltip" class="absolute bottom-full mb-2 left-0 w-72 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 z-40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                     </div>
-                </div>
-                <div id="chart-card-2" class="dark-card p-4 card-animation flex flex-col xl:col-span-2">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="text-lg font-semibold text-gray-200">最省钱游戏</h3>
-                        <button id="view-all-cph-btn" class="text-sm text-blue-400 hover:text-blue-300">查看全部</button>
+                     <div>
+                        <p class="text-sm text-gray-300">硬件总投入</p>
+                        <p id="hardware-actual-cost" class="text-xl font-semibold text-white">¥0.00</p>
                     </div>
-                    <div class="flex-grow relative">
-                        <canvas id="cost-benefit-chart"></canvas>
+                    <div class="relative group">
+                        <p class="text-sm text-gray-300">未通关游戏价值</p>
+                        <div class="flex items-center">
+                            <p id="unfinished-games-cost" class="text-xl font-semibold text-orange-400">¥0.00</p>
+                            <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                        </div>
+                        <div id="unfinished-cost-tooltip" class="absolute bottom-full mb-2 left-0 w-80 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 z-40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Second Row -->
-            <div class="dashboard-grid second-row">
-                <div id="kpi-card-2" class="dark-card p-4 card-animation flex flex-col xl:col-span-1">
-                    <h3 class="text-lg font-semibold text-gray-200 mb-4">时间总览</h3>
-                     <div class="space-y-4 flex-grow">
-                        <div class="relative group">
-                            <p class="text-sm text-gray-300">游戏总数</p>
-                            <div class="flex items-center">
-                               <p id="total-games" class="text-2xl font-bold text-blue-400">0 款</p>
-                               <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
-                            </div>
-                            <div id="total-games-tooltip" class="absolute bottom-full mb-2 left-0 w-72 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 z-40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+            <!-- 模块2: 时间总览 (移动端第2) -->
+            <div id="kpi-card-2" class="dark-card p-4 card-animation flex flex-col lg:col-span-1 lg:row-start-2">
+                <h3 class="text-lg font-semibold text-gray-200 mb-4">时间总览</h3>
+                 <div class="space-y-4 flex-grow">
+                    <div class="relative group">
+                        <p class="text-sm text-gray-300">游戏总数</p>
+                        <div class="flex items-center">
+                           <p id="total-games" class="text-2xl font-bold text-blue-400">0 款</p>
+                           <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
-                        <div class="relative group">
-                            <p class="text-sm text-gray-300">总计游玩</p>
-                            <div class="flex items-center">
-                               <p id="total-playtime" class="text-xl font-semibold text-white">0.00 小时</p>
-                               <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
-                            </div>
-                            <div id="playtime-tooltip" class="absolute bottom-full mb-2 left-0 w-72 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 z-40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                        <div id="total-games-tooltip" class="absolute bottom-full mb-2 left-0 w-72 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 z-40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                    </div>
+                    <div class="relative group">
+                        <p class="text-sm text-gray-300">总计游玩</p>
+                        <div class="flex items-center">
+                           <p id="total-playtime" class="text-xl font-semibold text-white">0.00 小时</p>
+                           <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
-                        <div>
-                            <p class="text-sm text-gray-300">平均游戏时长</p>
-                            <p id="avg-playtime" class="text-xl font-semibold text-white">0.00 小时/款</p>
+                        <div id="playtime-tooltip" class="absolute bottom-full mb-2 left-0 w-72 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 z-40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-300">平均游戏时长</p>
+                        <p id="avg-playtime" class="text-xl font-semibold text-white">0.00 小时/款</p>
+                    </div>
+                    <div class="relative group">
+                        <p class="text-sm text-gray-300">单位时间价格</p>
+                        <div class="flex items-center">
+                            <p id="cost-per-hour" class="text-xl font-bold text-yellow-400">¥0.00</p>
+                            <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
-                        <div class="relative group">
-                            <p class="text-sm text-gray-300">单位时间价格</p>
-                            <div class="flex items-center">
-                                <p id="cost-per-hour" class="text-xl font-bold text-yellow-400">¥0.00</p>
-                                <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
-                            </div>
-                            <div id="cph-tooltip" class="absolute bottom-full mb-2 left-0 w-80 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 z-40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-                        </div>
+                        <div id="cph-tooltip" class="absolute bottom-full mb-2 left-0 w-80 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 z-40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                     </div>
                 </div>
-                <div id="chart-card-3" class="dark-card p-4 card-animation xl:col-span-5 relative flex flex-col">
-                    <div class="flex justify-between items-center mb-2">
-                         <h3 class="text-lg font-semibold text-gray-200">月度消费与时间统计</h3>
+            </div>
+            
+            <!-- 模块3: 三个环形图 (移动端第3) -->
+            <div id="chart-card-all-doughnuts" class="dark-card p-4 card-animation relative flex flex-col lg:col-span-3 lg:row-start-1 min-h-[750px] lg:min-h-0">
+                <h3 class="text-lg font-semibold text-gray-200 mb-1">消费、时间与爱好统计</h3>
+                <!-- 手机竖屏时纵向排列，平板及以上横向排列 -->
+                <div class="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="relative flex flex-col">
+                        <div class="flex-grow relative"><canvas id="cost-distribution-chart"></canvas></div>
+                        <h4 class="text-center text-sm font-medium text-gray-300 mt-1">金额分布</h4>
+                    </div>
+                    <div class="relative flex flex-col">
+                        <div class="flex-grow relative"><canvas id="time-distribution-chart"></canvas></div>
+                         <h4 class="text-center text-sm font-medium text-gray-300 mt-1">时间分布</h4>
+                    </div>
+                    <div class="relative flex flex-col">
+                        <div class="flex-grow relative"><canvas id="game-sort-chart"></canvas></div>
+                        <h4 class="text-center text-sm font-medium text-gray-300 mt-1">喜欢的游戏类型</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 模块4: 最省钱游戏 (移动端第4) -->
+            <div id="chart-card-2" class="dark-card p-4 card-animation flex flex-col lg:col-span-2 lg:row-start-1 min-h-[250px] lg:min-h-0">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-semibold text-gray-200">最省钱游戏</h3>
+                    <button id="view-all-cph-btn" class="text-sm text-blue-400 hover:text-blue-300">查看全部</button>
+                </div>
+                <div class="flex-grow relative">
+                    <canvas id="cost-benefit-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- 模块5: 月度消费统计 (移动端第5) -->
+            <div id="chart-card-3" class="dark-card p-4 card-animation lg:col-span-5 lg:row-start-2 relative flex flex-col min-h-[300px] lg:min-h-0">
+                <div class="flex justify-between items-center gap-4 mb-2">
+                     <h3 class="text-lg font-semibold text-gray-200">月度消费与时间统计</h3>
+                    <div class="flex items-center space-x-4">
                         <div class="flex items-center space-x-2">
                             <input type="checkbox" id="exclude-switch2-checkbox" class="form-checkbox">
-                            <label for="exclude-switch2-checkbox" class="text-sm font-medium text-gray-300">不计算Switch2价格</label>
+                            <label for="exclude-switch2-checkbox" class="text-sm font-medium text-gray-300 whitespace-nowrap">不计NS2</label>
                         </div>
+                        <button id="monthly-chart-fullscreen-btn" class="lg:hidden text-gray-300 hover:text-white" title="全屏查看">
+                            <i class="fas fa-expand-alt fa-lg"></i>
+                        </button>
                     </div>
-                    <div class="flex-grow relative">
-                        <canvas id="monthly-trends-chart"></canvas>
-                    </div>
+                </div>
+                <div class="flex-grow relative">
+                    <canvas id="monthly-trends-chart"></canvas>
                 </div>
             </div>
         </main>
     </div>
     
-    <div class="fab-container">
+    <!-- 悬浮操作按钮 -->
+    <div class="fab-container hidden">
         <button id="export-btn" class="fab-secondary" title="导出 CSV"><i class="fas fa-upload fa-lg"></i></button>
         <button id="import-btn" class="fab-secondary" title="导入 CSV"><i class="fas fa-download fa-lg"></i></button>
         <div id="add-item-fab" class="fab-main" title="添加记录">
@@ -296,6 +300,7 @@
         </div>
     </div>
     
+    <!-- 添加/编辑记录 模态框 -->
     <div id="item-modal" class="fixed inset-0 z-50 items-center justify-center p-4 hidden modal-backdrop">
         <div class="dark-card w-full max-w-lg mx-auto rounded-lg shadow-xl p-6 relative">
             <h2 id="modal-title" class="text-xl font-bold text-white mb-6">添加记录</h2>
@@ -335,6 +340,7 @@
         </div>
     </div>
 
+    <!-- 数据详情 模态框 -->
     <div id="list-modal" class="fixed inset-0 z-50 p-4 hidden modal-backdrop overflow-y-auto">
         <div class="dark-card w-full max-w-7xl mx-auto rounded-lg shadow-xl p-6 relative my-auto flex flex-col">
             <div class="flex justify-between items-center mb-4 flex-shrink-0"><h2 id="list-modal-title" class="text-xl font-bold text-white">数据详情</h2><button id="close-list-modal-btn" class="text-gray-300 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div>
@@ -352,13 +358,34 @@
         </div>
     </div>
 
+    <!-- 全部游戏时间效益排行 模态框 -->
     <div id="full-chart-modal" class="fixed inset-0 z-50 p-4 hidden modal-backdrop overflow-y-auto">
         <div class="dark-card w-full max-w-4xl mx-auto rounded-lg shadow-xl p-6 relative my-auto flex flex-col">
             <div class="flex justify-between items-center mb-4 flex-shrink-0"><h2 class="text-xl font-bold text-white">全部游戏时间效益排行</h2><button id="close-full-chart-modal-btn" class="text-gray-300 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div>
             <div class="overflow-auto flex-grow"><canvas id="full-cost-benefit-chart"></canvas></div>
         </div>
     </div>
+
+    <!-- 月度消费统计-全屏 模态框 (修改) -->
+    <div id="monthly-chart-fullscreen-modal" class="fixed inset-0 z-[55] items-center justify-center p-2 sm:p-4 hidden modal-backdrop">
+        <div class="dark-card w-full h-full mx-auto rounded-lg shadow-xl p-4 sm:p-6 relative flex flex-col">
+            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                <h2 class="text-xl font-bold text-white">月度消费与时间统计</h2>
+                <button id="close-monthly-chart-fullscreen-btn" class="text-gray-300 hover:text-white" title="退出全屏">
+                    <i class="fas fa-compress-alt fa-lg"></i>
+                </button>
+            </div>
+            <!-- 修改为水平滚动 -->
+            <div class="flex-grow relative overflow-x-auto">
+                <!-- 容器的高度为100%，宽度将由JS动态设置 -->
+                <div class="h-full"> 
+                     <canvas id="monthly-trends-chart-fullscreen"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
     
+    <!-- 确认操作 模态框 -->
     <div id="confirm-modal" class="fixed inset-0 z-[60] items-center justify-center p-4 hidden modal-backdrop">
         <div class="dark-card w-full max-w-sm mx-auto rounded-lg shadow-xl p-6 relative">
             <h2 id="confirm-modal-title" class="text-lg font-bold text-white mb-4">请确认</h2>
@@ -377,24 +404,7 @@
     import { getFirestore, collection, doc, addDoc, setDoc, deleteDoc, onSnapshot, writeBatch, getDocs, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // --- 【重要】请在此处配置您的管理员UID列表 ---
-    // --- [IMPORTANT] Configure your administrator UID list here ---
-    // 登录你的应用后，在 Firebase 控制台的 Authentication -> Users 页面找到你的UID并替换下面的占位符
-    // After logging into your app, find your UID on the Authentication -> Users page in the Firebase console and replace the placeholder below
-    const ADMIN_UIDS = ['YOUR_ADMIN_UID_HERE'];
-
-    // --- 【重要】请在此处配置您的 Firebase 项目信息 ---
-    // --- [IMPORTANT] Configure your Firebase project details here ---
-    // 你可以在你的 Firebase 项目设置中找到这些信息
-    // You can find this information in your Firebase project settings
-    const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_AUTH_DOMAIN",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_STORAGE_BUCKET",
-        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-        appId: "YOUR_APP_ID",
-        measurementId: "YOUR_MEASUREMENT_ID" // 可选 / Optional
-    };
+    const ADMIN_UIDS = ['ZPyHfPGUI4elNvRN2Q30ZqfzT6X2'];
 
     // --- Firebase Initialization ---
     let app, auth, db;
@@ -403,13 +413,23 @@
     let unsubscribe = null; 
 
     try {
+        const firebaseConfig = {
+         apiKey: "AIzaSyAE7weH2hOhhswg8x51Uz0TMxn-jO_Ap0k",
+         authDomain: "game-data-dashboard.firebaseapp.com",
+         projectId: "game-data-dashboard",
+         storageBucket: "game-data-dashboard.firebasestorage.app",
+         messagingSenderId: "84289557335",
+         appId: "1:84289557335:web:f31479532875af0558a412",
+         measurementId: "G-P9L1V42JK6"
+        };
+    
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
 
     } catch (e) {
         console.error("Error initializing Firebase:", e);
-        document.getElementById('dashboard-subtitle').innerHTML = '<span class="text-red-500">Firebase 初始化失败, 请检查 firebaseConfig 配置是否正确。</span>';
+        document.body.innerHTML = '<div class="text-white text-center p-8">Firebase initialization failed. Please check the configuration.</div>';
     }
 
 
@@ -424,7 +444,6 @@
             userAvatar: document.getElementById('user-avatar'),
             authControls: document.getElementById('auth-controls'),
             lastUpdated: document.getElementById('last-updated'),
-
             totalActualCost: document.getElementById('total-actual-cost'), gameActualCost: document.getElementById('game-actual-cost'), hardwareActualCost: document.getElementById('hardware-actual-cost'), unfinishedGamesCost: document.getElementById('unfinished-games-cost'), totalPlaytime: document.getElementById('total-playtime'), avgPlaytime: document.getElementById('avg-playtime'), costPerHour: document.getElementById('cost-per-hour'), totalGames: document.getElementById('total-games'), gameCostTooltip: document.getElementById('game-cost-tooltip'), playtimeTooltip: document.getElementById('playtime-tooltip'), cphTooltip: document.getElementById('cph-tooltip'), addItemFab: document.getElementById('add-item-fab'), itemModal: document.getElementById('item-modal'), modalTitle: document.getElementById('modal-title'), itemForm: document.getElementById('item-form'), itemId: document.getElementById('item-id'), itemName: document.getElementById('item-name'), itemType: document.getElementById('item-type'), itemFrom: document.getElementById('item-from'), purchaseDate: document.getElementById('purchase-date'), purchasePrice: document.getElementById('purchase-price'), playTime: document.getElementById('play-time'), itemPass: document.getElementById('item-pass'), passDateContainer: document.getElementById('pass-date-container'), passDate: document.getElementById('pass-date'), sellDate: document.getElementById('sell-date'), sellPrice: document.getElementById('sell-price'), deleteBtn: document.getElementById('delete-btn'), cancelBtn: document.getElementById('cancel-btn'), closeModalBtn: document.getElementById('close-modal-btn'), gameFields: document.getElementById('game-fields'), resellFields: document.getElementById('resell-fields'), importBtn: document.getElementById('import-btn'), exportBtn: document.getElementById('export-btn'), csvImportInput: document.getElementById('csv-import-input'), viewAllBtn: document.getElementById('view-all-btn'), listModal: document.getElementById('list-modal'), listModalTitle: document.getElementById('list-modal-title'), closeListModalBtn: document.getElementById('close-list-modal-btn'), itemsTableBody: document.getElementById('items-table-body'), noDataListMessage: document.getElementById('no-data-list-message'), fabContainer: document.querySelector('.fab-container'),
             viewAllCphBtn: document.getElementById('view-all-cph-btn'),
             fullChartModal: document.getElementById('full-chart-modal'),
@@ -440,13 +459,16 @@
             itemSort: document.getElementById('item-sort'),
             saveBtn: document.getElementById('save-btn'),
             dashboardSubtitle: document.getElementById('dashboard-subtitle'),
+            // 新增全屏图表相关元素
+            monthlyChartFullscreenBtn: document.getElementById('monthly-chart-fullscreen-btn'),
+            monthlyChartFullscreenModal: document.getElementById('monthly-chart-fullscreen-modal'),
+            closeMonthlyChartFullscreenBtn: document.getElementById('close-monthly-chart-fullscreen-btn'),
         };
     
         // --- App State ---
         let items = [];
         let charts = {};
         let sortConfig = { key: 'id', direction: 'desc' };
-        let fabTimeout;
         let isEditingFromList = false;
         const PLATFORM_COLORS = { hardware: '#6b7280', switch_physical: '#E60012', switch_digital: '#ff4e5c', steam: '#3b82f6', ubi: '#a855f7', ms: '#107C10', other: '#f97316' };
     
@@ -457,30 +479,15 @@
         
         // --- Authentication Functions ---
         const signInWithGoogle = async () => {
-            if (!auth) {
-                console.error("Auth is not initialized");
-                return;
-            }
             const provider = new GoogleAuthProvider();
             try {
                 await signInWithPopup(auth, provider);
             } catch (error) {
                 console.error("Google Sign-In Error:", error);
-                if (error.code === 'auth/popup-closed-by-user') {
-                    // User closed the popup, do nothing.
-                } else if (error.code === 'auth/cancelled-popup-request') {
-                    // Another popup request was made before this one completed.
-                } else {
-                    elements.dashboardSubtitle.textContent = '登录失败，请检查控制台信息。';
-                }
             }
         };
 
         const signOutUser = async () => {
-            if (!auth) {
-                console.error("Auth is not initialized");
-                return;
-            }
             try {
                 await signOut(auth);
             } catch (error) {
@@ -490,10 +497,6 @@
 
         // --- Firestore Data Listener ---
         const setupFirestoreListener = () => {
-            if (!db) {
-                console.error("Firestore DB is not initialized");
-                return;
-            }
             if (unsubscribe) unsubscribe();
             itemsCollectionRef = collection(db, "items");
             unsubscribe = onSnapshot(itemsCollectionRef, (snapshot) => {
@@ -508,7 +511,8 @@
             }, (error) => {
                 console.error("Error fetching data from Firestore: ", error);
                 elements.lastUpdated.textContent = '数据加载失败';
-                elements.dashboardSubtitle.innerHTML = '<span class="text-red-500">加载数据失败，请检查Firebase安全规则。</span>';
+                elements.dashboardSubtitle.textContent = '加载数据失败，请检查Firebase安全规则。';
+                elements.dashboardSubtitle.classList.add('text-red-500');
             });
         };
         
@@ -518,12 +522,14 @@
             const writeButtons = [ elements.addItemFab, elements.importBtn, elements.deleteBtn, elements.saveBtn ];
     
             if (isReadOnly) {
+                elements.fabContainer.classList.add('hidden');
                 writeButtons.forEach(btn => {
                     btn.classList.add('readonly-mode-disabled');
                     btn.title = '需要管理员权限';
                 });
                 elements.itemsTableBody.style.pointerEvents = 'none';
             } else {
+                elements.fabContainer.classList.remove('hidden');
                  writeButtons.forEach(btn => {
                     btn.classList.remove('readonly-mode-disabled');
                     btn.title = '';
@@ -558,15 +564,59 @@
             isEditingFromList = false;
         };
     
-        // --- Chart Rendering (No changes needed in this section) ---
-        const renderCharts = () => { Object.values(charts).forEach(chart => { if(chart) chart.destroy() }); charts = {}; renderCostDistributionChart(); renderTimeDistributionChart(); renderCostBenefitChart(); renderMonthlyTrendsChart(); renderGameSortChart(); };
+        // --- Chart Rendering ---
+        const renderCharts = () => { Object.values(charts).forEach(chart => { if(chart && chart.destroy) chart.destroy() }); charts = {}; renderCostDistributionChart(); renderTimeDistributionChart(); renderCostBenefitChart(); renderMonthlyTrendsChart(); renderGameSortChart(); };
         const setupChartDefaults = () => { Chart.defaults.color = '#f9fafb'; Chart.defaults.borderColor = 'rgba(107, 114, 128, 0.5)'; Chart.defaults.plugins.legend.position = 'bottom'; Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(31, 41, 55, 0.9)'; Chart.defaults.plugins.tooltip.borderColor = '#4b5563'; Chart.defaults.plugins.tooltip.borderWidth = 1; Chart.defaults.plugins.tooltip.padding = 10; Chart.defaults.plugins.tooltip.titleFont = { weight: 'bold' }; }
         const createExternalTooltip = (formatter) => { let tooltipEl = document.getElementById('chartjs-external-tooltip'); if (!tooltipEl) { tooltipEl = document.createElement('div'); tooltipEl.id = 'chartjs-external-tooltip'; tooltipEl.className = 'absolute bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 z-[999] pointer-events-none opacity-0 transition-opacity w-80'; document.body.appendChild(tooltipEl); } return (context) => { const { chart, tooltip } = context; if (tooltip.opacity === 0) { tooltipEl.style.opacity = 0; return; } const html = formatter(tooltip); if (!html) { tooltipEl.style.opacity = 0; return; } tooltipEl.innerHTML = html; const chartRect = chart.canvas.getBoundingClientRect(); tooltipEl.style.opacity = 1; tooltipEl.style.left = `${chartRect.left + window.scrollX + tooltip.caretX}px`; tooltipEl.style.top = `${chartRect.top + window.scrollY + tooltip.caretY}px`; let transform = 'translate(-50%, -110%)'; const tooltipRect = tooltipEl.getBoundingClientRect(); if (tooltipRect.top < 0) { transform = 'translate(-50%, 20px)'; } if (tooltipRect.right > window.innerWidth) { transform = 'translate(-100%, -110%)'; } if (tooltipRect.left < 0) { transform = 'translate(0, -110%)'; } tooltipEl.style.transform = transform; }; };
         const renderCostDistributionChart = () => { const costReducer = (s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0); const data = { '硬件设备': items.filter(i => i.type === 'hardware').reduce(costReducer, 0), 'Switch 实体': items.filter(i => i.type === 'physical').reduce(costReducer, 0), 'Switch 数字': items.filter(i => i.type === 'digital').reduce(costReducer, 0), 'Steam 游戏': items.filter(i => i.type === 'steam').reduce(costReducer, 0), 'Uplay 游戏': items.filter(i => i.type === 'ubi').reduce(costReducer, 0), 'MS Store 游戏': items.filter(i => i.type === 'ms').reduce(costReducer, 0) }; const filteredData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v > 0)); const el = document.getElementById('cost-distribution-chart'); if (!el) return; charts.costDistribution = new Chart(el, { type: 'doughnut', data: { labels: Object.keys(filteredData), datasets: [{ data: Object.values(filteredData), backgroundColor: Object.keys(filteredData).map(label => { const typeMap = {'硬件设备': 'hardware', 'Switch 实体': 'switch_physical', 'Switch 数字': 'switch_digital', 'Steam 游戏': 'steam', 'Uplay 游戏': 'ubi', 'MS Store 游戏': 'ms'}; return PLATFORM_COLORS[typeMap[label]]; }), hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: false }, tooltip: { enabled: false, external: createExternalTooltip((tooltip) => { if (!tooltip.body) return null; const label = tooltip.title?.[0]; if (!label) return null; const value = tooltip.dataPoints[0].parsed; const total = tooltip.dataPoints[0].dataset.data.reduce((a, b) => a + b, 0); if (total === 0) return null; const percentage = ((value / total) * 100).toFixed(1); const typeMap = { '硬件设备': ['hardware'], 'Switch 实体': ['physical'], 'Switch 数字': ['digital'], 'Steam 游戏': ['steam'], 'Uplay 游戏': ['ubi'], 'MS Store 游戏': ['ms'] }; const topItems = items.filter(i => typeMap[label]?.includes(i.type)).map(i => ({ name: i.short || i.name, value: (i.purchasePrice || 0) - (i.sellPrice || 0) })).sort((a, b) => b.value - a.value).slice(0, 5); let innerHtml = `<div class="font-bold text-base mb-2 border-b border-gray-600 pb-1 flex justify-between"><span>${label}</span><span>${formatCurrency(value)} (${percentage}%)</span></div><h4 class="font-semibold mt-2 mb-1">支出 Top 5</h4><ul class="text-sm">`; topItems.forEach(item => { innerHtml += `<li class="flex justify-between my-1"><span>${item.name.substring(0, 20)}</span><strong>${formatCurrency(item.value)}</strong></li>`; }); if (topItems.length === 0 || topItems.every(i => i.value === 0)) innerHtml += '<li>无支出记录</li>'; innerHtml += '</ul>'; return innerHtml; }) } } } }); };
         const renderTimeDistributionChart = () => { const timeReducer = (s, i) => s + (i.playTime || 0); const data = { 'Switch': items.filter(i => ['physical', 'digital'].includes(i.type)).reduce(timeReducer, 0), 'Steam': items.filter(i => i.type === 'steam').reduce(timeReducer, 0), 'Uplay': items.filter(i => i.type === 'ubi').reduce(timeReducer, 0), 'MS Store': items.filter(i => i.type === 'ms').reduce(timeReducer, 0) }; const filteredData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v > 0)); const el = document.getElementById('time-distribution-chart'); if (!el) return; charts.timeDistribution = new Chart(el, { type: 'doughnut', data: { labels: Object.keys(filteredData), datasets: [{ data: Object.values(filteredData), backgroundColor: Object.keys(filteredData).map(label => { const typeMap = {'Switch': 'switch_physical', 'Steam': 'steam', 'Uplay': 'ubi', 'MS Store': 'ms'}; return PLATFORM_COLORS[typeMap[label]]; }), hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: false }, tooltip: { enabled: false, external: createExternalTooltip((tooltip) => { if (!tooltip.body) return null; const label = tooltip.title?.[0]; if (!label) return null; const value = tooltip.dataPoints[0].parsed; const total = tooltip.dataPoints[0].dataset.data.reduce((a, b) => a + b, 0); if (total === 0) return null; const percentage = ((value / total) * 100).toFixed(1); const typeMap = { 'Switch': ['physical', 'digital'], 'Steam': ['steam'], 'Uplay': ['ubi'], 'MS Store': ['ms'] }; const topItems = items.filter(i => typeMap[label]?.includes(i.type)).sort((a, b) => (b.playTime || 0) - (a.playTime || 0)).slice(0, 5); let innerHtml = `<div class="font-bold text-base mb-2 border-b border-gray-600 pb-1 flex justify-between"><span>${label}</span><span>${value.toFixed(1)}h (${percentage}%)</span></div><h4 class="font-semibold mt-2 mb-1">时长 Top 5</h4><ul class="text-sm">`; topItems.forEach(item => { innerHtml += `<li class="flex justify-between my-1"><span>${(item.short || item.name).substring(0, 20)}</span><strong>${(item.playTime || 0).toFixed(1)}h</strong></li>`; }); if (topItems.length === 0 || topItems.every(i => !(i.playTime > 0))) innerHtml += '<li>无游玩记录</li>'; innerHtml += '</ul>'; return innerHtml; }) } } } }); };
         const renderCostBenefitChart = (isFull = false) => { const games = items.filter(i => i.type !== 'hardware' && i.playTime > 0 && i.from !== 'free' && i.pass === 'y').map(i => ({ name: i.name, short: i.short, cph: ((i.purchasePrice || 0) - (i.sellPrice || 0)) / i.playTime })).sort((a, b) => a.cph - b.cph); const dataSlice = isFull ? games : games.slice(0, 5); const canvasId = isFull ? 'full-cost-benefit-chart' : 'cost-benefit-chart'; const chartKey = isFull ? 'fullCostBenefit' : 'costBenefit'; const el = document.getElementById(canvasId); if (!el) return; if (charts[chartKey]) charts[chartKey].destroy(); charts[chartKey] = new Chart(el, { type: 'bar', data: { labels: dataSlice.map(g => g.short || g.name), datasets: [{ label: '时间成本', data: dataSlice.map(g => g.cph), backgroundColor: '#10b981' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: 'rgba(107, 114, 128, 0.5)' } }, y: { grid: { display: false } } }, plugins: { legend: { display: false } } } }); };
         const renderGameSortChart = () => { const gamesWithSort = items.filter(i => i.type !== 'hardware' && i.sort && i.playTime > 0); const timeBySort = gamesWithSort.reduce((acc, game) => { acc[game.sort] = (acc[game.sort] || 0) + (game.playTime || 0); return acc; }, {}); const sortedData = Object.entries(timeBySort).sort((a, b) => b[1] - a[1]); const labels = sortedData.map(d => d[0]); const data = sortedData.map(d => d[1]); const hashCode = s => s.split('').reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0); const backgroundColors = labels.map(label => `hsl(${hashCode(label) % 360}, 70%, 60%)`); const el = document.getElementById('game-sort-chart'); if (!el) return; charts.gameSort = new Chart(el, { type: 'doughnut', data: { labels: labels, datasets: [{ data: data, backgroundColor: backgroundColors, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: false }, tooltip: { enabled: false, external: createExternalTooltip((tooltip) => { if (!tooltip.body) return null; const label = tooltip.title?.[0]; if (!label) return null; const value = tooltip.dataPoints[0].parsed; const total = tooltip.dataPoints[0].dataset.data.reduce((a, b) => a + b, 0); if (total === 0) return null; const percentage = ((value / total) * 100).toFixed(1); const topGames = items.filter(i => i.sort === label && i.playTime > 0).sort((a, b) => (b.playTime || 0) - (a.playTime || 0)).slice(0, 3); let innerHtml = `<div class="font-bold text-base mb-2 border-b border-gray-600 pb-1 flex justify-between"><span>${label}</span><span>${value.toFixed(1)}h (${percentage}%)</span></div><h4 class="font-semibold mt-2 mb-1">该类型时长 Top 3</h4><ul class="text-sm">`; topGames.forEach(item => { innerHtml += `<li class="flex justify-between my-1"><span>${(item.short || item.name).substring(0, 20)}</span><strong>${(item.playTime || 0).toFixed(1)}h</strong></li>`; }); if (topGames.length === 0) innerHtml += '<li>无游玩记录</li>'; innerHtml += '</ul>'; return innerHtml; }) } } } }); };
-        const renderMonthlyTrendsChart = () => { const excludeSwitch2 = elements.excludeSwitch2Checkbox.checked; const currentItems = excludeSwitch2 ? items.filter(i => !(i.name.toLowerCase().includes('switch') && i.name.includes('2') && i.type === 'hardware')) : items; const trends = {}; const allMonths = new Set(); const normalizeMonth = (dateStr) => { if (!dateStr) return null; const date = new Date(dateStr); if (isNaN(date.getTime())) return null; return date.getFullYear() + '-' + ('0' + (date.getMonth() + 1)).slice(-2); }; currentItems.forEach(item => { if (item.purchaseDate) { const purchaseMonth = normalizeMonth(item.purchaseDate); if(purchaseMonth) { allMonths.add(purchaseMonth); if (!trends[purchaseMonth]) trends[purchaseMonth] = { hardware: 0, switch_physical: 0, switch_digital: 0, steam: 0, ubi: 0, ms: 0, playtime: 0 }; const cost = (item.purchasePrice || 0) - (item.sellPrice || 0); if (item.type === 'hardware') trends[purchaseMonth].hardware += cost; else if (item.type === 'physical') trends[purchaseMonth].switch_physical += cost; else if (item.type === 'digital') trends[purchaseMonth].switch_digital += cost; else if (item.type === 'steam') trends[purchaseMonth].steam += cost; else if (item.type === 'ubi') trends[purchaseMonth].ubi += cost; else if (item.type === 'ms') trends[purchaseMonth].ms += cost; } } if (item.type !== 'hardware' && item.playTime > 0 && item.purchaseDate) { if (item.pass === 'y' && item.passDate) { const startDate = new Date(item.purchaseDate); const endDate = new Date(item.passDate); if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && startDate <= endDate) { const totalDurationDays = Math.max(1, (endDate - startDate) / (1000 * 60 * 60 * 24) + 1); const dailyPlaytime = item.playTime / totalDurationDays; for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) { const monthStr = normalizeMonth(d); if(monthStr){ allMonths.add(monthStr); if (!trends[monthStr]) trends[monthStr] = { hardware: 0, switch_physical: 0, switch_digital: 0, steam: 0, ubi: 0, ms: 0, playtime: 0 }; trends[monthStr].playtime += dailyPlaytime; } } return; } } const purchaseMonth = normalizeMonth(item.purchaseDate); if(purchaseMonth) { allMonths.add(purchaseMonth); if (!trends[purchaseMonth]) trends[purchaseMonth] = { hardware: 0, switch_physical: 0, switch_digital: 0, steam: 0, ubi: 0, ms: 0, playtime: 0 }; trends[purchaseMonth].playtime += (item.playTime || 0); } } }); const sortedMonths = Array.from(allMonths).sort(); const datasets = [ { label: '硬件', data: sortedMonths.map(m => trends[m]?.hardware || 0), backgroundColor: PLATFORM_COLORS.hardware, yAxisID: 'y', order: 2 }, { label: 'Switch 实体', data: sortedMonths.map(m => trends[m]?.switch_physical || 0), backgroundColor: PLATFORM_COLORS.switch_physical, yAxisID: 'y', order: 2 }, { label: 'Switch 数字', data: sortedMonths.map(m => trends[m]?.switch_digital || 0), backgroundColor: PLATFORM_COLORS.switch_digital, yAxisID: 'y', order: 2 }, { label: 'Steam', data: sortedMonths.map(m => trends[m]?.steam || 0), backgroundColor: PLATFORM_COLORS.steam, yAxisID: 'y', order: 2 }, { label: 'Uplay', data: sortedMonths.map(m => trends[m]?.ubi || 0), backgroundColor: PLATFORM_COLORS.ubi, yAxisID: 'y', order: 2 }, { label: 'MS', data: sortedMonths.map(m => trends[m]?.ms || 0), backgroundColor: PLATFORM_COLORS.ms, yAxisID: 'y', order: 2 }, { label: '时长', data: sortedMonths.map(m => trends[m]?.playtime || 0), borderColor: '#eab308', backgroundColor: '#eab308', type: 'line', tension: 0.3, yAxisID: 'y1', order: 1 } ]; const el = document.getElementById('monthly-trends-chart'); if (!el) return; if (charts.monthlyTrends) charts.monthlyTrends.destroy(); charts.monthlyTrends = new Chart(el, { type: 'bar', data: { labels: sortedMonths, datasets }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false, }, scales: { x: { stacked: true, ticks: { callback: (v, i) => sortedMonths[v] ? sortedMonths[v].substring(2).replace('-', '/') : '' } }, y: { stacked: true, position: 'left', title: { display: true, text: '支出 (¥)' }, grid: { color: 'rgba(107, 114, 128, 0.5)' }, beginAtZero: true }, y1: { position: 'right', title: { display: true, text: '时长 (h)' }, grid: { drawOnChartArea: false }, beginAtZero: true } }, plugins: { tooltip: { enabled: false, external: createExternalTooltip((tooltip) => { if (!tooltip || !tooltip.body) return null; const month = tooltip.title?.[0]; if (!month) return null; const topCostItems = items.filter(i => normalizeMonth(i.purchaseDate) === month).map(i => ({ name: i.short || i.name, value: (i.purchasePrice || 0) - (i.sellPrice || 0) })).filter(i => i.value > 0).sort((a, b) => b.value - a.value).slice(0, 5); const topTimeItems = items.filter(item => { if (!item.playTime || item.playTime <= 0) return false; const itemMonth = normalizeMonth(item.purchaseDate); if (!itemMonth) return false; if (!item.passDate) { return itemMonth === month; } const start = new Date(item.purchaseDate); const end = new Date(item.passDate); const currentMonthStart = new Date(month + '-01'); const currentMonthEnd = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() + 1, 0); return start <= currentMonthEnd && end >= currentMonthStart; }).sort((a, b) => (b.playTime || 0) - (a.playTime || 0)).slice(0, 5); let innerHtml = `<div class="font-bold text-base mb-2 border-b border-gray-600 pb-1">${month} 月报</div>`; innerHtml += `<h4 class="font-semibold mt-2 mb-1">当月支出 Top 5</h4><ul class="text-sm">`; topCostItems.forEach(item => { innerHtml += `<li class="flex justify-between my-1"><span>${((item.name || '') || '').substring(0, 20)}</span><strong>${formatCurrency(item.value)}</strong></li>`; }); if (topCostItems.length === 0) innerHtml += '<li>无支出记录</li>'; innerHtml += '</ul>'; innerHtml += `<h4 class="font-semibold mt-2 mb-1">当月游玩 Top 5</h4><ul class="text-sm">`; topTimeItems.forEach(item => { innerHtml += `<li class="flex justify-between my-1"><span>${((item.short || item.name) || '').substring(0, 20)}</span><strong>${(item.playTime || 0).toFixed(1)}h</strong></li>`; }); if (topTimeItems.length === 0) innerHtml += '<li>无游玩记录</li>'; innerHtml += '</ul>'; return innerHtml; }) } } } }); };
+        const renderMonthlyTrendsChart = (isFullscreen = false) => {
+            const canvasId = isFullscreen ? 'monthly-trends-chart-fullscreen' : 'monthly-trends-chart';
+            const chartKey = isFullscreen ? 'monthlyTrendsFullscreen' : 'monthlyTrends';
+            
+            const excludeSwitch2 = elements.excludeSwitch2Checkbox.checked; 
+            const currentItems = excludeSwitch2 ? items.filter(i => !(i.name.toLowerCase().includes('switch') && i.name.includes('2') && i.type === 'hardware')) : items; 
+            const trends = {}; const allMonths = new Set(); 
+            const normalizeMonth = (dateStr) => { if (!dateStr) return null; const date = new Date(dateStr); if (isNaN(date.getTime())) return null; return date.getFullYear() + '-' + ('0' + (date.getMonth() + 1)).slice(-2); }; 
+            currentItems.forEach(item => { if (item.purchaseDate) { const purchaseMonth = normalizeMonth(item.purchaseDate); if(purchaseMonth) { allMonths.add(purchaseMonth); if (!trends[purchaseMonth]) trends[purchaseMonth] = { hardware: 0, switch_physical: 0, switch_digital: 0, steam: 0, ubi: 0, ms: 0, playtime: 0 }; const cost = (item.purchasePrice || 0) - (item.sellPrice || 0); if (item.type === 'hardware') trends[purchaseMonth].hardware += cost; else if (item.type === 'physical') trends[purchaseMonth].switch_physical += cost; else if (item.type === 'digital') trends[purchaseMonth].switch_digital += cost; else if (item.type === 'steam') trends[purchaseMonth].steam += cost; else if (item.type === 'ubi') trends[purchaseMonth].ubi += cost; else if (item.type === 'ms') trends[purchaseMonth].ms += cost; } } if (item.type !== 'hardware' && item.playTime > 0 && item.purchaseDate) { if (item.pass === 'y' && item.passDate) { const startDate = new Date(item.purchaseDate); const endDate = new Date(item.passDate); if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && startDate <= endDate) { const totalDurationDays = Math.max(1, (endDate - startDate) / (1000 * 60 * 60 * 24) + 1); const dailyPlaytime = item.playTime / totalDurationDays; for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) { const monthStr = normalizeMonth(d); if(monthStr){ allMonths.add(monthStr); if (!trends[monthStr]) trends[monthStr] = { hardware: 0, switch_physical: 0, switch_digital: 0, steam: 0, ubi: 0, ms: 0, playtime: 0 }; trends[monthStr].playtime += dailyPlaytime; } } return; } } const purchaseMonth = normalizeMonth(item.purchaseDate); if(purchaseMonth) { allMonths.add(purchaseMonth); if (!trends[purchaseMonth]) trends[purchaseMonth] = { hardware: 0, switch_physical: 0, switch_digital: 0, steam: 0, ubi: 0, ms: 0, playtime: 0 }; trends[purchaseMonth].playtime += (item.playTime || 0); } } }); 
+            const sortedMonths = Array.from(allMonths).sort(); 
+            const datasets = [ { label: '硬件', data: sortedMonths.map(m => trends[m]?.hardware || 0), backgroundColor: PLATFORM_COLORS.hardware, yAxisID: 'y', order: 2 }, { label: 'Switch 实体', data: sortedMonths.map(m => trends[m]?.switch_physical || 0), backgroundColor: PLATFORM_COLORS.switch_physical, yAxisID: 'y', order: 2 }, { label: 'Switch 数字', data: sortedMonths.map(m => trends[m]?.switch_digital || 0), backgroundColor: PLATFORM_COLORS.switch_digital, yAxisID: 'y', order: 2 }, { label: 'Steam', data: sortedMonths.map(m => trends[m]?.steam || 0), backgroundColor: PLATFORM_COLORS.steam, yAxisID: 'y', order: 2 }, { label: 'Uplay', data: sortedMonths.map(m => trends[m]?.ubi || 0), backgroundColor: PLATFORM_COLORS.ubi, yAxisID: 'y', order: 2 }, { label: 'MS', data: sortedMonths.map(m => trends[m]?.ms || 0), backgroundColor: PLATFORM_COLORS.ms, yAxisID: 'y', order: 2 }, { label: '时长', data: sortedMonths.map(m => trends[m]?.playtime || 0), borderColor: '#eab308', backgroundColor: '#eab308', type: 'line', tension: 0.3, yAxisID: 'y1', order: 1 } ]; 
+            
+            const el = document.getElementById(canvasId); if (!el) return;
+
+            // 如果是全屏模式，动态计算图表宽度以支持滚动
+            if (isFullscreen) {
+                const minBarWidth = 40; // 每个柱子的最小宽度
+                const container = el.parentElement.parentElement;
+                if (container) {
+                    const chartWidth = Math.max(container.clientWidth, sortedMonths.length * minBarWidth);
+                    el.parentElement.style.width = `${chartWidth}px`;
+                }
+            } else {
+                if (el && el.parentElement) {
+                    el.parentElement.style.width = ''; // 恢复默认宽度
+                }
+            }
+            
+            if (charts[chartKey]) charts[chartKey].destroy(); 
+            
+            const chartOptions = {
+                indexAxis: 'x', // 始终为垂直柱状图
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: { // 统一使用一套坐标轴配置
+                    x: { stacked: true, ticks: { callback: (v, i) => sortedMonths[v] ? sortedMonths[v].substring(2).replace('-', '/') : '' } },
+                    y: { stacked: true, position: 'left', title: { display: true, text: '支出 (¥)' }, grid: { color: 'rgba(107, 114, 128, 0.5)' }, beginAtZero: true },
+                    y1: { position: 'right', title: { display: true, text: '时长 (h)' }, grid: { drawOnChartArea: false }, beginAtZero: true }
+                },
+                plugins: { tooltip: { enabled: false, external: createExternalTooltip((tooltip) => { if (!tooltip || !tooltip.body) return null; const month = tooltip.title?.[0]; if (!month) return null; const topCostItems = items.filter(i => normalizeMonth(i.purchaseDate) === month).map(i => ({ name: i.short || i.name, value: (i.purchasePrice || 0) - (i.sellPrice || 0) })).filter(i => i.value > 0).sort((a, b) => b.value - a.value).slice(0, 5); const topTimeItems = items.filter(item => { if (!item.playTime || item.playTime <= 0) return false; const itemMonth = normalizeMonth(item.purchaseDate); if (!itemMonth) return false; if (!item.passDate) { return itemMonth === month; } const start = new Date(item.purchaseDate); const end = new Date(item.passDate); const currentMonthStart = new Date(month + '-01'); const currentMonthEnd = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() + 1, 0); return start <= currentMonthEnd && end >= currentMonthStart; }).sort((a, b) => (b.playTime || 0) - (a.playTime || 0)).slice(0, 5); let innerHtml = `<div class="font-bold text-base mb-2 border-b border-gray-600 pb-1">${month} 月报</div>`; innerHtml += `<h4 class="font-semibold mt-2 mb-1">当月支出 Top 5</h4><ul class="text-sm">`; topCostItems.forEach(item => { innerHtml += `<li class="flex justify-between my-1"><span>${((item.name || '') || '').substring(0, 20)}</span><strong>${formatCurrency(item.value)}</strong></li>`; }); if (topCostItems.length === 0) innerHtml += '<li>无支出记录</li>'; innerHtml += '</ul>'; innerHtml += `<h4 class="font-semibold mt-2 mb-1">当月游玩 Top 5</h4><ul class="text-sm">`; topTimeItems.forEach(item => { innerHtml += `<li class="flex justify-between my-1"><span>${((item.short || item.name) || '').substring(0, 20)}</span><strong>${(item.playTime || 0).toFixed(1)}h</strong></li>`; }); if (topTimeItems.length === 0) innerHtml += '<li>无游玩记录</li>'; innerHtml += '</ul>'; return innerHtml; }) } }
+            };
+
+            charts[chartKey] = new Chart(el, { type: 'bar', data: { labels: sortedMonths, datasets: datasets }, options: chartOptions });
+        };
         const updateKpiTooltips = () => { const games = items.filter(i => i.type !== 'hardware'); const topCost = [...games].sort((a,b) => ((b.purchasePrice || 0) - (b.sellPrice || 0)) - ((a.purchasePrice || 0) - (a.sellPrice || 0))).slice(0, 10); elements.gameCostTooltip.innerHTML = `<h3 class="font-bold mb-1">游戏支出 Top 10</h3><ul>` + topCost.map(g => `<li class="flex justify-between"><span>${g.name.substring(0,18)}</span><strong>${formatCurrency((g.purchasePrice||0)-(g.sellPrice||0))}</strong></li>`).join('') + '</ul>'; const topPlay = [...games].sort((a, b) => (b.playTime || 0) - (a.playTime || 0)).slice(0, 10); elements.playtimeTooltip.innerHTML = `<h3 class="font-bold mb-1">游玩时长 Top 10</h3><ul>` + topPlay.map(g => `<li class="flex justify-between"><span>${g.name.substring(0,18)}</span><strong>${(g.playTime||0).toFixed(1)}h</strong></li>`).join('') + '</ul>'; const gamesCph = games.filter(g => g.playTime > 0 && g.from !== 'free').map(g => ({...g, cph: ((g.purchasePrice || 0) - (g.sellPrice || 0)) / g.playTime })); const cheapest = [...gamesCph].sort((a,b) => a.cph - b.cph).slice(0, 5); const mostExpensive = [...gamesCph].sort((a,b) => b.cph - a.cph).slice(0, 5); elements.cphTooltip.innerHTML = `<h3 class="font-bold mb-1">最高时间成本 Top 5</h3><ul>` + mostExpensive.map(g => `<li class="flex justify-between"><span>${g.name.substring(0,20)}</span><strong>${formatCurrency(g.cph)}/h</strong></li>`).join('') + `</ul><h3 class="font-bold mt-2 mb-1">最低时间成本 Top 5</h3><ul>` + cheapest.map(g => `<li class="flex justify-between"><span>${g.name.substring(0,20)}</span><strong>${formatCurrency(g.cph)}/h</strong></li>`).join('') + '</ul>'; const unfinishedGames = items.filter(g => g.type !== 'hardware' && g.pass !== 'y'); const unfinishedPhysicalCost = unfinishedGames.filter(g => g.type === 'physical').reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0); const unfinishedDigitalCost = unfinishedGames.filter(g => !['physical', 'hardware'].includes(g.type)).reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0); const topUnfinished = [...unfinishedGames].sort((a,b) => ((b.purchasePrice || 0) - (b.sellPrice || 0)) - ((a.purchasePrice || 0) - (a.sellPrice || 0))).slice(0,5); let unfinishedHtml = `<div class="grid grid-cols-2 gap-1 mb-2"><div>实体: <strong>${formatCurrency(unfinishedPhysicalCost)}</strong></div><div>数字: <strong>${formatCurrency(unfinishedDigitalCost)}</strong></div></div><h3 class="font-bold mt-2 mb-1 border-t border-gray-600 pt-1">最贵未通关 Top 5</h3><ul>`; unfinishedHtml += topUnfinished.map(g => `<li class="flex justify-between"><span>${g.name.substring(0,20)}</span><strong>${formatCurrency((g.purchasePrice||0)-(g.sellPrice||0))}</strong></li>`).join(''); if (topUnfinished.length === 0) unfinishedHtml += '<li>无</li>'; unfinishedHtml += '</ul>'; elements.unfinishedCostTooltip.innerHTML = unfinishedHtml; const gameCountByType = { 'Switch': items.filter(i => ['physical', 'digital'].includes(i.type)).length, 'Steam': items.filter(i => i.type === 'steam').length, 'Uplay': items.filter(i => i.type === 'ubi').length, 'MS Store': items.filter(i => i.type === 'ms').length, }; let gameCountHtml = `<h3 class="font-bold mb-1">各平台游戏数量</h3><ul>`; Object.entries(gameCountByType).forEach(([platform, count]) => { if (count > 0) gameCountHtml += `<li class="flex justify-between"><span>${platform}</span><strong>${count} 款</strong></li>`; }); gameCountHtml += '</ul>'; elements.totalGamesTooltip.innerHTML = gameCountHtml; };
         const updateDashboard = () => { const games = items.filter(i => i.type !== 'hardware'); const hardware = items.filter(i => i.type === 'hardware'); const gamesForCostCalc = games.filter(g => g.from !== 'free'); const totalActual = items.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0); const gameActual = games.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0); const hardwareActual = hardware.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0); const unfinishedGamesCost = games.filter(g => g.pass !== 'y').reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0); const totalPlaytime = games.reduce((s, i) => s + (i.playTime || 0), 0); const gameCount = games.length; const avgPlaytime = gameCount > 0 ? totalPlaytime / gameCount : 0; const gameActualForCost = gamesForCostCalc.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0); const totalPlaytimeForCost = gamesForCostCalc.reduce((s, i) => s + (i.playTime || 0), 0); const costPerHour = totalPlaytimeForCost > 0 ? gameActualForCost / totalPlaytimeForCost : null; elements.totalActualCost.textContent = formatCurrency(totalActual); elements.gameActualCost.textContent = formatCurrency(gameActual); elements.hardwareActualCost.textContent = formatCurrency(hardwareActual); elements.unfinishedGamesCost.textContent = formatCurrency(unfinishedGamesCost); elements.totalGames.textContent = `${gameCount} 款`; elements.totalPlaytime.textContent = `${totalPlaytime.toFixed(2)} 小时`; elements.avgPlaytime.textContent = `${avgPlaytime.toFixed(2)} 小时/款`; elements.costPerHour.textContent = costPerHour !== null ? formatCurrency(costPerHour) : '/'; renderCharts(); updateKpiTooltips(); };
         const updateSortHeaders = () => { document.querySelectorAll('.sortable-header').forEach(header => { const key = header.dataset.sort; let text = header.textContent.replace(/[▾▴]/, '').trim(); if (key === sortConfig.key) { header.textContent = `${text} ${sortConfig.direction === 'desc' ? '▾' : '▴'}`; } else { header.textContent = text; } }); };
@@ -581,21 +631,54 @@
             elements.loginBtn.addEventListener('click', signInWithGoogle);
             elements.logoutBtn.addEventListener('click', signOutUser);
             elements.viewAllBtn.addEventListener('click', () => { elements.listModalTitle.textContent = "数据详情"; sortConfig = { key: 'id', direction: 'desc' }; renderItemsList(); updateSortHeaders(); openModal(elements.listModal); }); 
-            elements.addItemFab.addEventListener('click', () => { isEditingFromList = false; elements.modalTitle.textContent = '添加记录'; elements.itemForm.reset(); elements.itemId.value = ''; elements.deleteBtn.classList.add('hidden'); elements.purchaseDate.value = new Date().toISOString().split('T')[0]; openModal(elements.itemModal); }); 
+            
+            elements.addItemFab.addEventListener('click', () => {
+                if (elements.fabContainer.classList.contains('open')) {
+                    isEditingFromList = false;
+                    elements.modalTitle.textContent = '添加记录';
+                    elements.itemForm.reset();
+                    elements.itemId.value = '';
+                    elements.deleteBtn.classList.add('hidden');
+                    elements.purchaseDate.value = new Date().toISOString().split('T')[0];
+                    openModal(elements.itemModal);
+                    elements.fabContainer.classList.remove('open');
+                } else {
+                    elements.fabContainer.classList.add('open');
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!elements.fabContainer.contains(e.target) && elements.fabContainer.classList.contains('open')) {
+                    elements.fabContainer.classList.remove('open');
+                }
+            });
+
             elements.itemForm.addEventListener('submit', async (e) => { e.preventDefault(); const fb_id = elements.itemId.value; const itemData = { id: fb_id ? items.find(i => i.fb_id === fb_id).id : `${elements.itemType.value.charAt(0)}-${Date.now().toString().slice(-8)}`, name: elements.itemName.value, short: elements.itemShortName.value, sort: elements.itemSort.value, type: elements.itemType.value, from: elements.itemFrom.value, purchaseDate: parseDateOrNull(elements.purchaseDate.value), purchasePrice: parseFloatOrNull(elements.purchasePrice.value), playTime: parseFloatOrNull(elements.playTime.value), pass: elements.itemPass.checked ? 'y' : 'n', passDate: elements.itemPass.checked ? parseDateOrNull(elements.passDate.value) : null, sellDate: parseDateOrNull(elements.sellDate.value), sellPrice: parseFloatOrNull(elements.sellPrice.value) }; try { const docRef = fb_id ? doc(itemsCollectionRef, fb_id) : doc(itemsCollectionRef); await setDoc(docRef, itemData, { merge: true }); closeItemModalAndReturnToList(); } catch (error) { console.error("Error saving item: ", error); } });
             elements.deleteBtn.addEventListener('click', () => { showConfirmation('您确定要删除此记录吗？此操作无法撤销。', async () => { const fb_id = elements.itemId.value; try { await deleteDoc(doc(itemsCollectionRef, fb_id)); closeItemModalAndReturnToList(); } catch (error) { console.error("Error deleting item: ", error); } }); });
             elements.importBtn.addEventListener('click', () => elements.csvImportInput.click()); 
             elements.exportBtn.addEventListener('click', () => { if (items.length === 0) { showConfirmation('没有数据可以导出。', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "通知"; return; } const headers = ['id', 'name', 'short', 'type', 'sort', 'purchaseDate', 'purchasePrice', 'from', 'playTime', 'pass', 'passDate', 'sellDate', 'sellPrice']; const csv = "data:text/csv;charset=utf-8,\uFEFF" + headers.join(',') + '\r\n' + items.map(i => headers.map(h => `"${i[h] ?? ''}"`).join(',')).join('\r\n'); const link = Object.assign(document.createElement("a"), { href: encodeURI(csv), download: `game_cost_export_${new Date().toISOString().split('T')[0]}.csv` }); document.body.appendChild(link); link.click(); document.body.removeChild(link); }); 
             elements.csvImportInput.addEventListener('change', (e) => { const file = e.target.files[0]; if (!file) return; showConfirmation('导入CSV将覆盖所有现有数据，您确定吗？', async () => { const reader = new FileReader(); reader.onload = async (re) => { const text = re.target.result; if (!text) { showConfirmation('文件为空或无法读取。', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "错误"; return; } const rows = text.split(/\r\n|\n/); const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, '')); try { const headerIndexMap = {}; headers.forEach((h, i) => { headerIndexMap[h] = i; }); if (headerIndexMap['id'] === undefined || headerIndexMap['name'] === undefined || headerIndexMap['type'] === undefined) { showConfirmation('导入失败：CSV文件必须包含 id, name, 和 type 表头。', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "错误"; return; } const newItems = rows.slice(1).filter(r => r.trim()).map(r => { const v = r.split(',').map(val => val.trim().replace(/^"|"$/g, '')); const getVal = (headerName) => v[headerIndexMap[headerName]] || ''; const item = { id: getVal('id'), name: getVal('name'), short: getVal('short'), sort: getVal('sort'), type: getVal('type'), from: getVal('from'), purchaseDate: parseDateOrNull(getVal('purchaseDate')), purchasePrice: parseFloatOrNull(getVal('purchasePrice')), pass: getVal('pass'), passDate: parseDateOrNull(getVal('passDate')), sellDate: parseDateOrNull(getVal('sellDate')), sellPrice: parseFloatOrNull(getVal('sellPrice')), playTime: parseFloatOrNull(headerIndexMap['playTime'] !== undefined ? getVal('playTime') : getVal('time')) }; return (!item.id || !item.name || !item.type) ? null : item; }).filter(Boolean); if (new Set(newItems.map(i => i.id)).size !== newItems.length) { showConfirmation('导入失败：ID重复。', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "错误"; return; } const querySnapshot = await getDocs(query(itemsCollectionRef)); const batch = writeBatch(db); querySnapshot.forEach((doc) => { batch.delete(doc.ref); }); newItems.forEach((item) => { const newDocRef = doc(itemsCollectionRef); batch.set(newDocRef, item); }); await batch.commit(); showConfirmation('导入成功！', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "成功"; } catch (error) { console.error(error); showConfirmation('导入失败，请检查CSV格式或控制台日志。', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "错误"; } }; reader.readAsText(file, 'UTF-8'); }); e.target.value = null; }); 
-            elements.fabContainer.addEventListener('mouseenter', () => { clearTimeout(fabTimeout); elements.fabContainer.classList.add('open'); }); 
-            elements.fabContainer.addEventListener('mouseleave', () => { fabTimeout = setTimeout(() => elements.fabContainer.classList.remove('open'), 1000); }); 
+            
             elements.closeModalBtn.addEventListener('click', () => closeItemModalAndReturnToList()); 
             elements.cancelBtn.addEventListener('click', () => closeItemModalAndReturnToList()); 
             elements.closeListModalBtn.addEventListener('click', () => closeModal(elements.listModal));
             elements.confirmCancelBtn.addEventListener('click', () => closeModal(elements.confirmModal));
             elements.viewAllCphBtn.addEventListener('click', () => { renderCostBenefitChart(true); openModal(elements.fullChartModal); });
             elements.closeFullChartModalBtn.addEventListener('click', () => closeModal(elements.fullChartModal));
-            elements.excludeSwitch2Checkbox.addEventListener('change', renderMonthlyTrendsChart);
+            elements.excludeSwitch2Checkbox.addEventListener('change', () => renderMonthlyTrendsChart());
+            
+            elements.monthlyChartFullscreenBtn.addEventListener('click', () => {
+                openModal(elements.monthlyChartFullscreenModal);
+                renderMonthlyTrendsChart(true);
+            });
+            elements.closeMonthlyChartFullscreenBtn.addEventListener('click', () => {
+                closeModal(elements.monthlyChartFullscreenModal);
+                if (charts.monthlyTrendsFullscreen) {
+                    charts.monthlyTrendsFullscreen.destroy();
+                    delete charts.monthlyTrendsFullscreen;
+                }
+            });
+
             document.querySelectorAll('.sortable-header').forEach(header => { header.addEventListener('click', () => { const sortKey = header.dataset.sort; if (sortConfig.key === sortKey) { sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc'; } else { sortConfig.key = sortKey; sortConfig.direction = 'desc'; } renderItemsList(); updateSortHeaders(); }); }); };
         
         // --- App Initialization ---
@@ -603,9 +686,7 @@
             updateUIAccess(null); // Start in read-only mode
             setupChartDefaults();
             setupEventListeners();
-            if (db) {
-                setupFirestoreListener(); 
-            }
+            setupFirestoreListener(); 
             document.querySelectorAll('.card-animation').forEach((card, index) => {
                 setTimeout(() => {
                     card.style.opacity = '1';
@@ -617,28 +698,21 @@
         // --- Authentication and UI Control Logic ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // User is signed in.
                 userId = user.uid;
                 elements.userAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'A')}&background=random`;
-                
                 elements.loginBtn.classList.add('hidden');
                 elements.userInfo.classList.remove('hidden');
                 elements.userInfo.classList.add('flex');
-
                 updateUIAccess(userId);
             } else {
-                 // User is signed out.
                 userId = null;
-                
                 elements.loginBtn.classList.remove('hidden');
                 elements.userInfo.classList.add('hidden');
                 elements.userInfo.classList.remove('flex');
-                
-                updateUIAccess(null); // Ensure UI is in read-only mode
+                updateUIAccess(null);
             }
         });
         
-        // --- Start the App ---
         initApp();
     });
 </script>
