@@ -3,7 +3,7 @@
 来这里**视奸**我的游戏记录吧：
 Come **stalk** my gaming records here:
 
-  * **云同步版Cloud Version**: **(game-data-dashboard.web.app/)** 或 (or) **(netizen-dino.fun)**
+  * **云同步版Cloud Version**: **game-data-dashboard.web.app(game-data-dashboard.web.app)** 或 (or) **netizen-dino.fun**
 
 
 本项目是一个开源的游戏数据仪表盘，旨在量化你的游戏生涯。它有两个版本：功能强大的 **Firebase 云同步版**，使用Google账号登录，数据实时同步，可以安全地分享给朋友围观；以及一个极其纯粹的**纯净本地版** (`index.html`)，所有数据仅保存在你的浏览器中，完全离线，即开即用。无论你是数据控还是只想简单记个账，总有一款适合你。
