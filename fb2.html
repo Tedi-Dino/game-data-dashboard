@@ -281,8 +281,8 @@
                      <h3 class="text-lg font-semibold text-gray-200">🗓️ 月度消费与时间统计</h3>
                     <div class="flex items-center space-x-4">
                         <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="exclude-switch2-checkbox" class="form-checkbox">
-                            <label for="exclude-switch2-checkbox" class="text-sm font-medium text-gray-300 whitespace-nowrap">不计NS2</label>
+                            <input type="checkbox" id="exclude-hardware-checkbox" class="form-checkbox">
+                            <label for="exclude-hardware-checkbox" class="text-sm font-medium text-gray-300 whitespace-nowrap">不计硬件</label>
                         </div>
                         <button id="monthly-chart-fullscreen-btn" class="lg:hidden text-gray-300 hover:text-white" title="全屏查看">
                             <i class="fas fa-expand-alt fa-lg"></i>
@@ -374,6 +374,7 @@
                                 <option value="backlog">待玩</option>
                                 <option value="passed">已通关</option>
                                 <option value="abandoned">已弃坑</option>
+                                <option value="empty">空</option>
                             </select>
                         </div>
                          <div id="pass-date-container" class="hidden">
@@ -403,7 +404,19 @@
     <!-- 数据详情 模态框 (已重构) -->
     <div id="list-modal" class="fixed inset-0 z-50 p-4 hidden modal-backdrop overflow-y-auto">
         <div class="dark-card w-full max-w-7xl mx-auto rounded-lg shadow-xl p-6 relative my-auto flex flex-col">
-            <div class="flex justify-between items-center mb-4 flex-shrink-0"><h2 id="list-modal-title" class="text-xl font-bold text-white">数据详情</h2><button id="close-list-modal-btn" class="text-gray-300 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div>
+            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                <h2 id="list-modal-title" class="text-xl font-bold text-white">数据详情</h2>
+                <button id="close-list-modal-btn" class="text-gray-300 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            </div>
+            <!-- Search Box -->
+            <div class="mb-4">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                    <input type="text" id="list-search-input" class="form-input w-full pl-10" placeholder="搜索名称、分类、类型...">
+                </div>
+            </div>
             <div class="overflow-auto">
                 <table class="w-full text-sm text-left text-gray-300">
                     <thead class="text-xs text-gray-400 uppercase bg-gray-700">
@@ -493,6 +506,13 @@
                 <!-- 右列: AI 推荐 -->
                 <div class="flex flex-col min-h-0">
                     <h3 class="text-lg font-semibold text-teal-400 mb-2 flex-shrink-0">🤖 AI 推荐</h3>
+                    <!-- AI Prompt Input -->
+                    <div class="flex gap-2 mb-3 flex-shrink-0">
+                        <input type="text" id="ai-prompt-input" class="form-input flex-grow" placeholder="输入你想玩的游戏类型或风格...">
+                        <button id="ai-prompt-send-btn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-3 rounded-lg transition-colors">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
                     <div id="ai-recommendations-list" class="space-y-3 overflow-y-auto pr-2">
                         <!-- AI recommendations will be inserted here -->
                     </div>
@@ -510,7 +530,7 @@
     import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
     // --- 【重要】请在此处配置您的管理员UID列表 ---
-    const ADMIN_UIDS = ['YOUR_ADMIN_UID_HERE'];
+    const ADMIN_UIDS = ['ZPyHfPGUI4elNvRN2Q30ZqfzT6X2'];
 
     // --- Firebase Initialization ---
     let app, auth, db, functions;
@@ -520,7 +540,7 @@
 
     try {
         const firebaseConfig = {
-         apiKey: "YOUR_API_KEY",
+         apiKey: "AIzaSyAE7weH2hOhhswg8x51Uz0TMxn-jO_Ap0k",
          authDomain: "game-data-dashboard.firebaseapp.com",
          projectId: "game-data-dashboard",
          storageBucket: "game-data-dashboard.firebasestorage.app",
@@ -553,7 +573,7 @@
             lastUpdated: document.getElementById('last-updated'),
             totalActualCost: document.getElementById('total-actual-cost'), gameActualCost: document.getElementById('game-actual-cost'), hardwareActualCost: document.getElementById('hardware-actual-cost'), unfinishedGamesCost: document.getElementById('unfinished-games-cost'), totalPlaytime: document.getElementById('total-playtime'), avgPlaytime: document.getElementById('avg-playtime'), costPerHour: document.getElementById('cost-per-hour'), totalGames: document.getElementById('total-games'), gameCostTooltip: document.getElementById('game-cost-tooltip'), playtimeTooltip: document.getElementById('playtime-tooltip'), cphTooltip: document.getElementById('cph-tooltip'), addItemFab: document.getElementById('add-item-fab'), itemModal: document.getElementById('item-modal'), modalTitle: document.getElementById('modal-title'), itemForm: document.getElementById('item-form'), itemId: document.getElementById('item-id'), itemCustomId: document.getElementById('item-custom-id'), itemName: document.getElementById('item-name'), itemType: document.getElementById('item-type'), itemFrom: document.getElementById('item-from'), purchaseDate: document.getElementById('purchase-date'), purchasePrice: document.getElementById('purchase-price'), playTime: document.getElementById('play-time'), passDateContainer: document.getElementById('pass-date-container'), passDate: document.getElementById('pass-date'), sellDate: document.getElementById('sell-date'), sellPrice: document.getElementById('sell-price'), deleteBtn: document.getElementById('delete-btn'), cancelBtn: document.getElementById('cancel-btn'), closeModalBtn: document.getElementById('close-modal-btn'), gameFields: document.getElementById('game-fields'), resellFields: document.getElementById('resell-fields'), importBtn: document.getElementById('import-btn'), exportBtn: document.getElementById('export-btn'), csvImportInput: document.getElementById('csv-import-input'), viewAllBtn: document.getElementById('view-all-btn'), listModal: document.getElementById('list-modal'), listModalTitle: document.getElementById('list-modal-title'), closeListModalBtn: document.getElementById('close-list-modal-btn'), itemsTableBody: document.getElementById('items-table-body'), noDataListMessage: document.getElementById('no-data-list-message'), fabContainer: document.querySelector('.fab-container'),
             unfinishedCostTooltip: document.getElementById('unfinished-cost-tooltip'),
-            excludeSwitch2Checkbox: document.getElementById('exclude-switch2-checkbox'),
+            excludeHardwareCheckbox: document.getElementById('exclude-hardware-checkbox'),
             confirmModal: document.getElementById('confirm-modal'),
             confirmModalMessage: document.getElementById('confirm-modal-message'),
             confirmOkBtn: document.getElementById('confirm-ok-btn'),
@@ -578,6 +598,9 @@
             aiRecommendationsList: document.getElementById('ai-recommendations-list'),
             itemStatus: document.getElementById('item-status'),
             itemRating: document.getElementById('item-rating'),
+            listSearchInput: document.getElementById('list-search-input'),
+            aiPromptInput: document.getElementById('ai-prompt-input'),
+            aiPromptSendBtn: document.getElementById('ai-prompt-send-btn'),
         };
     
         // --- App State ---
@@ -828,8 +851,8 @@
             const canvasId = isFullscreen ? 'monthly-trends-chart-fullscreen' : 'monthly-trends-chart';
             const chartKey = isFullscreen ? 'monthlyTrendsFullscreen' : 'monthlyTrends';
             
-            const excludeSwitch2 = elements.excludeSwitch2Checkbox.checked; 
-            const currentItems = excludeSwitch2 ? items.filter(i => !(i.name.toLowerCase().includes('switch') && i.name.includes('2') && i.type === 'hardware')) : items; 
+            const excludeHardware = elements.excludeHardwareCheckbox.checked; 
+            const currentItems = excludeHardware ? items.filter(i => i.type !== 'hardware') : items; 
             const trends = {}; const allMonths = new Set(); 
             const normalizeMonth = (dateStr) => { if (!dateStr) return null; const date = new Date(dateStr); if (isNaN(date.getTime())) return null; return date.getFullYear() + '-' + ('0' + (date.getMonth() + 1)).slice(-2); }; 
             currentItems.forEach(item => { if (item.purchaseDate) { const purchaseMonth = normalizeMonth(item.purchaseDate); if(purchaseMonth) { allMonths.add(purchaseMonth); if (!trends[purchaseMonth]) trends[purchaseMonth] = { hardware: 0, switch_physical: 0, switch_digital: 0, steam: 0, epic: 0, ubi: 0, ms: 0, emulator: 0, playtime: 0 }; const cost = (item.purchasePrice || 0) - (item.sellPrice || 0); if (item.type === 'hardware') trends[purchaseMonth].hardware += cost; else if (item.type === 'physical') trends[purchaseMonth].switch_physical += cost; else if (item.type === 'digital') trends[purchaseMonth].switch_digital += cost; else if (item.type === 'steam') trends[purchaseMonth].steam += cost; else if (item.type === 'epic') trends[purchaseMonth].epic += cost; else if (item.type === 'ubi') trends[purchaseMonth].ubi += cost; else if (item.type === 'ms') trends[purchaseMonth].ms += cost; else if (item.type === 'emulator') trends[purchaseMonth].emulator += cost; } } if (item.type !== 'hardware' && item.playTime > 0 && item.purchaseDate) { if (item.status === 'passed' && item.passDate) { const startDate = new Date(item.purchaseDate); const endDate = new Date(item.passDate); if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && startDate <= endDate) { const totalDurationDays = Math.max(1, (endDate - startDate) / (1000 * 60 * 60 * 24) + 1); const dailyPlaytime = item.playTime / totalDurationDays; for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) { const monthStr = normalizeMonth(d); if(monthStr){ allMonths.add(monthStr); if (!trends[monthStr]) trends[monthStr] = { hardware: 0, switch_physical: 0, switch_digital: 0, steam: 0, epic: 0, ubi: 0, ms: 0, emulator: 0, playtime: 0 }; trends[monthStr].playtime += dailyPlaytime; } } return; } } const purchaseMonth = normalizeMonth(item.purchaseDate); if(purchaseMonth) { allMonths.add(purchaseMonth); if (!trends[purchaseMonth]) trends[purchaseMonth] = { hardware: 0, switch_physical: 0, switch_digital: 0, steam: 0, epic: 0, ubi: 0, ms: 0, emulator: 0, playtime: 0 }; trends[purchaseMonth].playtime += (item.playTime || 0); } } }); 
@@ -871,7 +894,7 @@
         const updateKpiTooltips = () => { const games = items.filter(i => i.type !== 'hardware'); const topCost = [...games].sort((a,b) => ((b.purchasePrice || 0) - (b.sellPrice || 0)) - ((a.purchasePrice || 0) - (a.sellPrice || 0))).slice(0, 10); elements.gameCostTooltip.innerHTML = `<h3 class="font-bold mb-1">游戏支出 Top 10</h3><ul>` + topCost.map(g => `<li class="flex justify-between"><span>${g.name.substring(0,18)}</span><strong>${formatCurrency((g.purchasePrice||0)-(g.sellPrice||0))}</strong></li>`).join('') + '</ul>'; const topPlay = [...games].sort((a, b) => (b.playTime || 0) - (a.playTime || 0)).slice(0, 10); elements.playtimeTooltip.innerHTML = `<h3 class="font-bold mb-1">游玩时长 Top 10</h3><ul>` + topPlay.map(g => `<li class="flex justify-between"><span>${g.name.substring(0,18)}</span><strong>${(g.playTime||0).toFixed(1)}h</strong></li>`).join('') + '</ul>'; const gamesCph = games.filter(g => g.playTime > 0 && g.from !== 'free').map(g => ({...g, cph: ((g.purchasePrice || 0) - (g.sellPrice || 0)) / g.playTime })); const cheapest = [...gamesCph].sort((a,b) => a.cph - b.cph).slice(0, 5); const mostExpensive = [...gamesCph].sort((a,b) => b.cph - a.cph).slice(0, 5); elements.cphTooltip.innerHTML = `<h3 class="font-bold mb-1">最高时间成本 Top 5</h3><ul>` + mostExpensive.map(g => `<li class="flex justify-between"><span>${g.name.substring(0,20)}</span><strong>${formatCurrency(g.cph)}/h</strong></li>`).join('') + `</ul><h3 class="font-bold mt-2 mb-1">最低时间成本 Top 5</h3><ul>` + cheapest.map(g => `<li class="flex justify-between"><span>${g.name.substring(0,20)}</span><strong>${formatCurrency(g.cph)}/h</strong></li>`).join('') + '</ul>'; const unfinishedGames = items.filter(g => g.type !== 'hardware' && g.status !== 'passed'); const unfinishedPhysicalCost = unfinishedGames.filter(g => g.type === 'physical').reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0); const unfinishedDigitalCost = unfinishedGames.filter(g => !['physical', 'hardware'].includes(g.type)).reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0); const topUnfinished = [...unfinishedGames].sort((a,b) => ((b.purchasePrice || 0) - (b.sellPrice || 0)) - ((a.purchasePrice || 0) - (a.sellPrice || 0))).slice(0,5); let unfinishedHtml = `<div class="grid grid-cols-2 gap-1 mb-2"><div>实体: <strong>${formatCurrency(unfinishedPhysicalCost)}</strong></div><div>数字: <strong>${formatCurrency(unfinishedDigitalCost)}</strong></div></div><h3 class="font-bold mt-2 mb-1 border-t border-gray-600 pt-1">最贵未通关 Top 5</h3><ul>`; unfinishedHtml += topUnfinished.map(g => `<li class="flex justify-between"><span>${g.name.substring(0,20)}</span><strong>${formatCurrency((g.purchasePrice||0)-(g.sellPrice||0))}</strong></li>`).join(''); if (topUnfinished.length === 0) unfinishedHtml += '<li>无</li>'; unfinishedHtml += '</ul>'; elements.unfinishedCostTooltip.innerHTML = unfinishedHtml; const gameCountByType = { 'Switch': items.filter(i => ['physical', 'digital'].includes(i.type)).length, 'Steam': items.filter(i => i.type === 'steam').length, 'Epic': items.filter(i => i.type === 'epic').length, 'Uplay': items.filter(i => i.type === 'ubi').length, 'MS Store': items.filter(i => i.type === 'ms').length, '模拟器': items.filter(i => i.type === 'emulator').length, }; let gameCountHtml = `<h3 class="font-bold mb-1">各平台游戏数量</h3><ul>`; Object.entries(gameCountByType).forEach(([platform, count]) => { if (count > 0) gameCountHtml += `<li class="flex justify-between"><span>${platform}</span><strong>${count} 款</strong></li>`; }); gameCountHtml += '</ul>'; elements.totalGamesTooltip.innerHTML = gameCountHtml; };
         const updateDashboard = () => { const games = items.filter(i => i.type !== 'hardware'); const hardware = items.filter(i => i.type === 'hardware'); const gamesForCostCalc = games.filter(g => g.from !== 'free'); const totalActual = items.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0); const gameActual = games.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0); const hardwareActual = hardware.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0); const unfinishedGamesCost = games.filter(g => g.status !== 'passed').reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0); const totalPlaytime = games.reduce((s, i) => s + (i.playTime || 0), 0); const gameCount = games.length; const avgPlaytime = gameCount > 0 ? totalPlaytime / gameCount : 0; const gameActualForCost = gamesForCostCalc.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0); const totalPlaytimeForCost = gamesForCostCalc.reduce((s, i) => s + (i.playTime || 0), 0); const costPerHour = totalPlaytimeForCost > 0 ? gameActualForCost / totalPlaytimeForCost : null; elements.totalActualCost.textContent = formatCurrency(totalActual); elements.gameActualCost.textContent = formatCurrency(gameActual); elements.hardwareActualCost.textContent = formatCurrency(hardwareActual); elements.unfinishedGamesCost.textContent = formatCurrency(unfinishedGamesCost); elements.totalGames.textContent = `${gameCount} 款`; elements.totalPlaytime.textContent = `${totalPlaytime.toFixed(2)} 小时`; elements.avgPlaytime.textContent = `${avgPlaytime.toFixed(2)} 小时/款`; elements.costPerHour.textContent = costPerHour !== null ? formatCurrency(costPerHour) : '/'; renderCharts(); updateKpiTooltips(); };
         const updateSortHeaders = () => { document.querySelectorAll('.sortable-header').forEach(header => { const key = header.dataset.sort; let text = header.textContent.replace(/[▾▴]/, '').trim(); if (key === sortConfig.key) { header.textContent = `${text} ${sortConfig.direction === 'desc' ? '▾' : '▴'}`; } else { header.textContent = text; } }); };
-        const renderItemsList = () => { elements.itemsTableBody.innerHTML = ''; if (items.length === 0) return elements.noDataListMessage.classList.remove('hidden'); elements.noDataListMessage.classList.add('hidden'); const typeMap = { 'digital': 'Switch数字', 'physical': 'Switch实体', 'hardware': '硬件', 'steam': 'Steam', 'epic': 'Epic', 'ubi': 'Uplay', 'ms': 'MS Store', 'emulator': '模拟器游戏' }; const fromMap = { 'purchase': '购买', 'free': '免费', 'friend': '赠送' }; const statusMap = {'playing': '正在玩', 'backlog': '待玩', 'passed': '已通关', 'abandoned': '已弃坑'}; [...items].sort((a, b) => { const getVal = (item, key) => { const cost = (item.purchasePrice || 0) - (item.sellPrice || 0); switch(key) { case 'id': return item.id || ''; case 'name': return item.name || ''; case 'sort': return item.sort || ''; case 'type': return item.type || ''; case 'from': return item.from || ''; case 'status': return item.status || ''; case 'purchaseDate': return item.purchaseDate || ''; case 'purchasePrice': return item.purchasePrice ?? -1; case 'actualCost': return cost; case 'playTime': return item.playTime ?? -1; case 'costPerHour': return (!item.playTime || item.playTime <= 0 ? Infinity : cost / item.playTime); case 'rating': return item.rating ?? 0; case 'passDate': return item.passDate || ''; default: return ''; } }; const valA = getVal(a, sortConfig.key); const valB = getVal(b, sortConfig.key); const comparison = typeof valA === 'string' ? valA.localeCompare(valB, 'zh-CN') : (valA < valB ? -1 : (valA > valB ? 1 : 0)); return sortConfig.direction === 'asc' ? comparison : -comparison; }).forEach(item => { const cost = (item.purchasePrice || 0) - (item.sellPrice || 0); const cph = item.playTime > 0 ? cost / item.playTime : null; const row = document.createElement('tr'); row.className = 'border-b border-gray-600 hover:bg-gray-600 cursor-pointer'; row.dataset.fb_id = item.fb_id; row.innerHTML = `<td class="px-4 py-3 font-mono">${item.id}</td> <td class="px-4 py-3 font-medium whitespace-nowrap">${item.name}</td> <td class="px-4 py-3 whitespace-nowrap">${item.sort || '/'}</td> <td class="px-4 py-3">${typeMap[item.type] || item.type}</td><td class="px-4 py-3">${fromMap[item.from] || '购买'}</td><td class="px-4 py-3">${statusMap[item.status] || '待玩'}</td> <td class="px-4 py-3">${item.purchaseDate || '/'}</td> <td class="px-4 py-3">${item.purchasePrice != null ? formatCurrency(item.purchasePrice) : '/'}</td> <td class="px-4 py-3">${formatCurrency(cost)}</td> <td class="px-4 py-3">${item.playTime != null ? `${item.playTime}h` : '/'}</td> <td class="px-4 py-3">${cph != null && isFinite(cph) ? formatCurrency(cph) : '/'}</td><td class="px-4 py-3 text-center">${renderStarsForTable(item.rating)}</td> <td class="px-4 py-3">${item.passDate || ''}</td>`; row.addEventListener('click', () => handleEditItem(item.fb_id)); elements.itemsTableBody.appendChild(row); }); };
+        const renderItemsList = () => { elements.itemsTableBody.innerHTML = ''; if (items.length === 0) return elements.noDataListMessage.classList.remove('hidden'); elements.noDataListMessage.classList.add('hidden'); const typeMap = { 'digital': 'Switch数字', 'physical': 'Switch实体', 'hardware': '硬件', 'steam': 'Steam', 'epic': 'Epic', 'ubi': 'Uplay', 'ms': 'MS Store', 'emulator': '模拟器游戏' }; const fromMap = { 'purchase': '购买', 'free': '免费', 'friend': '赠送' }; const statusMap = {'playing': '正在玩', 'backlog': '待玩', 'passed': '已通关', 'abandoned': '已弃坑', 'empty': '空'}; [...items].sort((a, b) => { const getVal = (item, key) => { const cost = (item.purchasePrice || 0) - (item.sellPrice || 0); switch(key) { case 'id': return item.id || ''; case 'name': return item.name || ''; case 'sort': return item.sort || ''; case 'type': return item.type || ''; case 'from': return item.from || ''; case 'status': return item.status || ''; case 'purchaseDate': return item.purchaseDate || ''; case 'purchasePrice': return item.purchasePrice ?? -1; case 'actualCost': return cost; case 'playTime': return item.playTime ?? -1; case 'costPerHour': return (!item.playTime || item.playTime <= 0 ? Infinity : cost / item.playTime); case 'rating': return item.rating ?? 0; case 'passDate': return item.passDate || ''; default: return ''; } }; const valA = getVal(a, sortConfig.key); const valB = getVal(b, sortConfig.key); const comparison = typeof valA === 'string' ? valA.localeCompare(valB, 'zh-CN') : (valA < valB ? -1 : (valA > valB ? 1 : 0)); return sortConfig.direction === 'asc' ? comparison : -comparison; }).forEach(item => { const cost = (item.purchasePrice || 0) - (item.sellPrice || 0); const cph = item.playTime > 0 ? cost / item.playTime : null; const row = document.createElement('tr'); row.className = 'border-b border-gray-600 hover:bg-gray-600 cursor-pointer'; row.dataset.fb_id = item.fb_id; row.innerHTML = `<td class="px-4 py-3 font-mono">${item.id}</td> <td class="px-4 py-3 font-medium whitespace-nowrap">${item.name}</td> <td class="px-4 py-3 whitespace-nowrap">${item.sort || '/'}</td> <td class="px-4 py-3">${typeMap[item.type] || item.type}</td><td class="px-4 py-3">${fromMap[item.from] || '购买'}</td><td class="px-4 py-3">${statusMap[item.status] || '待玩'}</td> <td class="px-4 py-3">${item.purchaseDate || '/'}</td> <td class="px-4 py-3">${item.purchasePrice != null ? formatCurrency(item.purchasePrice) : '/'}</td> <td class="px-4 py-3">${formatCurrency(cost)}</td> <td class="px-4 py-3">${item.playTime != null ? `${item.playTime}h` : '/'}</td> <td class="px-4 py-3">${cph != null && isFinite(cph) ? formatCurrency(cph) : '/'}</td><td class="px-4 py-3 text-center">${renderStarsForTable(item.rating)}</td> <td class="px-4 py-3">${item.passDate || ''}</td>`; row.addEventListener('click', () => handleEditItem(item.fb_id)); elements.itemsTableBody.appendChild(row); }); };
         
         const handleEditItem = (fb_id) => { 
             if(!ADMIN_UIDS.includes(userId)) return; 
@@ -934,7 +957,7 @@
             openModal(elements.onThisDayModal);
         };
         
-        async function getAIRecommendations() {
+        async function getAIRecommendations(customPrompt = '') {
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
@@ -948,13 +971,13 @@
                 .map(i => `《${i.name}》`)
                 .join(', ');
 
-            if (backlog.length === 0) {
+            if (backlog.length === 0 && !customPrompt) {
                  return { recommendations: [{name: "太棒了！", reason: "您的待玩清单已经一干二净，是时候购入新游戏了！"}] };
             }
 
             try {
                 const getRecommendationsFunction = httpsCallable(functions, 'getAiRecommendations');
-                const result = await getRecommendationsFunction({ recentHistory, backlog });
+                const result = await getRecommendationsFunction({ recentHistory, backlog, customPrompt });
 
                 const data = result.data;
                 if (!data || !data.output || !data.output.text) {
@@ -990,21 +1013,34 @@
         const setupEventListeners = () => { 
             elements.loginBtn.addEventListener('click', signInWithGoogle);
             elements.logoutBtn.addEventListener('click', signOutUser);
-            elements.viewAllBtn.addEventListener('click', () => { elements.listModalTitle.textContent = "数据详情"; sortConfig = { key: 'id', direction: 'desc' }; renderItemsList(); updateSortHeaders(); openModal(elements.listModal); }); 
+            elements.viewAllBtn.addEventListener('click', () => { 
+                elements.listModalTitle.textContent = "数据详情";
+                elements.listSearchInput.value = '';
+                sortConfig = { key: 'id', direction: 'desc' }; 
+                renderItemsList(); 
+                updateSortHeaders(); 
+                openModal(elements.listModal); 
+            }); 
             elements.onThisDayBtn.addEventListener('click', showOnThisDay);
             elements.closeOnThisDayModalBtn.addEventListener('click', () => closeModal(elements.onThisDayModal));
             elements.closePlayNextModalBtn.addEventListener('click', () => closeModal(elements.playNextModal));
             
-            elements.playNextBtn.addEventListener('click', async () => {
+            elements.playNextBtn.addEventListener('click', () => {
                 const myPlayNextGames = items.filter(i => i.status === 'backlog');
                 elements.myPlayNextList.innerHTML = myPlayNextGames.length > 0 
                     ? myPlayNextGames.map(g => `<p class="p-3 bg-gray-800/80 rounded-md font-semibold ring-1 ring-gray-700">${g.name}</p>`).join('')
                     : '<p class="text-gray-500 text-center">你还未标记任何待玩的游戏。</p>';
-
-                elements.aiRecommendationsList.innerHTML = '<div class="flex justify-center items-center h-full"><p class="text-gray-500 animate-pulse">🤖 正在向AI咨询中，请稍候...</p></div>';
+                
+                elements.aiPromptInput.value = '';
+                elements.aiRecommendationsList.innerHTML = '<p class="text-gray-500 text-center">输入您想玩的风格，让AI为您推荐。</p>';
                 openModal(elements.playNextModal);
+            });
 
-                const result = await getAIRecommendations();
+            elements.aiPromptSendBtn.addEventListener('click', async () => {
+                const customPrompt = elements.aiPromptInput.value;
+                elements.aiRecommendationsList.innerHTML = '<div class="flex justify-center items-center h-full"><p class="text-gray-500 animate-pulse">🤖 正在向AI咨询中，请稍候...</p></div>';
+
+                const result = await getAIRecommendations(customPrompt);
                 
                 if (result.error) {
                     elements.aiRecommendationsList.innerHTML = `<div class="p-4 bg-red-900/50 rounded-lg text-red-400 text-center">${result.error}</div>`;
@@ -1015,6 +1051,7 @@
                     elements.aiRecommendationsList.innerHTML = '<p class="text-gray-500 text-center">AI暂时没有找到合适的推荐。</p>';
                 }
             });
+
 
             elements.addItemFab.addEventListener('click', () => {
                 if (elements.fabContainer.classList.contains('open')) {
@@ -1044,13 +1081,13 @@
             elements.deleteBtn.addEventListener('click', () => { showConfirmation('您确定要删除此记录吗？此操作无法撤销。', async () => { const fb_id = elements.itemId.value; try { await deleteDoc(doc(itemsCollectionRef, fb_id)); await updateLastModifiedTimestamp(); closeItemModalAndReturnToList(); } catch (error) { console.error("Error deleting item: ", error); } }); });
             elements.importBtn.addEventListener('click', () => elements.csvImportInput.click()); 
             elements.exportBtn.addEventListener('click', () => { if (items.length === 0) { showConfirmation('没有数据可以导出。', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "通知"; return; } const headers = ['id', 'name', 'type', 'sort', 'status', 'purchaseDate', 'purchasePrice', 'from', 'playTime', 'passDate', 'sellDate', 'sellPrice', 'rating']; const csv = "data:text/csv;charset=utf-8,\uFEFF" + headers.join(',') + '\r\n' + items.map(i => headers.map(h => `"${i[h] ?? ''}"`).join(',')).join('\r\n'); const link = Object.assign(document.createElement("a"), { href: encodeURI(csv), download: `game_cost_export_${new Date().toISOString().split('T')[0]}.csv` }); document.body.appendChild(link); link.click(); document.body.removeChild(link); }); 
-            elements.csvImportInput.addEventListener('change', (e) => { const file = e.target.files[0]; if (!file) return; showConfirmation('导入CSV将覆盖所有现有数据，您确定吗？', async () => { const reader = new FileReader(); reader.onload = async (re) => { const text = re.target.result; if (!text) { showConfirmation('文件为空或无法读取。', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "错误"; return; } const rows = text.split(/\r\n|\n/); const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, '')); try { const headerIndexMap = {}; headers.forEach((h, i) => { headerIndexMap[h] = i; }); if (headerIndexMap['id'] === undefined || headerIndexMap['name'] === undefined || headerIndexMap['type'] === undefined) { showConfirmation('导入失败：CSV文件必须包含 id, name, 和 type 表头。', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "错误"; return; } const newItems = rows.slice(1).filter(r => r.trim()).map(r => { const v = r.split(',').map(val => val.trim().replace(/^"|"$/g, '')); const getVal = (headerName) => v[headerIndexMap[headerName]] || ''; const item = { id: getVal('id'), name: getVal('name'), sort: getVal('sort'), type: getVal('type'), from: getVal('from'), status: getVal('status') || 'backlog', purchaseDate: parseDateOrNull(getVal('purchaseDate')), purchasePrice: parseFloatOrNull(getVal('purchasePrice')), passDate: parseDateOrNull(getVal('passDate')), sellDate: parseDateOrNull(getVal('sellDate')), sellPrice: parseFloatOrNull(getVal('sellPrice')), playTime: parseFloatOrNull(headerIndexMap['playTime'] !== undefined ? getVal('playTime') : getVal('time')), rating: parseFloatOrNull(getVal('rating')) }; return (!item.id || !item.name || !item.type) ? null : item; }).filter(Boolean); if (new Set(newItems.map(i => i.id)).size !== newItems.length) { showConfirmation('导入失败：ID重复。', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "错误"; return; } const querySnapshot = await getDocs(query(itemsCollectionRef)); const batch = writeBatch(db); querySnapshot.forEach((doc) => { batch.delete(doc.ref); }); newItems.forEach((item) => { const newDocRef = doc(itemsCollectionRef); batch.set(newDocRef, item); }); await batch.commit(); await updateLastModifiedTimestamp(); showConfirmation('导入成功！', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "成功"; } catch (error) { console.error(error); showConfirmation('导入失败，请检查CSV格式或控制台日志。', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "错误"; } }; reader.readAsText(file, 'UTF-8'); }); e.target.value = null; }); 
+            elements.csvImportInput.addEventListener('change', (e) => { const file = e.target.files[0]; if (!file) return; showConfirmation('导入CSV将覆盖所有现有数据，您确定吗？', async () => { const reader = new FileReader(); reader.onload = async (re) => { const text = re.target.result; if (!text) { showConfirmation('文件为空或无法读取。', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "错误"; return; } const rows = text.split(/\r\n|\n/); const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, '')); try { const headerIndexMap = {}; headers.forEach((h, i) => { headerIndexMap[h] = i; }); if (headerIndexMap['id'] === undefined || headerIndexMap['name'] === undefined || headerIndexMap['type'] === undefined) { showConfirmation('导入失败：CSV文件必须包含 id, name, 和 type 表头。', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "错误"; return; } const newItems = rows.slice(1).filter(r => r.trim()).map(r => { const v = r.split(',').map(val => val.trim().replace(/^"|"$/g, '')); const getVal = (headerName) => v[headerIndexMap[headerName]] || ''; const item = { id: getVal('id'), name: getVal('name'), sort: getVal('sort'), type: getVal('type'), from: getVal('from'), status: getVal('status') || 'empty', purchaseDate: parseDateOrNull(getVal('purchaseDate')), purchasePrice: parseFloatOrNull(getVal('purchasePrice')), passDate: parseDateOrNull(getVal('passDate')), sellDate: parseDateOrNull(getVal('sellDate')), sellPrice: parseFloatOrNull(getVal('sellPrice')), playTime: parseFloatOrNull(headerIndexMap['playTime'] !== undefined ? getVal('playTime') : getVal('time')), rating: parseFloatOrNull(getVal('rating')) }; return (!item.id || !item.name || !item.type) ? null : item; }).filter(Boolean); if (new Set(newItems.map(i => i.id)).size !== newItems.length) { showConfirmation('导入失败：ID重复。', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "错误"; return; } const querySnapshot = await getDocs(query(itemsCollectionRef)); const batch = writeBatch(db); querySnapshot.forEach((doc) => { batch.delete(doc.ref); }); newItems.forEach((item) => { const newDocRef = doc(itemsCollectionRef); batch.set(newDocRef, item); }); await batch.commit(); await updateLastModifiedTimestamp(); showConfirmation('导入成功！', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "成功"; } catch (error) { console.error(error); showConfirmation('导入失败，请检查CSV格式或控制台日志。', () => {}); document.getElementById('confirm-ok-btn').classList.add('hidden'); document.getElementById('confirm-modal-title').textContent = "错误"; } }; reader.readAsText(file, 'UTF-8'); }); e.target.value = null; }); 
             
             elements.closeModalBtn.addEventListener('click', () => closeItemModalAndReturnToList()); 
             elements.cancelBtn.addEventListener('click', () => closeItemModalAndReturnToList()); 
             elements.closeListModalBtn.addEventListener('click', () => closeModal(elements.listModal));
             elements.confirmCancelBtn.addEventListener('click', () => closeModal(elements.confirmModal));
-            elements.excludeSwitch2Checkbox.addEventListener('change', () => renderMonthlyTrendsChart());
+            elements.excludeHardwareCheckbox.addEventListener('change', () => renderMonthlyTrendsChart());
 
             elements.itemStatus.addEventListener('change', (e) => {
                 elements.passDateContainer.classList.toggle('hidden', e.target.value !== 'passed');
@@ -1097,6 +1134,15 @@
                 }
             });
 
+            elements.listSearchInput.addEventListener('keyup', () => {
+                const searchTerm = elements.listSearchInput.value.toLowerCase();
+                const rows = elements.itemsTableBody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const rowText = row.textContent.toLowerCase();
+                    row.style.display = rowText.includes(searchTerm) ? '' : 'none';
+                });
+            });
+
             document.querySelectorAll('.sortable-header').forEach(header => { header.addEventListener('click', () => { const sortKey = header.dataset.sort; if (sortConfig.key === sortKey) { sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc'; } else { sortConfig.key = sortKey; sortConfig.direction = 'desc'; } renderItemsList(); updateSortHeaders(); }); }); };
         
         // --- App Initialization ---
@@ -1138,4 +1184,3 @@
 
 </body>
 </html>
-
