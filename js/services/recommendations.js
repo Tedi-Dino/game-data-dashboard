@@ -88,7 +88,7 @@ const callDeepSeekDirectly = async (customPrompt) => {
                 'Authorization': `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-                model: 'deepseek-chat',
+                model: 'deepseek-v4-pro',
                 messages: [{ role: 'user', content: prompt }],
                 max_tokens: 2000,
                 temperature: 0.7,

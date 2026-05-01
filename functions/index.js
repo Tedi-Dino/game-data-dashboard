@@ -52,7 +52,7 @@ ${customPrompt || "无特定需求，请综合推荐。"}
             "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
           },
           body: JSON.stringify({
-            model: "deepseek-chat",
+            model: "deepseek-v4-pro",
             messages: [
               { role: "user", content: prompt }
             ],
