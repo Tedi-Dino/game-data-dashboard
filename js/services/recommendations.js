@@ -101,7 +101,8 @@ const callDeepSeekDirectly = async (customPrompt) => {
                 model: 'deepseek-v4-pro',
                 messages: [{ role: 'user', content: prompt }],
                 max_tokens: 2000,
-                temperature: 0.7,
+                temperature: 0.3,
+                thinking: { type: 'disabled' },
             }),
         });
 
