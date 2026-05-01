@@ -9,7 +9,7 @@ const fetch = require("node-fetch");
 // Define the DeepSeek API key secret
 const deepseekApiKey = defineSecret("DEEPSEEK_API_KEY");
 
-exports.getAiRecommendations = onCall({secrets: [deepseekApiKey]}, async (request) => {
+exports.getAiRecommendations = onCall({secrets: [deepseekApiKey], timeoutSeconds: 120}, async (request) => {
   const DEEPSEEK_API_KEY = deepseekApiKey.value();
   if (!DEEPSEEK_API_KEY) {
     logger.error("DEEPSEEK_API_KEY secret is not set");
