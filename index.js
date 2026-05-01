@@ -59,7 +59,8 @@ ${customPrompt || "无特定需求，请综合推荐。"}
               { role: "user", content: prompt }
             ],
             max_tokens: 2000,
-            temperature: 0.7,
+            temperature: 0.3,
+            thinking: { type: "disabled" },
           }),
         },
     );
@@ -74,10 +75,14 @@ ${customPrompt || "无特定需求，请综合推荐。"}
 
     // DeepSeek response format (OpenAI-compatible):
     // { choices: [{ message: { content: "..." } }] }
-    let textContent = "";
-    if (data && data.choices && data.choices.length > 0 &&
-        data.choices[0].message && data.choices[0].message.content) {
-      textContent = data.choices[0].message.content;
+    logger.info("DeepSeek raw response keys:", JSON.stringify(Object.keys(data)));
+    const choice = data?.choices?.[0];
+    const msg = choice?.message;
+    let textContent = msg?.content || "";
+
+    if (!textContent && msg) {
+      logger.warn("message.content is empty. Full message keys:", JSON.stringify(Object.keys(msg)));
+      logger.warn("Full message:", JSON.stringify(msg));
     }
 
     logger.info("DeepSeek response received, length:", textContent.length);
