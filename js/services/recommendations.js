@@ -125,6 +125,11 @@ const callCloudFunction = async (customPrompt) => {
         const result = await fn({ passedGames, unpassedGames, customPrompt });
         const data = result.data;
 
+        // Error returned as normal response
+        if (data && data.error) {
+            return { error: data.error };
+        }
+
         if (!data || !data.output || !data.output.text) {
             throw new Error('从云函数返回的响应结构无效。');
         }
@@ -136,7 +141,7 @@ const callCloudFunction = async (customPrompt) => {
         if (error.code === 'unavailable') {
             msg = '无法连接到AI服务，请检查网络连接。';
         } else if (error.message) {
-            msg = `调用AI服务失败: ${error.message}`;
+            msg = `调用AI服务失败 [${error.code || 'unknown'}]: ${error.message}`;
         }
         return { error: msg };
     }
