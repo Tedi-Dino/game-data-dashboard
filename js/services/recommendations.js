@@ -57,8 +57,18 @@ ${customPrompt || "无特定需求，请综合推荐。"}
  * Parse AI response text into recommendations array.
  */
 const parseRecommendations = (text) => {
+    // Strip markdown code fences if present
+    let cleaned = text.trim();
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+
+    // Try to extract JSON array from the text
+    const match = cleaned.match(/\[[\s\S]*\]/);
+    if (match) {
+        cleaned = match[0];
+    }
+
     try {
-        const recommendations = JSON.parse(text);
+        const recommendations = JSON.parse(cleaned);
         if (Array.isArray(recommendations) && recommendations.every(r => r.name && r.reason)) {
             return { recommendations };
         }
