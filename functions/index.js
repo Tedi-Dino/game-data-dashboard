@@ -12,7 +12,8 @@ const deepseekApiKey = defineSecret("DEEPSEEK_API_KEY");
 exports.getAiRecommendations = onCall({secrets: [deepseekApiKey]}, async (request) => {
   const DEEPSEEK_API_KEY = deepseekApiKey.value();
   if (!DEEPSEEK_API_KEY) {
-    throw new HttpsError("failed-precondition", "DEEPSEEK_API_KEY 未配置。请在 Firebase 中设置此密钥: firebase functions:secrets:set DEEPSEEK_API_KEY");
+    logger.error("DEEPSEEK_API_KEY secret is not set");
+    return { output: { text: "" }, error: "DEEPSEEK_API_KEY 未配置。请在 Firebase 中设置此密钥: firebase functions:secrets:set DEEPSEEK_API_KEY" };
   }
 
   const { passedGames, unpassedGames, customPrompt } = request.data;
@@ -43,6 +44,7 @@ ${customPrompt || "无特定需求，请综合推荐。"}
 ]`;
 
   try {
+    logger.info("Calling DeepSeek API, model: deepseek-v4-pro");
     const response = await fetch(
         "https://api.deepseek.com/v1/chat/completions",
         {
@@ -64,8 +66,8 @@ ${customPrompt || "无特定需求，请综合推荐。"}
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      logger.error("DeepSeek API Error:", response.status, errorData);
-      throw new HttpsError("unknown", `DeepSeek API 返回错误 (${response.status}): ${JSON.stringify(errorData)}`);
+      logger.error("DeepSeek API Error:", response.status, JSON.stringify(errorData));
+      return { output: { text: "" }, error: `DeepSeek API 返回错误 (${response.status}): ${JSON.stringify(errorData)}` };
     }
 
     const data = await response.json();
@@ -78,9 +80,8 @@ ${customPrompt || "无特定需求，请综合推荐。"}
       textContent = data.choices[0].message.content;
     }
 
-    logger.info("DeepSeek response text:", textContent);
+    logger.info("DeepSeek response received, length:", textContent.length);
 
-    // Return in the format expected by the frontend
     return {
       output: {
         text: textContent
@@ -88,11 +89,7 @@ ${customPrompt || "无特定需求，请综合推荐。"}
     };
 
   } catch (error) {
-    logger.error("Error calling getAiRecommendations:", error);
-    if (error instanceof HttpsError) {
-      throw error;
-    }
-    const detail = error.message || String(error);
-    throw new HttpsError("internal", `Cloud Function 内部错误: ${detail}`);
+    logger.error("Error calling getAiRecommendations:", error.message, error.stack);
+    return { output: { text: "" }, error: `Cloud Function 内部错误: ${error.message}` };
   }
 });
