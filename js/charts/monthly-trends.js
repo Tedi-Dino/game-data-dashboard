@@ -168,6 +168,19 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
         order: 1
     };
 
+    // Total playtime area dataset (games + dramas)
+    const totalPlaytimeDataset = {
+        label: '合计时长',
+        data: sortedMonths.map(m => (trends[m]?.playtime || 0) + (trends[m]?.dramaPlaytime || 0)),
+        borderColor: '#8b5cf6',
+        backgroundColor: 'rgba(139, 92, 246, 0.15)',
+        type: 'line',
+        fill: true,
+        tension: 0.3,
+        yAxisID: 'y1',
+        order: 0
+    };
+
     const el = document.getElementById(canvasId);
     if (!el) return;
 
@@ -177,7 +190,7 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
         type: 'bar',
         data: {
             labels: sortedMonths,
-            datasets: [...platformDatasets, playtimeDataset, dramaPlaytimeDataset]
+            datasets: [...platformDatasets, playtimeDataset, dramaPlaytimeDataset, totalPlaytimeDataset]
         },
         options: {
             indexAxis: 'x',
