@@ -63,7 +63,7 @@ export const renderItemsList = () => {
             <td class="px-4 py-3 font-medium">${escapeHTML(item.name) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.sort) || '/'}</td>
             <td class="px-4 py-3 text-center whitespace-nowrap">${renderStarsForTable(item.rating)}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${item.type === 'drama' && item.episodeCount ? `${item.episodeCount}集×${item.episodeDuration}min` : (item.playTime != null ? `${item.playTime}h` : '/')}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${item.playTime != null ? `${item.playTime}h` : '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(STATUS_MAP[item.status]) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.passDate) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.purchaseDate) || '/'}</td>
