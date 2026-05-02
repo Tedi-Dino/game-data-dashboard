@@ -172,8 +172,8 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
     const totalPlaytimeDataset = {
         label: '合计时长',
         data: sortedMonths.map(m => (trends[m]?.playtime || 0) + (trends[m]?.dramaPlaytime || 0)),
-        borderColor: '#8b5cf6',
-        backgroundColor: 'rgba(139, 92, 246, 0.15)',
+        borderColor: 'transparent',
+        backgroundColor: 'rgba(234, 179, 8, 0.15)',
         type: 'line',
         fill: true,
         tension: 0.3,
@@ -219,6 +219,14 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
                 }
             },
             plugins: {
+                legend: {
+                    labels: {
+                        filter: (item) => {
+                            // Hide platform bar chart legends, only show line legends
+                            return ['游戏时长', '剧集时长', '合计时长'].includes(item.text);
+                        }
+                    }
+                },
                 tooltip: {
                     enabled: false,
                     external: createExternalTooltip((tooltip) => {
@@ -234,19 +242,12 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
                             .sort((a, b) => b.value - a.value)
                             .slice(0, 5);
 
-                        // Top 5 playtimes for this month (amortized)
+                        // Top 5 playtimes for this month (amortized) - combined games and dramas
                         const currentMonthStart = new Date(month + '-01');
                         const currentMonthEnd = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() + 1, 0);
 
-                        const topGameTimeItems = items
-                            .filter(i => i.type !== 'drama' && i.type !== 'hardware')
-                            .map(item => ({ ...item, monthlyPlaytime: calcMonthlyPlaytime(item, currentMonthStart, currentMonthEnd) }))
-                            .filter(item => item.monthlyPlaytime > 0.01)
-                            .sort((a, b) => b.monthlyPlaytime - a.monthlyPlaytime)
-                            .slice(0, 5);
-
-                        const topDramaTimeItems = items
-                            .filter(i => i.type === 'drama')
+                        const topPlaytimeItems = items
+                            .filter(i => i.type !== 'hardware')
                             .map(item => ({ ...item, monthlyPlaytime: calcMonthlyPlaytime(item, currentMonthStart, currentMonthEnd) }))
                             .filter(item => item.monthlyPlaytime > 0.01)
                             .sort((a, b) => b.monthlyPlaytime - a.monthlyPlaytime)
@@ -260,20 +261,13 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
                         if (topCostItems.length === 0) html += '<li>无支出记录</li>';
                         html += '</ul>';
 
-                        html += '<h4 class="font-semibold mt-2 mb-1">🎮 当月游戏 Top 5 (折算)</h4><ul class="text-sm">';
-                        topGameTimeItems.forEach(item => {
-                            html += `<li class="flex justify-between my-1"><span>${escapeHTML((item.name || '').substring(0, 15))}</span><span class="flex items-center"><strong>${item.monthlyPlaytime.toFixed(1)}h</strong>${renderStars(item.rating)}</span></li>`;
+                        html += '<h4 class="font-semibold mt-2 mb-1">🎮📺 当月游戏/剧集 Top 5 (折算)</h4><ul class="text-sm">';
+                        topPlaytimeItems.forEach(item => {
+                            const prefix = item.type === 'drama' ? '📺 ' : '';
+                            html += `<li class="flex justify-between my-1"><span>${prefix}${escapeHTML((item.name || '').substring(0, 15))}</span><span class="flex items-center"><strong>${item.monthlyPlaytime.toFixed(1)}h</strong>${renderStars(item.rating)}</span></li>`;
                         });
-                        if (topGameTimeItems.length === 0) html += '<li>无游玩记录</li>';
+                        if (topPlaytimeItems.length === 0) html += '<li>无游玩记录</li>';
                         html += '</ul>';
-
-                        if (topDramaTimeItems.length > 0) {
-                            html += '<h4 class="font-semibold mt-2 mb-1">📺 当月剧集 Top 5 (折算)</h4><ul class="text-sm">';
-                            topDramaTimeItems.forEach(item => {
-                                html += `<li class="flex justify-between my-1"><span>${escapeHTML((item.name || '').substring(0, 15))}</span><span class="flex items-center"><strong>${item.monthlyPlaytime.toFixed(1)}h</strong>${renderStars(item.rating)}</span></li>`;
-                            });
-                            html += '</ul>';
-                        }
                         return html;
                     })
                 }
