@@ -1,0 +1,11 @@
+{
+  "name": "game-data-dashboard-functions",
+  "description": "Cloud Functions for Game Data Dashboard",
+  "engines": {
+    "node": "20"
+  },
+  "dependencies": {
+    "firebase-functions": "^6.3.0",
+    "node-fetch": "^2.7.0"
+  }
+}

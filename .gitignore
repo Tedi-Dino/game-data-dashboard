@@ -67,3 +67,15 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# Claude Code
+.claude/
+
+# Old version files
+old/
+
+# Data exports
+*.csv
+
+# Firebase default hosting page
+public/
