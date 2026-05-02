@@ -13,6 +13,7 @@ const COST_LABELS = {
     gog: 'GOG 游戏',
     ps: 'PlayStation 游戏',
     xbox: 'Xbox/MS 游戏',
+    ms: 'Xbox/MS 游戏',
     appstore: 'App Store 游戏',
     googleplay: 'Google Play 游戏',
     emulator: '模拟器游戏',

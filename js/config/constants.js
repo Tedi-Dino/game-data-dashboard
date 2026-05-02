@@ -23,9 +23,9 @@ export const PLATFORM_COLORS = {
 export const TYPE_MAP = {
     digital: 'Switch数字', physical: 'Switch实体', hardware: '硬件',
     steam: 'Steam', epic: 'Epic', ubi: 'Uplay', gog: 'GOG',
-    ps: 'PlayStation', xbox: 'Xbox/MS Store', appstore: 'App Store',
-    googleplay: 'Google Play', emulator: '模拟器', other: 'Other',
-    drama: '剧'
+    ps: 'PlayStation', xbox: 'Xbox/MS Store', ms: 'Xbox/MS Store',
+    appstore: 'App Store', googleplay: 'Google Play', emulator: '模拟器',
+    other: 'Other', drama: '剧'
 };
 
 export const FROM_MAP = {
@@ -47,7 +47,7 @@ export const COST_TYPE_MAP = {
     'Uplay 游戏': ['ubi'],
     'GOG 游戏': ['gog'],
     'PlayStation 游戏': ['ps'],
-    'Xbox/MS 游戏': ['xbox'],
+    'Xbox/MS 游戏': ['xbox', 'ms'],
     'App Store 游戏': ['appstore'],
     'Google Play 游戏': ['googleplay'],
     '模拟器游戏': ['emulator'],
@@ -73,7 +73,7 @@ export const TIME_TYPE_MAP = {
     'Uplay': ['ubi'],
     'GOG': ['gog'],
     'PlayStation': ['ps'],
-    'Xbox/MS': ['xbox'],
+    'Xbox/MS': ['xbox', 'ms'],
     'App Store': ['appstore'],
     'Google Play': ['googleplay'],
     '模拟器': ['emulator'],

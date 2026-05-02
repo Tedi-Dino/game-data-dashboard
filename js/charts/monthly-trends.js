@@ -33,20 +33,36 @@ const buildTrends = (currentItems) => {
     // Map item.type to trend key
     const typeToKey = {
         physical: 'switch_physical',
-        digital: 'switch_digital'
+        digital: 'switch_digital',
+        ms: 'xbox'
     };
 
     currentItems.forEach(item => {
+        const key = typeToKey[item.type] || item.type;
+
         // --- Cost processing ---
+        // Purchase cost in the purchase month
         if (item.purchaseDate) {
             const purchaseMonth = normalizeMonth(item.purchaseDate);
             if (purchaseMonth) {
                 allMonths.add(purchaseMonth);
                 if (!trends[purchaseMonth]) trends[purchaseMonth] = { ...DEFAULT_TREND };
-                const cost = (item.purchasePrice || 0) - (item.sellPrice || 0);
-                const key = typeToKey[item.type] || item.type;
-                if (trends[purchaseMonth][key] !== undefined) {
+                const cost = item.purchasePrice || 0;
+                if (cost > 0 && trends[purchaseMonth][key] !== undefined) {
                     trends[purchaseMonth][key] += cost;
+                }
+            }
+        }
+
+        // Sell revenue in the sell month (reduces cost, can make month negative)
+        if (item.sellDate) {
+            const sellMonth = normalizeMonth(item.sellDate);
+            if (sellMonth) {
+                allMonths.add(sellMonth);
+                if (!trends[sellMonth]) trends[sellMonth] = { ...DEFAULT_TREND };
+                const revenue = item.sellPrice || 0;
+                if (revenue > 0 && trends[sellMonth][key] !== undefined) {
+                    trends[sellMonth][key] -= revenue;
                 }
             }
         }
@@ -240,12 +256,19 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
                         const month = tooltip.title?.[0];
                         if (!month) return null;
 
-                        // Top 5 costs for this month
-                        const topCostItems = items
-                            .filter(i => normalizeMonth(i.purchaseDate) === month)
-                            .map(i => ({ name: i.name, value: (i.purchasePrice || 0) - (i.sellPrice || 0) }))
-                            .filter(i => i.value > 0)
-                            .sort((a, b) => b.value - a.value)
+                        // Items purchased this month
+                        const purchaseItems = items
+                            .filter(i => normalizeMonth(i.purchaseDate) === month && (i.purchasePrice || 0) > 0)
+                            .map(i => ({ name: i.name, value: i.purchasePrice || 0, type: 'purchase' }));
+
+                        // Items sold this month
+                        const saleItems = items
+                            .filter(i => normalizeMonth(i.sellDate) === month && (i.sellPrice || 0) > 0)
+                            .map(i => ({ name: i.name, value: -(i.sellPrice || 0), type: 'sale' }));
+
+                        // Combined, sorted by absolute value
+                        const allCostItems = [...purchaseItems, ...saleItems]
+                            .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
                             .slice(0, 5);
 
                         // Top 5 playtimes for this month (amortized) - combined games and dramas
@@ -260,11 +283,13 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
                             .slice(0, 5);
 
                         let html = `<div class="font-bold text-base mb-2 border-b border-stone-200 pb-1">${month} 月报</div>`;
-                        html += '<h4 class="font-semibold mt-2 mb-1">当月支出 Top 5</h4><ul class="text-sm">';
-                        topCostItems.forEach(item => {
-                            html += `<li class="flex justify-between my-1"><span>${escapeHTML((item.name || '').substring(0, 20))}</span><strong>${formatCurrency(item.value)}</strong></li>`;
+                        html += '<h4 class="font-semibold mt-2 mb-1">当月收支 Top 5</h4><ul class="text-sm">';
+                        allCostItems.forEach(item => {
+                            const icon = item.type === 'sale' ? '💰' : '';
+                            const color = item.value < 0 ? 'text-green-600' : '';
+                            html += `<li class="flex justify-between my-1"><span>${icon}${escapeHTML((item.name || '').substring(0, 20))}</span><strong class="${color}">${formatCurrency(item.value)}</strong></li>`;
                         });
-                        if (topCostItems.length === 0) html += '<li>无支出记录</li>';
+                        if (allCostItems.length === 0) html += '<li>无收支记录</li>';
                         html += '</ul>';
 
                         html += '<h4 class="font-semibold mt-2 mb-1">🎮📺 当月游戏/剧集 Top 5 (折算)</h4><ul class="text-sm">';

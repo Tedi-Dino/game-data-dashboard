@@ -6,7 +6,7 @@ import { createExternalTooltip } from './setup.js';
 const TIME_LABELS = {
     physical: 'Switch', digital: 'Switch',
     steam: 'Steam', epic: 'Epic', ubi: 'Uplay', gog: 'GOG',
-    ps: 'PlayStation', xbox: 'Xbox/MS', appstore: 'App Store',
+    ps: 'PlayStation', xbox: 'Xbox/MS', ms: 'Xbox/MS', appstore: 'App Store',
     googleplay: 'Google Play', emulator: '模拟器', other: 'Other',
     drama: '剧'
 };
