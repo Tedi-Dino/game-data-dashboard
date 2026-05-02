@@ -27,6 +27,9 @@ export const setFormMode = (mode) => {
     const modeDramaBtn = document.getElementById('mode-drama-btn');
     const gameFields = document.getElementById('game-fields');
     const dramaFields = document.getElementById('drama-fields');
+    const fromPriceRow = document.getElementById('from-price-row');
+    const itemFrom = document.getElementById('item-from');
+    const purchasePrice = document.getElementById('purchase-price');
 
     if (formMode) formMode.value = mode;
 
@@ -39,6 +42,9 @@ export const setFormMode = (mode) => {
         }
         if (gameFields) gameFields.classList.add('hidden');
         if (dramaFields) dramaFields.classList.remove('hidden');
+        if (fromPriceRow) fromPriceRow.classList.add('hidden');
+        if (itemFrom) itemFrom.value = 'free';
+        if (purchasePrice) purchasePrice.value = '0';
     } else {
         if (modeGameBtn) {
             modeGameBtn.className = 'flex-1 px-3 py-1.5 font-medium rounded-md bg-amber-600 text-white transition-colors cursor-pointer';
@@ -48,6 +54,7 @@ export const setFormMode = (mode) => {
         }
         if (gameFields) gameFields.classList.remove('hidden');
         if (dramaFields) dramaFields.classList.add('hidden');
+        if (fromPriceRow) fromPriceRow.classList.remove('hidden');
     }
 };
 
@@ -84,9 +91,9 @@ const readFormData = () => {
         name: document.getElementById('item-name').value,
         sort: document.getElementById('item-sort').value,
         type,
-        from: document.getElementById('item-from').value,
+        from: isDrama ? 'free' : document.getElementById('item-from').value,
         purchaseDate: parseDateOrNull(document.getElementById('purchase-date').value),
-        purchasePrice: parseFloatOrNull(document.getElementById('purchase-price').value),
+        purchasePrice: isDrama ? 0 : parseFloatOrNull(document.getElementById('purchase-price').value),
         playTime,
         status,
         passDate: status === 'passed' ? parseDateOrNull(document.getElementById(passDateId).value) : null,
