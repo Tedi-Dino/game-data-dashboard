@@ -152,9 +152,7 @@ const handleEditItem = (fbId) => {
     document.getElementById('item-custom-id').value = item.id || '';
     document.getElementById('item-name').value = item.name;
     document.getElementById('item-sort').value = item.sort || '';
-    document.getElementById('item-from').value = item.from || 'purchase';
     document.getElementById('purchase-date').value = formatDateForInput(item.purchaseDate);
-    document.getElementById('purchase-price').value = item.purchasePrice ?? '';
 
     const isDrama = item.type === 'drama';
     setFormMode(isDrama ? 'drama' : 'game');
@@ -174,6 +172,8 @@ const handleEditItem = (fbId) => {
         document.getElementById('pass-date-drama').value = formatDateForInput(item.passDate);
         document.getElementById('pass-date-container-drama').classList.toggle('hidden', item.status !== 'passed');
     } else {
+        document.getElementById('item-from').value = item.from || 'purchase';
+        document.getElementById('purchase-price').value = item.purchasePrice ?? '';
         document.getElementById('item-type').value = item.type;
         document.getElementById('play-time').value = item.playTime ?? '';
         document.getElementById('item-status').value = item.status || 'empty';
