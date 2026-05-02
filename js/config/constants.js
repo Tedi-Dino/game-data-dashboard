@@ -29,7 +29,7 @@ export const TYPE_MAP = {
 };
 
 export const FROM_MAP = {
-    purchase: '购买', free: '免费', friend: '赠送'
+    purchase: '购买', free: '免费', friend: '赠送', subscription: '订阅'
 };
 
 export const STATUS_MAP = {
