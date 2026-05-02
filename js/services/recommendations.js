@@ -14,42 +14,59 @@ export const isLocalMode = () => localStorage.getItem(LOCAL_MODE_STORAGE) === 't
 export const setLocalMode = (enabled) => localStorage.setItem(LOCAL_MODE_STORAGE, enabled ? 'true' : 'false');
 
 /**
- * Build the prompt string from current game data.
+ * Build the prompt string from current game and drama data.
  */
 const buildPrompt = (customPrompt) => {
     const passedGames = items
-        .filter(i => i.status === 'passed' && i.type !== 'hardware')
+        .filter(i => i.status === 'passed' && i.type !== 'hardware' && i.type !== 'drama')
         .map(i => `《${i.name}》 (用户评分: ${i.rating || '未评'}/5)`)
         .join('\n');
 
     const unpassedGames = items
-        .filter(i => i.status !== 'passed' && i.type !== 'hardware')
+        .filter(i => i.status !== 'passed' && i.type !== 'hardware' && i.type !== 'drama')
         .map(i => `《${i.name}》 (状态: ${STATUS_MAP[i.status] || i.status || '未知'})`)
         .join('\n');
 
-    return { passedGames, unpassedGames, prompt: `你是一个资深游戏玩家和推荐助手。请分析一个玩家的游戏数据。
+    const passedDramas = items
+        .filter(i => i.status === 'passed' && i.type === 'drama')
+        .map(i => `《${i.name}》 (用户评分: ${i.rating || '未评'}/5, 类型: ${i.sort || '未分类'})`)
+        .join('\n');
 
-### 玩家【已通关】的游戏 (包含用户评分 1-5分):
+    const unpassedDramas = items
+        .filter(i => i.status !== 'passed' && i.type === 'drama')
+        .map(i => `《${i.name}》 (状态: ${STATUS_MAP[i.status] || i.status || '未知'})`)
+        .join('\n');
+
+    return { passedGames, unpassedGames, passedDramas, unpassedDramas, prompt: `你是一个资深的影音娱乐推荐助手。请分析一个用户的游戏和剧集数据。
+
+### 用户【已通关】的游戏 (包含用户评分 1-5分):
 ${passedGames || "无"}
 
-### 玩家【未通关】的游戏 (包含当前状态):
+### 用户【未通关】的游戏 (包含当前状态):
 ${unpassedGames || "无"}
 
-### 玩家的额外需求:
+### 用户【已看完】的剧集 (包含用户评分 1-5分和类型):
+${passedDramas || "无"}
+
+### 用户【未看完】的剧集 (包含当前状态):
+${unpassedDramas || "无"}
+
+### 用户的额外需求:
 ${customPrompt || "无特定需求，请综合推荐。"}
 
 ### 你的任务:
-请根据玩家【已通关】的游戏列表（特别是高分游戏）来分析他的品味，并结合他的【额外需求】，为他推荐最多5款游戏。
-1.  **首要目标**: 优先从"玩家【未通关】的游戏"列表中推荐最匹配的游戏。
-2.  **次要目标**: 如果"额外需求"很明确（例如 "想玩xx类型"），并且"未通关"列表中没有匹配的，**请推荐不在该列表中的新游戏**。
-3.  如果"额外需求"为空，请主要从"未通关"列表中推荐。
-4.  理由应简短（不超过50字），并说明为什么推荐（例如 "看你喜欢《XXX》(高分)，这款《YYY》你也许会喜欢" 或 "这是你待玩列表中的xx类型"）。
+请根据用户的数据（特别是高分内容）来分析他的品味，并结合他的【额外需求】，为他推荐最多5款游戏和/或剧集。
+1.  **首要目标**: 优先从"未通关/未看完"列表中推荐最匹配的内容。
+2.  **次要目标**: 如果"额外需求"很明确（例如 "想玩xx类型"或"想看xx类型的剧"），并且列表中没有匹配的，**请推荐不在该列表中的新内容**。
+3.  如果"额外需求"为空，请主要从"未通关/未看完"列表中推荐。
+4.  理由应简短（不超过50字），并说明为什么推荐。
 5.  按推荐优先级从高到低排序。
+6.  请在推荐中标明类型（游戏或剧集）。
 
 请严格按照以下JSON格式返回，不要包含任何多余的解释、代码块标记或标题。
 [
-  {"name": "游戏名1", "reason": "推荐理由1..."},
-  {"name": "游戏名2", "reason": "推荐理由2..."}
+  {"name": "内容名1", "reason": "推荐理由1...", "type": "游戏或剧集"},
+  {"name": "内容名2", "reason": "推荐理由2...", "type": "游戏或剧集"}
 ]` };
 };
 
@@ -165,10 +182,10 @@ const callCloudFunction = async (customPrompt) => {
  * @returns {{ recommendations?: Array, error?: string }}
  */
 export const getAIRecommendations = async (customPrompt = '') => {
-    const { unpassedGames } = buildPrompt(customPrompt);
+    const { unpassedGames, unpassedDramas } = buildPrompt(customPrompt);
 
-    if (!unpassedGames && !customPrompt) {
-        return { recommendations: [{ name: '太棒了！', reason: '您的未通关清单已经一干二净！' }] };
+    if (!unpassedGames && !unpassedDramas && !customPrompt) {
+        return { recommendations: [{ name: '太棒了！', reason: '您的待玩/待看清单已经一干二净！' }] };
     }
 
     // If user explicitly set local mode, use direct API call

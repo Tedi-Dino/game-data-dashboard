@@ -68,16 +68,26 @@ export const deleteItem = async (fbId) => {
     await deleteDoc(doc(itemsCollectionRef, fbId));
 };
 
-export const getItemsCollectionRef = () => itemsCollectionRef;
-
 // --- CSV Import (bulk replace) ---
 export const bulkReplaceItems = async (newItems) => {
     const snapshot = await getDocs(query(itemsCollectionRef));
-    const batch = writeBatch(db);
-    snapshot.forEach((d) => { batch.delete(d.ref); });
-    newItems.forEach((item) => {
-        const newDocRef = doc(itemsCollectionRef);
-        batch.set(newDocRef, item);
-    });
-    await batch.commit();
+    const BATCH_LIMIT = 400; // conservative: Firestore hard limit is 500
+
+    // Delete in chunks
+    const allDocs = snapshot.docs;
+    for (let i = 0; i < allDocs.length; i += BATCH_LIMIT) {
+        const batch = writeBatch(db);
+        allDocs.slice(i, i + BATCH_LIMIT).forEach(d => batch.delete(d.ref));
+        await batch.commit();
+    }
+
+    // Insert in chunks
+    for (let i = 0; i < newItems.length; i += BATCH_LIMIT) {
+        const batch = writeBatch(db);
+        newItems.slice(i, i + BATCH_LIMIT).forEach(item => {
+            const newDocRef = doc(itemsCollectionRef);
+            batch.set(newDocRef, item);
+        });
+        await batch.commit();
+    }
 };

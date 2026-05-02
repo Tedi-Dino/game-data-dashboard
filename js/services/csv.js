@@ -4,7 +4,8 @@ import { bulkReplaceItems, updateLastModifiedTimestamp } from './firestore.js';
 
 // CSV header columns
 const HEADERS = ['id', 'name', 'type', 'sort', 'status', 'purchaseDate', 'purchasePrice',
-    'from', 'playTime', 'passDate', 'sellDate', 'sellPrice', 'rating'];
+    'from', 'playTime', 'passDate', 'sellDate', 'sellPrice', 'rating',
+    'episodeCount', 'episodeDuration'];
 
 // Parse a single CSV row into an item object
 const parseCSVRow = (values, headerIndexMap) => {
@@ -24,15 +25,50 @@ const parseCSVRow = (values, headerIndexMap) => {
         playTime: parseFloatOrNull(
             headerIndexMap['playTime'] !== undefined ? getVal('playTime') : getVal('time')
         ),
-        rating: parseFloatOrNull(getVal('rating'))
+        rating: parseFloatOrNull(getVal('rating')),
+        episodeCount: parseFloatOrNull(getVal('episodeCount')),
+        episodeDuration: parseFloatOrNull(getVal('episodeDuration'))
     };
     return (!item.id || !item.name || !item.type) ? null : item;
+};
+
+// Parse a single CSV line handling quoted fields with commas
+const parseCSVLine = (line) => {
+    const values = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (inQuotes) {
+            if (ch === '"') {
+                if (line[i + 1] === '"') {
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = false;
+                }
+            } else {
+                current += ch;
+            }
+        } else {
+            if (ch === '"') {
+                inQuotes = true;
+            } else if (ch === ',') {
+                values.push(current.trim());
+                current = '';
+            } else {
+                current += ch;
+            }
+        }
+    }
+    values.push(current.trim());
+    return values;
 };
 
 // Parse CSV text into items array
 export const importCSV = async (text) => {
     const rows = text.split(/\r\n|\n/);
-    const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const headers = parseCSVLine(rows[0]).map(h => h.replace(/"/g, ''));
     const headerIndexMap = {};
     headers.forEach((h, i) => { headerIndexMap[h] = i; });
 
@@ -45,7 +81,7 @@ export const importCSV = async (text) => {
     const newItems = rows.slice(1)
         .filter(r => r.trim())
         .map(r => {
-            const values = r.split(',').map(val => val.trim().replace(/^"|"$/g, ''));
+            const values = parseCSVLine(r);
             return parseCSVRow(values, headerIndexMap);
         })
         .filter(Boolean);
@@ -65,7 +101,10 @@ export const exportCSV = () => {
 
     const csv = 'data:text/csv;charset=utf-8,﻿' +
         HEADERS.join(',') + '\r\n' +
-        items.map(i => HEADERS.map(h => `"${i[h] ?? ''}"`).join(',')).join('\r\n');
+        items.map(i => HEADERS.map(h => {
+            const val = String(i[h] ?? '');
+            return `"${val.replace(/"/g, '""')}"`;
+        }).join(',')).join('\r\n');
 
     const link = Object.assign(document.createElement('a'), {
         href: encodeURI(csv),

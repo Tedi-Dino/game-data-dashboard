@@ -2,11 +2,13 @@ import { charts } from '../core/state.js';
 
 // Initialize Chart.js defaults
 export const setupChartDefaults = () => {
-    Chart.defaults.color = '#f9fafb';
-    Chart.defaults.borderColor = 'rgba(107, 114, 128, 0.5)';
+    Chart.defaults.color = '#2d2927';
+    Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.08)';
     Chart.defaults.plugins.legend.position = 'bottom';
-    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(31, 41, 55, 0.9)';
-    Chart.defaults.plugins.tooltip.borderColor = '#4b5563';
+    Chart.defaults.plugins.tooltip.backgroundColor = '#ffffff';
+    Chart.defaults.plugins.tooltip.borderColor = '#e5e0dc';
+    Chart.defaults.plugins.tooltip.titleColor = '#1c1917';
+    Chart.defaults.plugins.tooltip.bodyColor = '#2d2927';
     Chart.defaults.plugins.tooltip.borderWidth = 1;
     Chart.defaults.plugins.tooltip.padding = 10;
     Chart.defaults.plugins.tooltip.titleFont = { weight: 'bold' };
@@ -25,7 +27,7 @@ export const createExternalTooltip = (formatter) => {
         let tooltipEl = chart.canvas.parentNode.querySelector('div.chartjs-tooltip');
         if (!tooltipEl) {
             tooltipEl = document.createElement('div');
-            tooltipEl.className = 'chartjs-tooltip absolute bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 opacity-0 pointer-events-none transition-opacity duration-100 w-72 z-[9999]';
+            tooltipEl.className = 'chartjs-tooltip absolute bg-white text-stone-800 text-sm rounded-lg shadow-lg p-3 opacity-0 pointer-events-none transition-opacity duration-100 w-72 z-[9999] border border-stone-200';
             chart.canvas.parentNode.appendChild(tooltipEl);
         }
 
@@ -94,14 +96,6 @@ export const destroyAllCharts = () => {
         if (chart && chart.destroy) chart.destroy();
     });
     for (const key of Object.keys(charts)) {
-        delete charts[key];
-    }
-};
-
-// Safely destroy a single chart by key
-export const destroyChart = (key) => {
-    if (charts[key]) {
-        charts[key].destroy();
-        delete charts[key];
+        charts[key] = undefined;
     }
 };

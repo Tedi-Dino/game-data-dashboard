@@ -1,5 +1,6 @@
 import { items } from '../core/state.js';
-import { openModal } from './modals.js';
+import { escapeHTML } from '../core/utils.js';
+import { openModal, closeModal } from './modals.js';
 import {
     getAIRecommendations,
     getLocalApiKey, setLocalApiKey, clearLocalApiKey,
@@ -7,7 +8,7 @@ import {
 } from '../services/recommendations.js';
 
 /**
- * Setup the "接下来玩什么?" (Play Next) modal.
+ * Setup the "接下来" (Play Next) modal.
  */
 export const setupPlayNextModal = () => {
     const playNextBtn = document.getElementById('play-next-btn');
@@ -82,7 +83,8 @@ export const setupPlayNextModal = () => {
 
     // --- Open modal ---
     playNextBtn.addEventListener('click', () => {
-        const myPlayNextGames = items.filter(i => i.status === 'backlog');
+        const myBacklogGames = items.filter(i => i.status === 'backlog' && i.type !== 'drama');
+        const myBacklogDramas = items.filter(i => i.status === 'backlog' && i.type === 'drama');
 
         if (aiRecommendationsList) {
             aiRecommendationsList.classList.add('hidden');
@@ -95,9 +97,19 @@ export const setupPlayNextModal = () => {
         if (myBacklogToggleIcon) myBacklogToggleIcon.classList.remove('rotate-180');
 
         if (myPlayNextList) {
-            myPlayNextList.innerHTML = myPlayNextGames.length > 0
-                ? myPlayNextGames.map(g => `<p class="p-3 bg-gray-800/80 rounded-md font-semibold ring-1 ring-gray-700">${g.name}</p>`).join('')
-                : '<p class="text-gray-500 text-center">你还没有待玩的游戏。</p>';
+            let html = '';
+            if (myBacklogGames.length > 0) {
+                html += '<p class="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">🎮 待玩游戏</p>';
+                html += myBacklogGames.map(g => `<p class="p-3 bg-stone-100 rounded-md font-semibold ring-1 ring-stone-200 text-stone-800">${escapeHTML(g.name)}</p>`).join('');
+            }
+            if (myBacklogDramas.length > 0) {
+                html += '<p class="text-xs font-semibold text-rose-500 uppercase tracking-wider mt-4 mb-2">📺 待看剧集</p>';
+                html += myBacklogDramas.map(g => `<p class="p-3 bg-rose-50 rounded-md font-semibold ring-1 ring-rose-200 text-stone-800">${escapeHTML(g.name)}</p>`).join('');
+            }
+            if (!html) {
+                html = '<p class="text-stone-400 text-center">你还没有待玩/待看的内容。</p>';
+            }
+            myPlayNextList.innerHTML = html;
         }
 
         if (aiPromptInput) aiPromptInput.value = '';
@@ -109,10 +121,7 @@ export const setupPlayNextModal = () => {
 
     // --- Close modal ---
     if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            playNextModal.classList.add('hidden');
-            playNextModal.classList.remove('flex');
-        });
+        closeBtn.addEventListener('click', () => closeModal(playNextModal));
     }
 
     // --- Toggle backlog list ---
@@ -130,7 +139,7 @@ export const setupPlayNextModal = () => {
 
             if (aiRecommendationsList) {
                 aiRecommendationsList.classList.remove('hidden');
-                aiRecommendationsList.innerHTML = '<div class="flex justify-center items-center h-24"><p class="text-gray-500 animate-pulse">🤖 正在向AI咨询中，请稍候...</p></div>';
+                aiRecommendationsList.innerHTML = '<div class="flex justify-center items-center h-24"><p class="text-stone-400 animate-pulse">🤖 正在向AI咨询中，请稍候...</p></div>';
             }
 
             const result = await getAIRecommendations(customPrompt);
@@ -139,16 +148,22 @@ export const setupPlayNextModal = () => {
 
             if (result.error) {
                 // Show error with whiteSpace pre-line to preserve formatting
-                aiRecommendationsList.innerHTML = `<div class="p-4 bg-red-900/50 rounded-lg text-red-400 text-center" style="white-space: pre-line">${result.error}</div>`;
+                aiRecommendationsList.innerHTML = `<div class="p-4 bg-red-50 rounded-lg text-red-600 text-center border border-red-200" style="white-space: pre-line">${result.error}</div>`;
             } else if (result.recommendations && result.recommendations.length > 0) {
                 if (myPlayNextList) myPlayNextList.classList.add('hidden');
                 if (myBacklogToggleIcon) myBacklogToggleIcon.classList.add('rotate-180');
 
                 aiRecommendationsList.innerHTML = result.recommendations
-                    .map(rec => `<div class="p-3 bg-gray-700/80 rounded-md ring-1 ring-gray-600"><h4 class="font-bold text-white text-md">${rec.name}</h4><p class="text-gray-300 mt-1 text-sm">${rec.reason}</p></div>`)
+                    .map(rec => {
+                        const isDrama = rec.type === '剧集';
+                        const bgColor = isDrama ? 'bg-rose-50' : 'bg-stone-100';
+                        const ringColor = isDrama ? 'ring-rose-200' : 'ring-stone-200';
+                        const icon = isDrama ? '📺' : '🎮';
+                        return `<div class="p-3 ${bgColor} rounded-md ring-1 ${ringColor}"><h4 class="font-bold text-stone-900 text-md">${icon} ${escapeHTML(rec.name)}</h4><p class="text-stone-600 mt-1 text-sm">${escapeHTML(rec.reason)}</p></div>`;
+                    })
                     .join('');
             } else {
-                aiRecommendationsList.innerHTML = '<p class="text-gray-500 text-center">AI暂时没有找到合适的推荐。</p>';
+                aiRecommendationsList.innerHTML = '<p class="text-stone-400 text-center">AI暂时没有找到合适的推荐。</p>';
             }
         });
     }

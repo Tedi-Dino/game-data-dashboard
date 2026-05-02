@@ -19,12 +19,12 @@ export const setupChartControls = () => {
     const setDistButtonActive = (activeBtn) => {
         [distTimeBtn, distPriceBtn].forEach(btn => {
             if (!btn) return;
-            btn.classList.remove('bg-indigo-600', 'text-white');
-            btn.classList.add('text-gray-300', 'hover:bg-gray-600');
+            btn.classList.remove('bg-amber-600', 'text-white');
+            btn.classList.add('text-stone-600', 'hover:bg-stone-200');
         });
         if (activeBtn) {
-            activeBtn.classList.add('bg-indigo-600', 'text-white');
-            activeBtn.classList.remove('text-gray-300', 'hover:bg-gray-600');
+            activeBtn.classList.add('bg-amber-600', 'text-white');
+            activeBtn.classList.remove('text-stone-600', 'hover:bg-stone-200');
         }
     };
 
@@ -79,7 +79,7 @@ export const setupChartControls = () => {
                 }
             }
 
-            setTimeout(() => renderMonthlyTrendsChart(true), 100);
+            requestAnimationFrame(() => renderMonthlyTrendsChart(true));
         });
     }
 
@@ -89,7 +89,7 @@ export const setupChartControls = () => {
             if (fullscreenContainer) fullscreenContainer.style = '';
             if (charts.monthlyTrendsFullscreen) {
                 charts.monthlyTrendsFullscreen.destroy();
-                delete charts.monthlyTrendsFullscreen;
+                charts.monthlyTrendsFullscreen = undefined;
             }
         });
     }

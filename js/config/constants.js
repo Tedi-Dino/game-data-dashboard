@@ -15,7 +15,8 @@ export const PLATFORM_COLORS = {
     appstore: '#525252',
     googleplay: '#3DDC84',
     emulator: '#fde047',
-    other: '#9ca3af'
+    other: '#9ca3af',
+    drama: '#e11d48'
 };
 
 // Type display name maps
@@ -23,7 +24,8 @@ export const TYPE_MAP = {
     digital: 'Switch数字', physical: 'Switch实体', hardware: '硬件',
     steam: 'Steam', epic: 'Epic', ubi: 'Uplay', gog: 'GOG',
     ps: 'PlayStation', xbox: 'Xbox/MS Store', appstore: 'App Store',
-    googleplay: 'Google Play', emulator: '模拟器', other: 'Other'
+    googleplay: 'Google Play', emulator: '模拟器', other: 'Other',
+    drama: '剧'
 };
 
 export const FROM_MAP = {
@@ -31,8 +33,8 @@ export const FROM_MAP = {
 };
 
 export const STATUS_MAP = {
-    playing: '正在玩', backlog: '待玩', passed: '已通关',
-    abandoned: '已弃坑', empty: '空'
+    playing: '进行中', backlog: '待看', passed: '已完成',
+    abandoned: '已放弃', empty: '空'
 };
 
 // Cost distribution chart: label → internal type(s)
@@ -49,7 +51,8 @@ export const COST_TYPE_MAP = {
     'App Store 游戏': ['appstore'],
     'Google Play 游戏': ['googleplay'],
     '模拟器游戏': ['emulator'],
-    'Other 游戏': ['other']
+    'Other 游戏': ['other'],
+    '剧': ['drama']
 };
 
 // Cost distribution: label → color key
@@ -59,7 +62,7 @@ export const COST_COLOR_MAP = {
     'Epic 游戏': 'epic', 'Uplay 游戏': 'ubi', 'GOG 游戏': 'gog',
     'PlayStation 游戏': 'ps', 'Xbox/MS 游戏': 'xbox',
     'App Store 游戏': 'appstore', 'Google Play 游戏': 'googleplay',
-    '模拟器游戏': 'emulator', 'Other 游戏': 'other'
+    '模拟器游戏': 'emulator', 'Other 游戏': 'other', '剧': 'drama'
 };
 
 // Time distribution chart: label → internal type(s)
@@ -74,7 +77,8 @@ export const TIME_TYPE_MAP = {
     'App Store': ['appstore'],
     'Google Play': ['googleplay'],
     '模拟器': ['emulator'],
-    'Other': ['other']
+    'Other': ['other'],
+    '剧': ['drama']
 };
 
 // Time distribution: label → color key
@@ -82,15 +86,10 @@ export const TIME_COLOR_MAP = {
     'Switch': 'switch_physical', 'Steam': 'steam', 'Epic': 'epic',
     'Uplay': 'ubi', 'GOG': 'gog', 'PlayStation': 'ps',
     'Xbox/MS': 'xbox', 'App Store': 'appstore',
-    'Google Play': 'googleplay', '模拟器': 'emulator', 'Other': 'other'
+    'Google Play': 'googleplay', '模拟器': 'emulator', 'Other': 'other',
+    '剧': 'drama'
 };
 
 // Distribution chart range definitions
 export const TIME_RANGES = [[0, 1], [1, 5], [5, 10], [10, 30], [30, 50], [50, 80], [80, Infinity]];
 export const PRICE_RANGES = [[0, 10], [10, 30], [30, 50], [50, 80], [80, 100], [100, 200], [200, Infinity]];
-
-// Monthly trends: all platform keys
-export const MONTHLY_PLATFORM_KEYS = [
-    'hardware', 'switch_physical', 'switch_digital', 'steam', 'epic',
-    'ubi', 'gog', 'ps', 'xbox', 'appstore', 'googleplay', 'emulator', 'other'
-];

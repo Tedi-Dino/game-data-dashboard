@@ -13,8 +13,8 @@ export const isAdmin = () => userId && ADMIN_UIDS.includes(userId);
  * Update UI elements to reflect read-only vs write access.
  * @param {string|null} currentUserId
  */
-export const updateUIAccess = (currentUserId) => {
-    const isReadOnly = !currentUserId || !ADMIN_UIDS.includes(currentUserId);
+export const updateUIAccess = () => {
+    const isReadOnly = !isAdmin();
     const fabContainer = document.querySelector('.fab-container');
     const tableBody = document.getElementById('items-table-body');
 
@@ -73,5 +73,5 @@ export const updateAuthUI = (user) => {
             userInfo.classList.remove('flex');
         }
     }
-    updateUIAccess(user ? user.uid : null);
+    updateUIAccess();
 };

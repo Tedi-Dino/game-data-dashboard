@@ -1,11 +1,12 @@
 import { items, charts } from '../core/state.js';
-import { hashCode, renderStars } from '../core/utils.js';
+import { hashCode, renderStars, escapeHTML } from '../core/utils.js';
 import { createExternalTooltip } from './setup.js';
 
 export const renderGameSortChart = () => {
-    const gamesWithSort = items.filter(i => i.type !== 'hardware' && i.sort && i.playTime > 0);
-    const timeBySort = gamesWithSort.reduce((acc, game) => {
-        acc[game.sort] = (acc[game.sort] || 0) + (game.playTime || 0);
+    const itemsWithSort = items.filter(i => i.type !== 'hardware' && i.sort && i.playTime > 0);
+    const timeBySort = itemsWithSort.reduce((acc, item) => {
+        const key = item.type === 'drama' ? `📺 ${item.sort}` : item.sort;
+        acc[key] = (acc[key] || 0) + (item.playTime || 0);
         return acc;
     }, {});
 
@@ -42,17 +43,19 @@ export const renderGameSortChart = () => {
                         if (total === 0) return null;
                         const percentage = ((value / total) * 100).toFixed(1);
 
-                        const topGames = items
-                            .filter(i => i.sort === label && i.playTime > 0)
+                        const sortName = label.replace(/^📺 /, '');
+                        const isDrama = label.startsWith('📺 ');
+                        const topItems = items
+                            .filter(i => i.sort === sortName && (isDrama ? i.type === 'drama' : i.type !== 'drama') && i.playTime > 0)
                             .sort((a, b) => (b.playTime || 0) - (a.playTime || 0))
                             .slice(0, 3);
 
-                        let html = `<div class="font-bold text-base mb-2 border-b border-gray-600 pb-1 flex justify-between"><span>${label}</span><span>${value.toFixed(1)}h (${percentage}%)</span></div>`;
-                        html += '<h4 class="font-semibold mt-2 mb-1">该类型时长 Top 3</h4><ul class="text-sm">';
-                        topGames.forEach(item => {
-                            html += `<li class="flex justify-between my-1"><span>${item.name.substring(0, 15)}</span><span class="flex items-center"><strong>${(item.playTime || 0).toFixed(1)}h</strong>${renderStars(item.rating)}</span></li>`;
+                        let html = `<div class="font-bold text-base mb-2 border-b border-stone-200 pb-1 flex justify-between"><span>${escapeHTML(label)}</span><span>${value.toFixed(1)}h (${percentage}%)</span></div>`;
+                        html += `<h4 class="font-semibold mt-2 mb-1">该类型时长 Top 3</h4><ul class="text-sm">`;
+                        topItems.forEach(item => {
+                            html += `<li class="flex justify-between my-1"><span>${escapeHTML(item.name.substring(0, 15))}</span><span class="flex items-center"><strong>${(item.playTime || 0).toFixed(1)}h</strong>${renderStars(item.rating)}</span></li>`;
                         });
-                        if (topGames.length === 0) html += '<li>无游玩记录</li>';
+                        if (topItems.length === 0) html += '<li>无记录</li>';
                         html += '</ul>';
                         return html;
                     })
