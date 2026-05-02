@@ -23,7 +23,7 @@ try {
 } catch (e) {
     console.error('Error initializing Firebase:', e);
     document.body.innerHTML =
-        '<div class="text-white text-center p-8">Firebase initialization failed. Please check the configuration.</div>';
+        '<div class="text-stone-900 text-center p-8">Firebase initialization failed. Please check the configuration.</div>';
 }
 
 export { app, auth, db, functions };

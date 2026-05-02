@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN" class="dark">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎮 游戏数据仪表盘</title>
+    <title>🎬 影音游戏仪表盘</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
@@ -16,39 +16,39 @@
         <!-- Header -->
         <header class="mb-4 flex flex-col sm:flex-row sm:flex-wrap justify-between items-center gap-4 flex-shrink-0">
             <div class="text-center sm:text-left">
-                <h1 class="text-3xl font-bold text-white">🎮 游戏数据仪表盘</h1>
-                <p id="dashboard-subtitle" class="text-gray-400 mt-1">量化您的游戏爱好：时间与资金投入分析</p>
+                <h1 class="text-3xl font-bold text-stone-900">🎬 影音游戏仪表盘</h1>
+                <p id="dashboard-subtitle" class="text-stone-500 mt-1">量化您的影音爱好：游戏与剧集的时间投入分析</p>
             </div>
             <div class="flex flex-wrap justify-center items-center gap-4">
                  <input type="file" id="csv-import-input" class="hidden" accept=".csv">
 
                  <div class="text-center sm:text-right">
-                    <p id="last-updated" class="text-sm text-gray-400">正在加载数据...</p>
-                    <p class="text-xs text-gray-500 mt-1">Powered by Firebase. Co-Developed by Tedi-Dino & Gemini ❤️</p>
+                    <p id="last-updated" class="text-sm text-stone-500">正在加载数据...</p>
+                    <p class="text-xs text-stone-400 mt-1">Powered by Firebase. Co-Developed by Tedi-Dino & Gemini ❤️</p>
                  </div>
 
                  <div class="flex items-center space-x-2">
                     <div id="auth-controls">
-                        <button id="login-btn" title="管理员登录" class="w-10 h-10 flex items-center justify-center bg-gray-700 hover:bg-gray-600 rounded-full transition-colors">
+                        <button id="login-btn" title="管理员登录" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
                             <i class="fab fa-google text-xl"></i>
                         </button>
                         <div id="user-info" class="hidden items-center space-x-2">
                            <img id="user-avatar" class="w-10 h-10 rounded-full" alt="User Avatar">
-                           <button id="logout-btn" title="登出" class="w-10 h-10 flex items-center justify-center bg-gray-700 hover:bg-gray-600 rounded-full transition-colors">
+                           <button id="logout-btn" title="登出" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
                                <i class="fas fa-sign-out-alt text-xl"></i>
                            </button>
                         </div>
                     </div>
-                    <a href="https://steamcommunity.com/profiles/76561199530798696/" target="_blank" title="Steam Profile" class="w-10 h-10 flex items-center justify-center bg-gray-700 hover:bg-gray-600 rounded-full transition-colors">
+                    <a href="https://steamcommunity.com/profiles/76561199530798696/" target="_blank" title="Steam Profile" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
                         <i class="fab fa-steam text-xl"></i>
                     </a>
-                    <a href="https://github.com/Tedi-Dino/game-data-dashboard" target="_blank" title="GitHub Repository" class="w-10 h-10 flex items-center justify-center bg-gray-700 hover:bg-gray-600 rounded-full transition-colors">
+                    <a href="https://github.com/Tedi-Dino/game-data-dashboard" target="_blank" title="GitHub Repository" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
                         <i class="fab fa-github text-xl"></i>
                     </a>
                 </div>
-                <button id="on-this-day-btn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">💡 那年今日</button>
-                <button id="play-next-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">💡 接下来玩</button>
-                <button id="view-all-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">📊 查看数据详情</button>
+                <button id="on-this-day-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">💡 那年今日</button>
+                <button id="play-next-btn" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">💡 接下来</button>
+                <button id="view-all-btn" class="bg-amber-700 hover:bg-amber-800 text-white font-bold py-2 px-4 rounded-lg transition-colors">📊 查看数据详情</button>
             </div>
         </header>
 
@@ -56,85 +56,112 @@
         <main class="dashboard-grid pb-28 lg:pb-2 flex-grow">
             <!-- KPI: 消费总览 -->
             <div id="kpi-card-1" class="dark-card p-4 card-animation lg:col-span-1 lg:row-start-1">
-                <h3 class="text-lg font-semibold text-gray-200 mb-2">💰 消费总览</h3>
+                <h3 class="text-lg font-semibold text-stone-800 mb-2">💰 消费总览</h3>
                 <div class="space-y-2 flex-grow">
                     <div>
-                        <p class="text-sm text-gray-300">实际总支出</p>
-                        <p id="total-actual-cost" class="text-2xl font-bold text-green-400">¥0.00</p>
+                        <p class="text-sm text-stone-600">实际总支出</p>
+                        <p id="total-actual-cost" class="text-2xl font-bold text-amber-600">¥0.00</p>
                     </div>
                     <div class="relative group">
-                        <p class="text-sm text-gray-300">游戏总消费</p>
+                        <p class="text-sm text-stone-600">游戏总消费</p>
                         <div class="flex items-center">
-                            <p id="game-actual-cost" class="text-xl font-semibold text-white">¥0.00</p>
-                            <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                            <p id="game-actual-cost" class="text-xl font-semibold text-stone-900">¥0.00</p>
+                            <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
-                        <div id="game-cost-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3"></div>
+                        <div id="game-cost-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
                     </div>
                      <div>
-                        <p class="text-sm text-gray-300">硬件总投入</p>
-                        <p id="hardware-actual-cost" class="text-xl font-semibold text-white">¥0.00</p>
+                        <p class="text-sm text-stone-600">硬件总投入</p>
+                        <p id="hardware-actual-cost" class="text-xl font-semibold text-stone-900">¥0.00</p>
                     </div>
                     <div class="relative group">
-                        <p class="text-sm text-gray-300">未通关游戏价值</p>
+                        <p class="text-sm text-stone-600">未通关游戏价值</p>
                         <div class="flex items-center">
-                            <p id="unfinished-games-cost" class="text-xl font-semibold text-orange-400">¥0.00</p>
-                            <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                            <p id="unfinished-games-cost" class="text-xl font-semibold text-amber-600">¥0.00</p>
+                            <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
-                        <div id="unfinished-cost-tooltip" class="kpi-tooltip kpi-tooltip-above w-80 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3"></div>
+                        <div id="unfinished-cost-tooltip" class="kpi-tooltip kpi-tooltip-above w-80 text-sm rounded-lg p-3"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- KPI: 时间总览 -->
+            <!-- KPI: 游戏时长总览 -->
             <div id="kpi-card-2" class="dark-card p-4 card-animation flex flex-col lg:col-span-1 lg:row-start-2">
-                <h3 class="text-lg font-semibold text-gray-200 mb-4">⏳ 时间总览</h3>
+                <h3 class="text-lg font-semibold text-stone-800 mb-4">🎮 游戏时长总览</h3>
                  <div class="space-y-4 flex-grow">
                     <div class="relative group">
-                        <p class="text-sm text-gray-300">游戏总数</p>
+                        <p class="text-sm text-stone-600">游戏总数</p>
                         <div class="flex items-center">
-                           <p id="total-games" class="text-2xl font-bold text-blue-400">0 款</p>
-                           <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                           <p id="total-games" class="text-2xl font-bold text-amber-600">0 款</p>
+                           <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
-                        <div id="total-games-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3"></div>
+                        <div id="total-games-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
                     </div>
                     <div class="relative group">
-                        <p class="text-sm text-gray-300">总计游玩</p>
+                        <p class="text-sm text-stone-600">总计游玩</p>
                         <div class="flex items-center">
-                           <p id="total-playtime" class="text-xl font-semibold text-white">0.00 小时</p>
-                           <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                           <p id="total-playtime" class="text-xl font-semibold text-stone-900">0.00 小时</p>
+                           <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
-                        <div id="playtime-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3"></div>
+                        <div id="playtime-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-300">平均游戏时长</p>
-                        <p id="avg-playtime" class="text-xl font-semibold text-white">0.00 小时/款</p>
+                        <p class="text-sm text-stone-600">平均游戏时长</p>
+                        <p id="avg-playtime" class="text-xl font-semibold text-stone-900">0.00 小时/款</p>
                     </div>
                     <div class="relative group">
-                        <p class="text-sm text-gray-300">单位时间价格</p>
+                        <p class="text-sm text-stone-600">单位时间价格</p>
                         <div class="flex items-center">
-                            <p id="cost-per-hour" class="text-xl font-bold text-yellow-400">¥0.00</p>
-                            <span class="text-gray-400 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                            <p id="cost-per-hour" class="text-xl font-bold text-amber-600">¥0.00</p>
+                            <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
-                        <div id="cph-tooltip" class="kpi-tooltip kpi-tooltip-above w-80 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3"></div>
+                        <div id="cph-tooltip" class="kpi-tooltip kpi-tooltip-above w-80 text-sm rounded-lg p-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI: 剧集时长总览 -->
+            <div id="kpi-card-3" class="dark-card p-4 card-animation flex flex-col lg:col-span-1 lg:row-start-2">
+                <h3 class="text-lg font-semibold text-stone-800 mb-4">📺 剧集时长总览</h3>
+                 <div class="space-y-4 flex-grow">
+                    <div class="relative group">
+                        <p class="text-sm text-stone-600">追剧数量</p>
+                        <div class="flex items-center">
+                           <p id="total-dramas" class="text-2xl font-bold text-rose-600">0 部</p>
+                           <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                        </div>
+                        <div id="total-dramas-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
+                    </div>
+                    <div class="relative group">
+                        <p class="text-sm text-stone-600">总计观剧</p>
+                        <div class="flex items-center">
+                           <p id="total-drama-time" class="text-xl font-semibold text-stone-900">0.00 小时</p>
+                           <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                        </div>
+                        <div id="drama-time-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-stone-600">平均观剧时长</p>
+                        <p id="avg-drama-time" class="text-xl font-semibold text-stone-900">0.00 小时/部</p>
                     </div>
                 </div>
             </div>
 
             <!-- Charts: Three Doughnuts -->
             <div id="chart-card-all-doughnuts" class="dark-card p-4 card-animation relative flex flex-col lg:col-span-3 lg:row-start-1 min-h-[750px] lg:min-h-0">
-                <h3 class="text-lg font-semibold text-gray-200 mb-1">📊 消费、时间与爱好统计</h3>
+                <h3 class="text-lg font-semibold text-stone-800 mb-1">📊 消费、时间与爱好统计</h3>
                 <div class="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div class="relative flex flex-col">
                         <div class="flex-grow relative"><canvas id="cost-distribution-chart"></canvas></div>
-                        <h4 class="text-center text-sm font-medium text-gray-300 mt-1">金额分布</h4>
+                        <h4 class="text-center text-sm font-medium text-stone-600 mt-1">金额分布</h4>
                     </div>
                     <div class="relative flex flex-col">
                         <div class="flex-grow relative"><canvas id="time-distribution-chart"></canvas></div>
-                         <h4 class="text-center text-sm font-medium text-gray-300 mt-1">时间分布</h4>
+                         <h4 class="text-center text-sm font-medium text-stone-600 mt-1">时间分布</h4>
                     </div>
                     <div class="relative flex flex-col">
                         <div class="flex-grow relative"><canvas id="game-sort-chart"></canvas></div>
-                        <h4 class="text-center text-sm font-medium text-gray-300 mt-1">玩的最多的游戏类型</h4>
+                        <h4 class="text-center text-sm font-medium text-stone-600 mt-1">玩的最多的游戏类型</h4>
                     </div>
                 </div>
             </div>
@@ -142,10 +169,10 @@
             <!-- Chart: Price & Time Distribution -->
             <div id="chart-card-2" class="dark-card p-4 card-animation flex flex-col lg:col-span-2 lg:row-start-1 min-h-[250px] lg:min-h-0">
                 <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-lg font-semibold text-gray-200">📈 价格与时间分布</h3>
-                    <div class="flex items-center bg-gray-700 rounded-lg p-1 text-sm">
-                        <button id="dist-time-btn" class="px-3 py-1 font-medium rounded-md bg-indigo-600 text-white transition-colors">游戏时长</button>
-                        <button id="dist-price-btn" class="px-3 py-1 font-medium rounded-md text-gray-300 hover:bg-gray-600 transition-colors">游戏价格</button>
+                    <h3 class="text-lg font-semibold text-stone-800">📈 价格与时间分布</h3>
+                    <div class="flex items-center bg-stone-100 rounded-lg p-1 text-sm">
+                        <button id="dist-time-btn" class="px-3 py-1 font-medium rounded-md bg-amber-600 text-white transition-colors">游戏时长</button>
+                        <button id="dist-price-btn" class="px-3 py-1 font-medium rounded-md text-stone-600 hover:bg-stone-200 transition-colors">游戏价格</button>
                     </div>
                 </div>
                 <div class="flex-grow relative">
@@ -154,15 +181,15 @@
             </div>
 
             <!-- Chart: Monthly Trends -->
-            <div id="chart-card-3" class="dark-card p-4 card-animation lg:col-span-5 lg:row-start-2 relative flex flex-col min-h-[300px] lg:min-h-0">
+            <div id="chart-card-3" class="dark-card p-4 card-animation lg:col-span-4 lg:row-start-2 relative flex flex-col min-h-[300px] lg:min-h-0">
                 <div class="flex justify-between items-center gap-4 mb-2">
-                     <h3 class="text-lg font-semibold text-gray-200">🗓️ 月度消费与时间统计</h3>
+                     <h3 class="text-lg font-semibold text-stone-800">🗓️ 月度消费与时间统计</h3>
                     <div class="flex items-center space-x-4">
                         <div class="flex items-center space-x-2">
                             <input type="checkbox" id="exclude-hardware-checkbox" class="form-checkbox">
-                            <label for="exclude-hardware-checkbox" class="text-sm font-medium text-gray-300 whitespace-nowrap">不计硬件</label>
+                            <label for="exclude-hardware-checkbox" class="text-sm font-medium text-stone-600 whitespace-nowrap">不计硬件</label>
                         </div>
-                        <button id="monthly-chart-fullscreen-btn" class="lg:hidden text-gray-300 hover:text-white" title="全屏查看">
+                        <button id="monthly-chart-fullscreen-btn" class="lg:hidden text-stone-600 hover:text-stone-900" title="全屏查看">
                             <i class="fas fa-expand-alt fa-lg"></i>
                         </button>
                     </div>
@@ -186,101 +213,157 @@
     <!-- Item Add/Edit Modal -->
     <div id="item-modal" class="fixed inset-0 z-50 items-center justify-center p-4 hidden modal-backdrop">
         <div class="dark-card w-full max-w-lg mx-auto rounded-lg shadow-xl p-6 relative">
-            <h2 id="modal-title" class="text-xl font-bold text-white mb-6">添加记录</h2>
+            <h2 id="modal-title" class="text-xl font-bold text-stone-900 mb-4">添加记录</h2>
+            <!-- Mode Toggle -->
+            <div id="mode-toggle" class="flex items-center bg-stone-100 rounded-lg p-1 text-sm mb-4 relative" style="z-index: 10;">
+                <button type="button" id="mode-game-btn" class="flex-1 px-3 py-1.5 font-medium rounded-md bg-amber-600 text-white transition-colors cursor-pointer">🎮 游戏</button>
+                <button type="button" id="mode-drama-btn" class="flex-1 px-3 py-1.5 font-medium rounded-md text-stone-600 hover:bg-stone-200 transition-colors cursor-pointer">📺 剧集</button>
+            </div>
             <form id="item-form" class="space-y-4">
                 <input type="hidden" id="item-id">
+                <input type="hidden" id="form-mode" value="game">
+                <!-- Common Fields -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label for="item-custom-id" class="block text-sm font-medium text-gray-300">ID (自定义)</label>
+                        <label for="item-custom-id" class="block text-sm font-medium text-stone-700">ID (自定义)</label>
                         <input type="text" id="item-custom-id" class="form-input w-full mt-1" required>
                     </div>
                     <div>
-                        <label for="item-name" class="block text-sm font-medium text-gray-300">名称</label>
+                        <label for="item-name" class="block text-sm font-medium text-stone-700">名称</label>
                         <input type="text" id="item-name" class="form-input w-full mt-1" required>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                     <div>
-                        <label for="item-type" class="block text-sm font-medium text-gray-300">分类</label>
-                        <select id="item-type" class="form-select w-full mt-1">
-                            <option value="hardware">硬件设备</option>
-                            <option value="physical">Switch实体</option>
-                            <option value="digital">Switch数字</option>
-                            <option value="steam">Steam</option>
-                            <option value="epic">Epic</option>
-                            <option value="ubi">Uplay</option>
-                            <option value="gog">GOG</option>
-                            <option value="ps">PlayStation</option>
-                            <option value="xbox">Xbox/MS Store</option>
-                            <option value="appstore">App Store (iOS)</option>
-                            <option value="googleplay">Google Play (Android)</option>
-                            <option value="emulator">模拟器</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
                     <div>
-                        <label for="item-sort" class="block text-sm font-medium text-gray-300">游戏类型</label>
-                        <input type="text" id="item-sort" class="form-input w-full mt-1">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label for="item-from" class="block text-sm font-medium text-gray-300">来源</label>
+                        <label for="item-from" class="block text-sm font-medium text-stone-700">来源</label>
                         <select id="item-from" class="form-select w-full mt-1">
                             <option value="purchase">购买</option>
                             <option value="free">免费</option>
                             <option value="friend">赠送</option>
+                            <option value="subscription">订阅</option>
                         </select>
                     </div>
                     <div>
-                        <label for="purchase-date" class="block text-sm font-medium text-gray-300">购入日期</label>
+                        <label for="purchase-date" class="block text-sm font-medium text-stone-700">购入/开始日期</label>
                         <input type="date" id="purchase-date" class="form-input w-full mt-1">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label for="purchase-price" class="block text-sm font-medium text-gray-300">购入价格 (¥)</label>
+                        <label for="purchase-price" class="block text-sm font-medium text-stone-700">购入价格 (¥)</label>
                         <input type="number" id="purchase-price" step="0.01" class="form-input w-full mt-1">
                     </div>
                     <div>
-                         <label for="play-time" class="block text-sm font-medium text-gray-300">游玩时长 (小时)</label>
-                         <input type="number" id="play-time" step="0.01" class="form-input w-full mt-1">
+                        <label for="item-sort" class="block text-sm font-medium text-stone-700">类型/分类</label>
+                        <input type="text" id="item-sort" class="form-input w-full mt-1" placeholder="游戏类型或剧集分类">
                     </div>
                 </div>
 
+                <!-- Game-specific Fields -->
                 <div id="game-fields" class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label for="item-status" class="block text-sm font-medium text-gray-300">状态</label>
+                            <label for="item-type" class="block text-sm font-medium text-stone-700">平台</label>
+                            <select id="item-type" class="form-select w-full mt-1">
+                                <option value="steam">Steam</option>
+                                <option value="physical">Switch实体</option>
+                                <option value="digital">Switch数字</option>
+                                <option value="epic">Epic</option>
+                                <option value="ubi">Uplay</option>
+                                <option value="gog">GOG</option>
+                                <option value="ps">PlayStation</option>
+                                <option value="xbox">Xbox/MS Store</option>
+                                <option value="appstore">App Store (iOS)</option>
+                                <option value="googleplay">Google Play (Android)</option>
+                                <option value="emulator">模拟器</option>
+                                <option value="other">Other</option>
+                                <option value="hardware">硬件设备</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="play-time" class="block text-sm font-medium text-stone-700">游玩时长 (小时)</label>
+                            <input type="number" id="play-time" step="0.01" class="form-input w-full mt-1">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="item-status" class="block text-sm font-medium text-stone-700">状态</label>
                             <select id="item-status" class="form-select w-full mt-1">
-                                <option value="playing">正在玩</option>
+                                <option value="playing">进行中</option>
                                 <option value="backlog">待玩</option>
                                 <option value="passed">已通关</option>
-                                <option value="abandoned">已弃坑</option>
+                                <option value="abandoned">已放弃</option>
                                 <option value="empty">空</option>
                             </select>
                         </div>
-                         <div id="pass-date-container" class="hidden">
-                             <label for="pass-date" class="block text-sm font-medium text-gray-300">通关日期</label>
-                             <input type="date" id="pass-date" class="form-input w-full mt-1">
-                         </div>
+                        <div id="pass-date-container" class="hidden">
+                            <label for="pass-date" class="block text-sm font-medium text-stone-700">通关日期</label>
+                            <input type="date" id="pass-date" class="form-input w-full mt-1">
+                        </div>
                     </div>
                     <div>
-                        <label for="item-rating" class="block text-sm font-medium text-gray-300">我的评分 (1-5)</label>
+                        <label for="item-rating" class="block text-sm font-medium text-stone-700">我的评分 (1-5)</label>
                         <input type="number" id="item-rating" min="1" max="5" step="1" class="form-input w-full mt-1" placeholder="输入1到5的整数">
                     </div>
+                    <div id="resell-fields" class="hidden grid grid-cols-2 gap-4">
+                        <div><label for="sell-date" class="block text-sm font-medium text-stone-700">售出日期</label><input type="date" id="sell-date" class="form-input w-full mt-1"></div>
+                        <div><label for="sell-price" class="block text-sm font-medium text-stone-700">售出价格 (¥)</label><input type="number" id="sell-price" step="0.01" class="form-input w-full mt-1"></div>
+                    </div>
                 </div>
-                <div id="resell-fields" class="hidden grid grid-cols-2 gap-4">
-                    <div><label for="sell-date" class="block text-sm font-medium text-gray-300">售出日期</label><input type="date" id="sell-date" class="form-input w-full mt-1"></div>
-                    <div><label for="sell-price" class="block text-sm font-medium text-gray-300">售出价格 (¥)</label><input type="number" id="sell-price" step="0.01" class="form-input w-full mt-1"></div>
+
+                <!-- Drama-specific Fields -->
+                <div id="drama-fields" class="hidden space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="drama-type" class="block text-sm font-medium text-stone-700">剧集类型</label>
+                            <select id="drama-type" class="form-select w-full mt-1">
+                                <option value="drama">剧</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="episode-count" class="block text-sm font-medium text-stone-700">集数</label>
+                            <input type="number" id="episode-count" min="1" step="1" class="form-input w-full mt-1" placeholder="总集数">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="episode-duration" class="block text-sm font-medium text-stone-700">每集时长 (分钟)</label>
+                            <input type="number" id="episode-duration" min="1" step="1" class="form-input w-full mt-1" placeholder="如 45">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700">总时长 (自动计算)</label>
+                            <div id="calculated-time" class="form-input w-full mt-1 bg-stone-50 text-stone-500">-</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="item-status-drama" class="block text-sm font-medium text-stone-700">状态</label>
+                            <select id="item-status-drama" class="form-select w-full mt-1">
+                                <option value="playing">在追</option>
+                                <option value="backlog">待看</option>
+                                <option value="passed">已看完</option>
+                                <option value="abandoned">弃剧</option>
+                                <option value="empty">空</option>
+                            </select>
+                        </div>
+                        <div id="pass-date-container-drama" class="hidden">
+                            <label for="pass-date-drama" class="block text-sm font-medium text-stone-700">看完日期</label>
+                            <input type="date" id="pass-date-drama" class="form-input w-full mt-1">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="item-rating-drama" class="block text-sm font-medium text-stone-700">我的评分 (1-5)</label>
+                        <input type="number" id="item-rating-drama" min="1" max="5" step="1" class="form-input w-full mt-1" placeholder="输入1到5的整数">
+                    </div>
                 </div>
+
                 <div class="flex justify-end space-x-4 pt-4">
-                    <button type="button" id="delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">删除</button>
-                    <button type="button" id="cancel-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">取消</button>
-                    <button type="submit" id="save-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">保存</button>
+                    <button type="button" id="delete-btn" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">删除</button>
+                    <button type="button" id="cancel-btn" class="bg-stone-400 hover:bg-stone-500 text-white font-bold py-2 px-4 rounded-lg">取消</button>
+                    <button type="submit" id="save-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg">保存</button>
                 </div>
             </form>
-            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-300 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-stone-500 hover:text-stone-900"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
         </div>
     </div>
 
@@ -288,20 +371,20 @@
     <div id="list-modal" class="fixed inset-0 z-50 p-4 hidden modal-backdrop overflow-y-auto">
         <div class="dark-card w-full max-w-7xl mx-auto rounded-lg shadow-xl p-6 relative my-auto flex flex-col">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
-                <h2 id="list-modal-title" class="text-xl font-bold text-white">数据详情</h2>
-                <button id="close-list-modal-btn" class="text-gray-300 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                <h2 id="list-modal-title" class="text-xl font-bold text-stone-900">数据详情</h2>
+                <button id="close-list-modal-btn" class="text-stone-500 hover:text-stone-900"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
             <div class="mb-4">
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <i class="fas fa-search text-gray-400"></i>
+                        <i class="fas fa-search text-stone-400"></i>
                     </div>
                     <input type="text" id="list-search-input" class="form-input w-full pl-10" placeholder="搜索名称、分类、类型...">
                 </div>
             </div>
             <div class="overflow-auto">
-                <table class="w-full text-sm text-left text-gray-300">
-                    <thead class="text-xs text-gray-400 uppercase bg-gray-700">
+                <table class="w-full text-sm text-left text-stone-700">
+                    <thead class="text-xs text-stone-500 uppercase bg-stone-100">
                         <tr>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="id">ID</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="name">名称</th>
@@ -320,15 +403,15 @@
                     </thead>
                     <tbody id="items-table-body"></tbody>
                 </table>
-                 <div id="no-data-list-message" class="text-center py-10 text-gray-500 hidden">暂无数据</div>
+                 <div id="no-data-list-message" class="text-center py-10 text-stone-400 hidden">暂无数据</div>
             </div>
         </div>
     </div>
 
     <!-- Monthly Chart Fullscreen Modal -->
     <div id="monthly-chart-fullscreen-modal" class="fixed inset-0 z-[55] hidden modal-backdrop" style="overflow: hidden;">
-        <div id="fullscreen-chart-container" class="dark-card relative bg-gray-900 border-none shadow-none">
-             <button id="close-monthly-chart-fullscreen-btn" class="absolute top-4 right-4 text-gray-300 hover:text-white z-[60]" title="退出全屏" style="background: rgba(0,0,0,0.5); padding: 8px; border-radius: 50%;">
+        <div id="fullscreen-chart-container" class="dark-card relative bg-white border-none shadow-none">
+             <button id="close-monthly-chart-fullscreen-btn" class="absolute top-4 right-4 text-stone-600 hover:text-stone-900 z-[60]" title="退出全屏" style="background: rgba(0,0,0,0.08); padding: 8px; border-radius: 50%;">
                 <i class="fas fa-compress-alt fa-lg"></i>
             </button>
             <div class="w-full h-full relative">
@@ -341,20 +424,20 @@
     <div id="on-this-day-modal" class="fixed inset-0 z-50 items-center justify-center p-4 hidden modal-backdrop">
         <div class="dark-card w-full max-w-md mx-auto rounded-lg shadow-xl p-6 relative">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-white">💡 那年今日</h2>
-                <button id="close-on-this-day-modal-btn" class="text-gray-300 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                <h2 class="text-xl font-bold text-stone-900">💡 那年今日</h2>
+                <button id="close-on-this-day-modal-btn" class="text-stone-500 hover:text-stone-900"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
-            <div id="on-this-day-content" class="space-y-4 max-h-[60vh] overflow-y-auto text-gray-300"></div>
+            <div id="on-this-day-content" class="space-y-4 max-h-[60vh] overflow-y-auto text-stone-700"></div>
         </div>
     </div>
 
     <!-- Confirm Modal -->
     <div id="confirm-modal" class="fixed inset-0 z-[60] items-center justify-center p-4 hidden modal-backdrop">
         <div class="dark-card w-full max-w-sm mx-auto rounded-lg shadow-xl p-6 relative">
-            <h2 id="confirm-modal-title" class="text-lg font-bold text-white mb-4">请确认</h2>
-            <p id="confirm-modal-message" class="text-gray-300 mb-6">您确定要执行此操作吗？</p>
+            <h2 id="confirm-modal-title" class="text-lg font-bold text-stone-900 mb-4">请确认</h2>
+            <p id="confirm-modal-message" class="text-stone-600 mb-6">您确定要执行此操作吗？</p>
             <div class="flex justify-end space-x-4">
-                <button type="button" id="confirm-cancel-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">取消</button>
+                <button type="button" id="confirm-cancel-btn" class="bg-stone-400 hover:bg-stone-500 text-white font-bold py-2 px-4 rounded-lg">取消</button>
                 <button type="button" id="confirm-ok-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">确认</button>
             </div>
         </div>
@@ -364,43 +447,43 @@
     <div id="play-next-modal" class="fixed inset-0 z-50 items-center justify-center p-4 hidden modal-backdrop">
         <div class="dark-card w-full max-w-4xl mx-auto rounded-lg shadow-xl p-6 relative flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
-                <h2 class="text-xl font-bold text-white">💡 接下来玩什么？</h2>
-                <button id="close-play-next-modal-btn" class="text-gray-300 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                <h2 class="text-xl font-bold text-stone-900">💡 接下来</h2>
+                <button id="close-play-next-modal-btn" class="text-stone-500 hover:text-stone-900"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow min-h-0">
                 <div id="my-backlog-container" class="flex flex-col min-h-0 transition-all duration-300 ease-in-out">
-                    <h3 id="my-backlog-title" class="text-lg font-semibold text-indigo-400 mb-2 flex-shrink-0 cursor-pointer flex justify-between items-center group">
-                        <span>📌 我的待玩(Backlog)列表</span>
+                    <h3 id="my-backlog-title" class="text-lg font-semibold text-amber-700 mb-2 flex-shrink-0 cursor-pointer flex justify-between items-center group">
+                        <span>📌 我的待玩/待看列表</span>
                         <i id="my-backlog-toggle-icon" class="fas fa-chevron-up text-sm opacity-0 group-hover:opacity-100 transition-opacity"></i>
                     </h3>
                     <div id="my-play-next-list" class="space-y-2 overflow-y-auto pr-2"></div>
                 </div>
                 <div class="flex flex-col min-h-0">
                     <div class="flex items-center gap-2 mb-2 flex-shrink-0">
-                        <h3 class="text-lg font-semibold text-teal-400">🤖 AI 推荐</h3>
-                        <button id="ai-settings-toggle" class="text-gray-500 hover:text-teal-400 transition-colors ml-auto" title="API 设置">
+                        <h3 class="text-lg font-semibold text-amber-700">🤖 AI 推荐</h3>
+                        <button id="ai-settings-toggle" class="text-stone-500 hover:text-amber-600 transition-colors ml-auto" title="API 设置">
                             <i class="fas fa-cog"></i>
                         </button>
                     </div>
                     <!-- API Settings Panel -->
-                    <div id="ai-settings-panel" class="hidden mb-3 p-3 bg-gray-800/60 rounded-lg border border-gray-600 flex-shrink-0 space-y-3 text-sm">
+                    <div id="ai-settings-panel" class="hidden mb-3 p-3 bg-stone-50 rounded-lg border border-stone-200 flex-shrink-0 space-y-3 text-sm">
                         <div>
-                            <label class="text-gray-300 font-medium block mb-1">DeepSeek API Key</label>
+                            <label class="text-stone-700 font-medium block mb-1">DeepSeek API Key</label>
                             <div class="flex gap-2">
                                 <input type="password" id="ai-api-key-input" class="form-input flex-grow" placeholder="粘贴你的 DeepSeek API Key">
-                                <button id="ai-api-key-save-btn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-1 px-3 rounded text-xs transition-colors">保存</button>
-                                <button id="ai-api-key-clear-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-1 px-3 rounded text-xs transition-colors">清除</button>
+                                <button id="ai-api-key-save-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-1 px-3 rounded text-xs transition-colors">保存</button>
+                                <button id="ai-api-key-clear-btn" class="bg-stone-300 hover:bg-stone-400 text-stone-800 font-bold py-1 px-3 rounded text-xs transition-colors">清除</button>
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
                             <input type="checkbox" id="ai-local-mode-checkbox" class="form-checkbox">
-                            <label for="ai-local-mode-checkbox" class="text-gray-300">本地直连模式（绕过Cloud Function）</label>
+                            <label for="ai-local-mode-checkbox" class="text-stone-700">本地直连模式（绕过Cloud Function）</label>
                         </div>
-                        <p id="ai-settings-status" class="text-gray-400 text-xs"></p>
+                        <p id="ai-settings-status" class="text-stone-500 text-xs"></p>
                     </div>
                     <div class="flex gap-2 mb-3 flex-shrink-0">
-                        <input type="text" id="ai-prompt-input" class="form-input flex-grow" placeholder="输入你想玩的游戏类型或风格...">
-                        <button id="ai-prompt-send-btn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-3 rounded-lg transition-colors">
+                        <input type="text" id="ai-prompt-input" class="form-input flex-grow" placeholder="输入你想玩/看的类型或风格...">
+                        <button id="ai-prompt-send-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-3 rounded-lg transition-colors">
                             <i class="fas fa-paper-plane"></i>
                         </button>
                     </div>

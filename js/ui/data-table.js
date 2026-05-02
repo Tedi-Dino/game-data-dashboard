@@ -1,8 +1,9 @@
 import { items, sortConfig, setSortConfig, setIsEditingFromList } from '../core/state.js';
-import { formatCurrency, renderStarsForTable } from '../core/utils.js';
+import { formatCurrency, renderStarsForTable, formatDateForInput, escapeHTML } from '../core/utils.js';
 import { TYPE_MAP, FROM_MAP, STATUS_MAP } from '../config/constants.js';
 import { openModal, closeModal } from './modals.js';
 import { isAdmin } from './auth.js';
+import { setFormMode } from './item-form.js';
 
 /**
  * Render the items data table in the list modal.
@@ -55,22 +56,22 @@ export const renderItemsList = () => {
         const cph = item.playTime > 0 ? cost / item.playTime : null;
 
         const row = document.createElement('tr');
-        row.className = 'border-b border-gray-600 hover:bg-gray-600 cursor-pointer';
+        row.className = 'border-b border-stone-200 hover:bg-stone-100 cursor-pointer';
         row.dataset.fb_id = item.fb_id;
         row.innerHTML = `
-            <td class="px-4 py-3 font-mono whitespace-nowrap">${item.id || '/'}</td>
-            <td class="px-4 py-3 font-medium">${item.name || '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${item.sort || '/'}</td>
+            <td class="px-4 py-3 font-mono whitespace-nowrap">${escapeHTML(item.id) || '/'}</td>
+            <td class="px-4 py-3 font-medium">${escapeHTML(item.name) || '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.sort) || '/'}</td>
             <td class="px-4 py-3 text-center whitespace-nowrap">${renderStarsForTable(item.rating)}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${item.playTime != null ? `${item.playTime}h` : '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${STATUS_MAP[item.status] || '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${item.passDate || '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${item.purchaseDate || '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${item.type === 'drama' && item.episodeCount ? `${item.episodeCount}集×${item.episodeDuration}min` : (item.playTime != null ? `${item.playTime}h` : '/')}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(STATUS_MAP[item.status]) || '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.passDate) || '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.purchaseDate) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${item.purchasePrice != null ? formatCurrency(item.purchasePrice) : '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${formatCurrency(cost)}</td>
             <td class="px-4 py-3 whitespace-nowrap">${cph != null && isFinite(cph) ? formatCurrency(cph) : '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${FROM_MAP[item.from] || '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${TYPE_MAP[item.type] || item.type || '/'}</td>`;
+            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(FROM_MAP[item.from]) || '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(TYPE_MAP[item.type] || item.type) || '/'}</td>`;
         row.addEventListener('click', () => handleEditItem(item.fb_id));
         tbody.appendChild(row);
     });
@@ -116,13 +117,17 @@ export const setupListSearch = () => {
     const searchInput = document.getElementById('list-search-input');
     if (!searchInput) return;
 
+    let debounceTimer;
     searchInput.addEventListener('keyup', () => {
-        const term = searchInput.value.toLowerCase();
-        const tbody = document.getElementById('items-table-body');
-        if (!tbody) return;
-        tbody.querySelectorAll('tr').forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
-        });
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const term = searchInput.value.toLowerCase();
+            const tbody = document.getElementById('items-table-body');
+            if (!tbody) return;
+            tbody.querySelectorAll('tr').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+            });
+        }, 150);
     });
 };
 
@@ -147,17 +152,45 @@ const handleEditItem = (fbId) => {
     document.getElementById('item-custom-id').value = item.id || '';
     document.getElementById('item-name').value = item.name;
     document.getElementById('item-sort').value = item.sort || '';
-    document.getElementById('item-type').value = item.type;
     document.getElementById('item-from').value = item.from || 'purchase';
-    document.getElementById('purchase-date').value = item.purchaseDate || '';
+    document.getElementById('purchase-date').value = formatDateForInput(item.purchaseDate);
     document.getElementById('purchase-price').value = item.purchasePrice ?? '';
-    document.getElementById('play-time').value = item.playTime ?? '';
-    document.getElementById('item-status').value = item.status || 'empty';
-    document.getElementById('pass-date').value = item.passDate || '';
-    document.getElementById('sell-date').value = item.sellDate || '';
-    document.getElementById('sell-price').value = item.sellPrice ?? '';
-    document.getElementById('item-rating').value = item.rating ?? '';
-    document.getElementById('pass-date-container').classList.toggle('hidden', item.status !== 'passed');
+
+    const isDrama = item.type === 'drama';
+    setFormMode(isDrama ? 'drama' : 'game');
+
+    if (isDrama) {
+        document.getElementById('episode-count').value = item.episodeCount ?? '';
+        document.getElementById('episode-duration').value = item.episodeDuration ?? '';
+        // Update calculated time display
+        const count = item.episodeCount ?? 0;
+        const duration = item.episodeDuration ?? 0;
+        const calculatedTime = document.getElementById('calculated-time');
+        if (calculatedTime && count > 0 && duration > 0) {
+            calculatedTime.textContent = `${(count * duration / 60).toFixed(2)} 小时`;
+        }
+        document.getElementById('item-status-drama').value = item.status || 'empty';
+        document.getElementById('item-rating-drama').value = item.rating ?? '';
+        document.getElementById('pass-date-drama').value = formatDateForInput(item.passDate);
+        document.getElementById('pass-date-container-drama').classList.toggle('hidden', item.status !== 'passed');
+    } else {
+        document.getElementById('item-type').value = item.type;
+        document.getElementById('play-time').value = item.playTime ?? '';
+        document.getElementById('item-status').value = item.status || 'empty';
+        document.getElementById('item-rating').value = item.rating ?? '';
+        document.getElementById('pass-date').value = formatDateForInput(item.passDate);
+        document.getElementById('pass-date-container').classList.toggle('hidden', item.status !== 'passed');
+        document.getElementById('sell-date').value = formatDateForInput(item.sellDate);
+        document.getElementById('sell-price').value = item.sellPrice ?? '';
+        const gameFields = document.getElementById('game-fields');
+        if (gameFields) gameFields.classList.toggle('hidden', item.type === 'hardware');
+        const resellFields = document.getElementById('resell-fields');
+        if (resellFields) {
+            const hasSellData = item.sellDate || item.sellPrice != null;
+            resellFields.classList.toggle('hidden', !(item.type === 'hardware' || hasSellData));
+        }
+    }
+
     document.getElementById('delete-btn').classList.remove('hidden');
 
     closeModal(listModal);

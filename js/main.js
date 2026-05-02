@@ -3,7 +3,7 @@ import { auth } from './config/firebase.js';
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
 
 // Core
-import { setSortConfig } from './core/state.js';
+import { items, setSortConfig } from './core/state.js';
 
 // Services
 import { setupFirestoreListener, setOnDataChange, setupMetadataListener } from './services/firestore.js';
@@ -39,10 +39,18 @@ const renderCharts = () => {
 };
 
 // --- Full dashboard update (called after Firestore data changes) ---
+let lastItemsHash = '';
+
 const updateDashboard = () => {
     updateDashboardKPIs();
-    renderCharts();
     updateKpiTooltips();
+
+    // Only re-render charts if data actually changed
+    const newHash = items.map(i => i.fb_id + '|' + i.playTime + '|' + i.purchasePrice + '|' + i.sellPrice).join(',');
+    if (newHash !== lastItemsHash) {
+        lastItemsHash = newHash;
+        renderCharts();
+    }
 
     const listModal = document.getElementById('list-modal');
     if (listModal && !listModal.classList.contains('hidden')) {
@@ -129,17 +137,14 @@ const initApp = () => {
 
     // Card entrance animations
     document.querySelectorAll('.card-animation').forEach((card, index) => {
-        setTimeout(() => {
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, (index + 1) * 100);
+        card.style.animationDelay = `${(index + 1) * 100}ms`;
+    });
+
+    // Auth state observer -- registered after DOM is ready
+    onAuthStateChanged(auth, (user) => {
+        updateAuthUI(user);
     });
 };
-
-// --- Auth State Observer ---
-onAuthStateChanged(auth, (user) => {
-    updateAuthUI(user);
-});
 
 // --- Boot ---
 document.addEventListener('DOMContentLoaded', initApp);
