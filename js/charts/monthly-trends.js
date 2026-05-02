@@ -30,6 +30,12 @@ const buildTrends = (currentItems) => {
     const trends = {};
     const allMonths = new Set();
 
+    // Map item.type to trend key
+    const typeToKey = {
+        physical: 'switch_physical',
+        digital: 'switch_digital'
+    };
+
     currentItems.forEach(item => {
         // --- Cost processing ---
         if (item.purchaseDate) {
@@ -38,7 +44,7 @@ const buildTrends = (currentItems) => {
                 allMonths.add(purchaseMonth);
                 if (!trends[purchaseMonth]) trends[purchaseMonth] = { ...DEFAULT_TREND };
                 const cost = (item.purchasePrice || 0) - (item.sellPrice || 0);
-                const key = item.type;
+                const key = typeToKey[item.type] || item.type;
                 if (trends[purchaseMonth][key] !== undefined) {
                     trends[purchaseMonth][key] += cost;
                 }
