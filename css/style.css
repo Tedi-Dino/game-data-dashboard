@@ -31,11 +31,14 @@ main {
 .doughnut-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr auto;
+    grid-template-rows: 1fr 1fr;
 }
 .doughnut-item-1 { grid-column: 1; grid-row: 1; }
 .doughnut-item-2 { grid-column: 2; grid-row: 1; }
 .doughnut-item-3 { grid-column: 1 / -1; grid-row: 2; max-width: 50%; justify-self: center; }
+.doughnut-grid .flex-grow.relative {
+    min-height: 180px;
+}
 
 @media (min-width: 1024px) {
     .doughnut-grid {
@@ -49,6 +52,9 @@ main {
         grid-row: auto;
         max-width: none;
         justify-self: auto;
+    }
+    .doughnut-grid .flex-grow.relative {
+        min-height: 250px;
     }
 }
 
