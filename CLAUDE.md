@@ -17,7 +17,7 @@ npx serve .              # or: python -m http.server 8080
 
 Open `http://localhost:<port>` in a browser. ES modules are loaded from the Firebase CDN (`gstatic.com/firebasejs/11.6.1/`) directly in the browser — no `npm install` needed.
 
-The Firebase Cloud Function at `index.js` (project root) must be deployed separately via `firebase deploy --only functions`. The `functions/` directory is empty; the function source lives at the repo root as `index.js`.
+The Firebase Cloud Function source is at `functions/index.js`. Deploy with `firebase deploy --only functions`. The root `index.js` is a copy kept for reference; the authoritative source is in `functions/`.
 
 ## Architecture
 
@@ -28,7 +28,7 @@ js/
 │   └── constants.js        # Admin UIDs, platform colors, type/status maps, chart range configs
 ├── core/
 │   ├── state.js            # Centralized mutable state: items[], sortConfig, charts{}, etc.
-│   └── utils.js            # Formatters (currency, dates, stars), hash utility
+│   └── utils.js            # Formatters (currency, dates, stars), escapeHTML, netCost, hash utility
 ├── services/
 │   ├── firestore.js        # Firestore onSnapshot listener, CRUD helpers, bulk CSV replace
 │   ├── csv.js              # CSV import/export logic
@@ -58,11 +58,11 @@ js/
 
 **Auth model**: Google Sign-In via Firebase Auth. Admin UIDs are hardcoded in `constants.js`. Non-admin users see read-only UI (FAB hidden, form buttons disabled). Admin users can add/edit/delete items and import/export CSV.
 
-**AI recommendations**: The "接下来玩" modal calls DeepSeek API (model `deepseek-v4-pro`) to analyze played/backlog games and suggest what to play next. Primary path: Firebase Cloud Function (`getAiRecommendations`). Fallback: direct DeepSeek API call from the browser (user must provide their own API key in settings).
+**AI recommendations**: The "接下来" modal calls DeepSeek API (model `deepseek-v4-pro`) to analyze played/backlog games **and dramas** (剧集), then suggest what to play/watch next. Primary path: Firebase Cloud Function (`getAiRecommendations`). Fallback: direct DeepSeek API call from the browser (user must provide their own API key in settings). The Cloud Function prompt only covers games; the browser-side prompt also includes drama data.
 
 ## Key patterns
 
 - **No framework**: All DOM manipulation is vanilla JS. Module state is shared via `js/core/state.js` getters/setters.
-- **Chart lifecycle**: Charts are stored in `state.charts` keyed by name. `destroyAllCharts()` is called before every re-render to prevent memory leaks. Individual chart modules render into specific `<canvas>` elements.
-- **Firestore doc shape**: Each item has `id`, `name`, `type`, `sort`, `status`, `purchaseDate`, `purchasePrice`, `from`, `playTime`, `passDate`, `sellDate`, `sellPrice`, `rating`. Firestore doc IDs are stored as `fb_id` on the client side.
+- **Chart lifecycle**: Charts are stored in `state.charts` keyed by name. `destroyAllCharts()` is called before re-rendering all charts. A lightweight hash of all items' key fields (`fb_id`, `playTime`, `purchasePrice`, `sellPrice`) skips chart re-renders when data hasn't actually changed. Individual chart renders also destroy their own previous instance before creating a new one (needed when charts re-render independently, e.g., distribution mode toggle).
+- **Firestore doc shape**: Each item has `id`, `name`, `type`, `sort`, `status`, `purchaseDate`, `purchasePrice`, `from`, `playTime`, `passDate`, `sellDate`, `sellPrice`, `rating`, `episodeCount`, `episodeDuration`. Firestore doc IDs are stored as `fb_id` on the client side. Drama items (`type: 'drama'`) use `episodeCount` × `episodeDuration` / 60 to auto-calculate `playTime`.
 - **Metadata**: A separate Firestore doc at `metadata/dashboard` tracks `lastManualUpdate` for the "last updated" display.
