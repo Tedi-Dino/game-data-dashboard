@@ -66,3 +66,12 @@ js/
 - **Chart lifecycle**: Charts are stored in `state.charts` keyed by name. `destroyAllCharts()` is called before re-rendering all charts. A lightweight hash of all items' key fields (`fb_id`, `playTime`, `purchasePrice`, `sellPrice`) skips chart re-renders when data hasn't actually changed. Individual chart renders also destroy their own previous instance before creating a new one (needed when charts re-render independently, e.g., distribution mode toggle).
 - **Firestore doc shape**: Each item has `id`, `name`, `type`, `sort`, `status`, `purchaseDate`, `purchasePrice`, `from`, `playTime`, `passDate`, `sellDate`, `sellPrice`, `rating`, `episodeCount`, `episodeDuration`. Firestore doc IDs are stored as `fb_id` on the client side. Drama items (`type: 'drama'`) use `episodeCount` × `episodeDuration` / 60 to auto-calculate `playTime`.
 - **Metadata**: A separate Firestore doc at `metadata/dashboard` tracks `lastManualUpdate` for the "last updated" display.
+
+## Standalone tools
+
+```
+tools/
+└── cost_per_hour_trend.py   # Python script: cost-per-hour trend chart from CSV export
+```
+
+`cost_per_hour_trend.py` reads `game_cost_export_*.csv` from the project root, filters out hardware/drama/free/zero-playtime games, and generates a cumulative cost-per-hour curve (`tools/cost_per_hour_trend.png`). Uses matplotlib; no dependencies beyond Python 3 + matplotlib. Run with `python tools/cost_per_hour_trend.py`.
