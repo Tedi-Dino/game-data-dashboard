@@ -20,8 +20,16 @@ import matplotlib.dates as mdates
 from datetime import datetime
 from pathlib import Path
 
-CSV_PATH = Path(__file__).resolve().parent.parent / 'game_cost_export_2026-05-03.csv'
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_PATH = Path(__file__).resolve().parent / 'cost_per_hour_trend.png'
+
+
+def find_latest_csv():
+    csvs = sorted(PROJECT_ROOT.glob('game_cost_export*.csv'),
+                  key=lambda p: p.stat().st_mtime, reverse=True)
+    if not csvs:
+        raise FileNotFoundError('No game_cost_export*.csv found in project root')
+    return csvs[0]
 
 
 def load_games(csv_path):
@@ -136,7 +144,9 @@ def plot(dates, cph_values, games):
 
 
 def main():
-    games = load_games(CSV_PATH)
+    csv_path = find_latest_csv()
+    print(f'Using CSV: {csv_path.name}')
+    games = load_games(csv_path)
     print(f'Loaded {len(games)} games (excluded hardware, drama, free, and zero-playtime)')
     dates, cph_values = compute_trend(games)
     print(f'Final cost-per-hour: {cph_values[-1]:.2f} yuan/h')
