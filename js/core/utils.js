@@ -29,13 +29,17 @@ export const normalizeMonth = (dateStr) => {
     return date.getFullYear() + '-' + ('0' + (date.getMonth() + 1)).slice(-2);
 };
 
-// Render star rating as HTML
+// Render star rating as HTML (10-point scale → 5 stars with half-star support)
 const SOLID_STAR = '★';
 
 export const renderStars = (rating, withMargin = true) => {
     if (!rating || rating < 1) return '';
     const margin = withMargin ? 'ml-2' : '';
-    return `<span class="text-yellow-400 ${margin}">${SOLID_STAR.repeat(rating)}</span>`;
+    const fullStars = Math.floor(rating / 2);
+    const hasHalf = (rating % 2) >= 1;
+    const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
+    const halfStarHtml = '<span style="position:relative;display:inline-block;width:1em"><span style="position:absolute;overflow:hidden;width:50%">★</span><span style="color:#d4d4d8">★</span></span>';
+    return `<span class="text-yellow-400 ${margin}">${SOLID_STAR.repeat(fullStars)}${hasHalf ? halfStarHtml : ''}${'<span style="color:#d4d4d8">' + SOLID_STAR.repeat(emptyStars) + '</span>'}</span>`;
 };
 
 export const renderStarsForTable = (rating) => {

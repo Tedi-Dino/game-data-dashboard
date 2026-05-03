@@ -19,7 +19,7 @@ export const setLocalMode = (enabled) => localStorage.setItem(LOCAL_MODE_STORAGE
 const buildPrompt = (customPrompt) => {
     const passedGames = items
         .filter(i => i.status === 'passed' && i.type !== 'hardware' && i.type !== 'drama')
-        .map(i => `《${i.name}》 (用户评分: ${i.rating || '未评'}/5)`)
+        .map(i => `《${i.name}》 (用户评分: ${i.rating || '未评'}/10)`)
         .join('\n');
 
     const unpassedGames = items
@@ -29,7 +29,7 @@ const buildPrompt = (customPrompt) => {
 
     const passedDramas = items
         .filter(i => i.status === 'passed' && i.type === 'drama')
-        .map(i => `《${i.name}》 (用户评分: ${i.rating || '未评'}/5, 类型: ${i.sort || '未分类'})`)
+        .map(i => `《${i.name}》 (用户评分: ${i.rating || '未评'}/10, 类型: ${i.sort || '未分类'})`)
         .join('\n');
 
     const unpassedDramas = items
@@ -39,13 +39,13 @@ const buildPrompt = (customPrompt) => {
 
     return { passedGames, unpassedGames, passedDramas, unpassedDramas, prompt: `你是一个资深的影音娱乐推荐助手。请分析一个用户的游戏和剧集数据。
 
-### 用户【已通关】的游戏 (包含用户评分 1-5分):
+### 用户【已通关】的游戏 (包含用户评分 1-10分):
 ${passedGames || "无"}
 
 ### 用户【未通关】的游戏 (包含当前状态):
 ${unpassedGames || "无"}
 
-### 用户【已看完】的剧集 (包含用户评分 1-5分和类型):
+### 用户【已看完】的剧集 (包含用户评分 1-10分和类型):
 ${passedDramas || "无"}
 
 ### 用户【未看完】的剧集 (包含当前状态):

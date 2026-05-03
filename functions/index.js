@@ -20,7 +20,7 @@ exports.getAiRecommendations = onCall({secrets: [deepseekApiKey], timeoutSeconds
 
   const prompt = `你是一个资深游戏玩家和推荐助手。请分析一个玩家的游戏数据。
 
-### 玩家【已通关】的游戏 (包含用户评分 1-5分):
+### 玩家【已通关】的游戏 (包含用户评分 1-10分):
 ${passedGames || "无"}
 
 ### 玩家【未通关】的游戏 (包含当前状态):
