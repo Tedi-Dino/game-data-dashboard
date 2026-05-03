@@ -6,12 +6,15 @@ import { STATUS_MAP } from '../config/constants.js';
 // --- Local API Key Management ---
 const LOCAL_KEY_STORAGE = 'deepseek_local_api_key';
 const LOCAL_MODE_STORAGE = 'deepseek_local_mode';
+const THINKING_MODE_STORAGE = 'deepseek_thinking_mode';
 
 export const getLocalApiKey = () => localStorage.getItem(LOCAL_KEY_STORAGE) || '';
 export const setLocalApiKey = (key) => localStorage.setItem(LOCAL_KEY_STORAGE, key.trim());
 export const clearLocalApiKey = () => localStorage.removeItem(LOCAL_KEY_STORAGE);
 export const isLocalMode = () => localStorage.getItem(LOCAL_MODE_STORAGE) === 'true';
 export const setLocalMode = (enabled) => localStorage.setItem(LOCAL_MODE_STORAGE, enabled ? 'true' : 'false');
+export const isThinkingMode = () => localStorage.getItem(THINKING_MODE_STORAGE) === 'true';
+export const setThinkingMode = (enabled) => localStorage.setItem(THINKING_MODE_STORAGE, enabled ? 'true' : 'false');
 
 /**
  * Build the prompt string from current game and drama data.
@@ -55,7 +58,7 @@ ${unpassedDramas || "无"}
 ${customPrompt || "无特定需求，请综合推荐。"}
 
 ### 你的任务:
-请根据用户的数据（特别是高分内容）来分析他的品味，并结合他的【额外需求】，为他推荐最多5款游戏和/或剧集。
+请根据用户的数据（特别是高分内容）来分析他的品味，并结合他的【额外需求】，为他推荐4款游戏和1部剧集。
 1.  **首要目标**: 优先从"未通关/未看完"列表中推荐最匹配的内容。
 2.  **次要目标**: 如果"额外需求"很明确（例如 "想玩xx类型"或"想看xx类型的剧"），并且列表中没有匹配的，**请推荐不在该列表中的新内容**。
 3.  如果"额外需求"为空，请主要从"未通关/未看完"列表中推荐。
@@ -65,8 +68,11 @@ ${customPrompt || "无特定需求，请综合推荐。"}
 
 请严格按照以下JSON格式返回，不要包含任何多余的解释、代码块标记或标题。
 [
-  {"name": "内容名1", "reason": "推荐理由1...", "type": "游戏或剧集"},
-  {"name": "内容名2", "reason": "推荐理由2...", "type": "游戏或剧集"}
+  {"name": "游戏名1", "reason": "推荐理由1...", "type": "游戏"},
+  {"name": "游戏名2", "reason": "推荐理由2...", "type": "游戏"},
+  {"name": "游戏名3", "reason": "推荐理由3...", "type": "游戏"},
+  {"name": "游戏名4", "reason": "推荐理由4...", "type": "游戏"},
+  {"name": "剧集名1", "reason": "推荐理由5...", "type": "剧集"}
 ]` };
 };
 
@@ -119,7 +125,9 @@ const callDeepSeekDirectly = async (customPrompt) => {
                 messages: [{ role: 'user', content: prompt }],
                 max_tokens: 2000,
                 temperature: 0.3,
-                thinking: { type: 'disabled' },
+                ...(isThinkingMode()
+                    ? { thinking: { type: 'enabled', reasoning_effort: 'high' } }
+                    : { thinking: { type: 'disabled' } }),
             }),
         });
 
@@ -146,11 +154,12 @@ const callDeepSeekDirectly = async (customPrompt) => {
  * Call the Firebase Cloud Function for AI recommendations.
  */
 const callCloudFunction = async (customPrompt) => {
-    const { passedGames, unpassedGames } = buildPrompt(customPrompt);
+    const { passedGames, unpassedGames, passedDramas, unpassedDramas } = buildPrompt(customPrompt);
+    const thinking = isThinkingMode();
 
     try {
         const fn = httpsCallable(functions, 'getAiRecommendations');
-        const result = await fn({ passedGames, unpassedGames, customPrompt });
+        const result = await fn({ passedGames, unpassedGames, passedDramas, unpassedDramas, customPrompt, thinking });
         const data = result.data;
 
         // Error returned as normal response
