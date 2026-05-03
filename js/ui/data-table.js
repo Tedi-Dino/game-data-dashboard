@@ -182,13 +182,6 @@ const handleEditItem = (fbId) => {
         document.getElementById('pass-date-container').classList.toggle('hidden', item.status !== 'passed');
         document.getElementById('sell-date').value = formatDateForInput(item.sellDate);
         document.getElementById('sell-price').value = item.sellPrice ?? '';
-        const gameFields = document.getElementById('game-fields');
-        if (gameFields) gameFields.classList.toggle('hidden', item.type === 'hardware');
-        const resellFields = document.getElementById('resell-fields');
-        if (resellFields) {
-            const hasSellData = item.sellDate || item.sellPrice != null;
-            resellFields.classList.toggle('hidden', !(item.type === 'hardware' || hasSellData));
-        }
     }
 
     document.getElementById('delete-btn').classList.remove('hidden');
