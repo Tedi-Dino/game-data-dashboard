@@ -28,6 +28,7 @@ export const setFormMode = (mode) => {
     const gameFields = document.getElementById('game-fields');
     const dramaFields = document.getElementById('drama-fields');
     const fromPriceRow = document.getElementById('from-price-row');
+    const resellFields = document.getElementById('resell-fields');
     const itemFrom = document.getElementById('item-from');
     const purchasePrice = document.getElementById('purchase-price');
 
@@ -43,6 +44,7 @@ export const setFormMode = (mode) => {
         if (gameFields) gameFields.classList.add('hidden');
         if (dramaFields) dramaFields.classList.remove('hidden');
         if (fromPriceRow) fromPriceRow.classList.add('hidden');
+        if (resellFields) resellFields.classList.add('hidden');
         if (itemFrom) itemFrom.value = 'free';
         if (purchasePrice) purchasePrice.value = '0';
     } else {
@@ -55,6 +57,7 @@ export const setFormMode = (mode) => {
         if (gameFields) gameFields.classList.remove('hidden');
         if (dramaFields) dramaFields.classList.add('hidden');
         if (fromPriceRow) fromPriceRow.classList.remove('hidden');
+        if (resellFields) resellFields.classList.remove('hidden');
     }
 };
 
