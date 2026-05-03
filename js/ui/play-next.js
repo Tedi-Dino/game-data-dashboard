@@ -1,10 +1,12 @@
 import { items } from '../core/state.js';
 import { escapeHTML } from '../core/utils.js';
 import { openModal, closeModal } from './modals.js';
+import { isAdmin } from './auth.js';
 import {
     getAIRecommendations,
     getLocalApiKey, setLocalApiKey, clearLocalApiKey,
-    isLocalMode, setLocalMode
+    isLocalMode, setLocalMode,
+    isThinkingMode, setThinkingMode
 } from '../services/recommendations.js';
 
 /**
@@ -28,6 +30,7 @@ export const setupPlayNextModal = () => {
     const apiKeySaveBtn = document.getElementById('ai-api-key-save-btn');
     const apiKeyClearBtn = document.getElementById('ai-api-key-clear-btn');
     const localModeCheckbox = document.getElementById('ai-local-mode-checkbox');
+    const thinkingModeCheckbox = document.getElementById('ai-thinking-mode-checkbox');
     const settingsStatus = document.getElementById('ai-settings-status');
 
     if (!playNextBtn || !playNextModal) return;
@@ -39,6 +42,7 @@ export const setupPlayNextModal = () => {
         apiKeyInput.value = hasKey ? '••••••••' : '';
         apiKeyInput.placeholder = hasKey ? '已保存 (重新输入以覆盖)' : '粘贴你的 DeepSeek API Key';
         localModeCheckbox.checked = isLocalMode();
+        if (thinkingModeCheckbox) thinkingModeCheckbox.checked = isThinkingMode();
         settingsStatus.textContent = hasKey
             ? (isLocalMode() ? '✅ 本地模式：直接调用 DeepSeek API' : '🔗 云端模式：通过 Cloud Function 调用（备用Key已配置）')
             : '⚠️ 未配置本地API Key';
@@ -81,6 +85,14 @@ export const setupPlayNextModal = () => {
         });
     }
 
+    // Thinking mode toggle
+    if (thinkingModeCheckbox) {
+        thinkingModeCheckbox.addEventListener('change', () => {
+            setThinkingMode(thinkingModeCheckbox.checked);
+            refreshSettingsUI();
+        });
+    }
+
     // --- Open modal ---
     playNextBtn.addEventListener('click', () => {
         const myBacklogGames = items.filter(i => i.status === 'backlog' && i.type !== 'drama');
@@ -115,6 +127,24 @@ export const setupPlayNextModal = () => {
         if (aiPromptInput) aiPromptInput.value = '';
         // Hide settings panel on open
         if (settingsPanel) settingsPanel.classList.add('hidden');
+
+        // Admin-only: toggle AI section visibility
+        const aiSection = document.getElementById('ai-section');
+        if (aiSection) {
+            const lockMsg = aiSection.querySelector('.ai-locked-msg');
+            if (isAdmin()) {
+                if (lockMsg) lockMsg.remove();
+                Array.from(aiSection.children).forEach(el => { if (!el.classList.contains('ai-locked-msg')) el.style.display = ''; });
+            } else {
+                Array.from(aiSection.children).forEach(el => { if (!el.classList.contains('ai-locked-msg')) el.style.display = 'none'; });
+                if (!lockMsg) {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-center h-full ai-locked-msg';
+                    div.innerHTML = '<p class="text-stone-400 text-center">🔒 AI推荐功能仅限管理员使用</p>';
+                    aiSection.appendChild(div);
+                }
+            }
+        }
         refreshSettingsUI();
         openModal(playNextModal);
     });
