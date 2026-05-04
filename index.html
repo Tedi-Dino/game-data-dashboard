@@ -172,7 +172,13 @@
 
             <!-- Chart: Price-Time Scatter -->
             <div id="chart-card-2" class="dark-card p-4 card-animation flex flex-col lg:col-span-2 lg:row-start-1 min-h-[250px] lg:min-h-0">
-                <h3 class="text-lg font-semibold text-stone-800 mb-2">📈 价格-时间分布</h3>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-semibold text-stone-800">📈 价格-时间分布</h3>
+                    <div class="flex items-center space-x-1">
+                        <input type="checkbox" id="exclude-unsold-physical-checkbox" class="form-checkbox">
+                        <label for="exclude-unsold-physical-checkbox" class="text-xs font-medium text-stone-600 whitespace-nowrap">不计未售实体</label>
+                    </div>
+                </div>
                 <div class="flex-grow relative">
                     <canvas id="game-distribution-chart"></canvas>
                 </div>
