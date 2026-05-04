@@ -17,9 +17,6 @@ export let gameDistributionMode = 'time'; // 'time' | 'price'
 // Active Chart.js instances (keyed by chart name)
 export const charts = {};
 
-// Whether to use Steam cloud playtime data (persisted in localStorage)
-export let useSteamData = localStorage.getItem('useSteamData') !== 'false';
-
 // --- Setters (prefer these over direct mutation for traceability) ---
 
 export const setItems = (newItems) => { items = newItems; };
@@ -29,8 +26,3 @@ export const setSortConfig = (key, direction) => { sortConfig = { key, direction
 export const setIsEditingFromList = (val) => { isEditingFromList = val; };
 
 export const setGameDistributionMode = (mode) => { gameDistributionMode = mode; };
-
-export const setUseSteamData = (val) => {
-    useSteamData = val;
-    localStorage.setItem('useSteamData', val ? 'true' : 'false');
-};

@@ -1,11 +1,11 @@
-import { items, useSteamData } from '../core/state.js';
+import { items } from '../core/state.js';
 import { formatCurrency, escapeHTML } from '../core/utils.js';
 
 // --- KPI Calculations ---
 const calcKPIs = () => {
     const games = items.filter(i => i.type !== 'hardware' && i.type !== 'drama');
-    // When useSteamData is OFF, only count games without steam_app_id for playtime
-    const gamesForPlaytime = useSteamData ? games : games.filter(g => !g.steam_app_id);
+    // Exclude items where user disabled Steam override (steam_override === false)
+    const gamesForPlaytime = games.filter(g => g.steam_override !== false);
     const hardware = items.filter(i => i.type === 'hardware');
     const dramas = items.filter(i => i.type === 'drama');
     const gamesForCostCalc = gamesForPlaytime.filter(g => g.from !== 'free');
