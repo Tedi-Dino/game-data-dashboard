@@ -11,9 +11,6 @@ export let sortConfig = { key: 'passDate', direction: 'desc' };
 // Whether we're editing an item from the list modal (vs direct add)
 export let isEditingFromList = false;
 
-// Current mode for the price/time distribution bar chart
-export let gameDistributionMode = 'time'; // 'time' | 'price'
-
 // Active Chart.js instances (keyed by chart name)
 export const charts = {};
 
@@ -24,5 +21,3 @@ export const setItems = (newItems) => { items = newItems; };
 export const setSortConfig = (key, direction) => { sortConfig = { key, direction }; };
 
 export const setIsEditingFromList = (val) => { isEditingFromList = val; };
-
-export const setGameDistributionMode = (mode) => { gameDistributionMode = mode; };
