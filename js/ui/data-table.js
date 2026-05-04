@@ -39,6 +39,7 @@ export const renderItemsList = () => {
                 case 'playTime': return item.playTime ?? -1;
                 case 'costPerHour': return (!item.playTime || item.playTime <= 0 ? Infinity : cost / item.playTime);
                 case 'rating': return item.rating ?? 0;
+                case 'steam': return item.steam_app_id ? 1 : 0;
                 default: return '';
             }
         };
@@ -183,6 +184,14 @@ const handleEditItem = (fbId) => {
         document.getElementById('pass-date-container').classList.toggle('hidden', item.status !== 'passed');
         document.getElementById('sell-date').value = formatDateForInput(item.sellDate);
         document.getElementById('sell-price').value = item.sellPrice ?? '';
+
+        // Steam fields
+        const steamFields = document.getElementById('steam-fields');
+        if (steamFields) steamFields.classList.toggle('hidden', item.type !== 'steam');
+        const steamAppIdInput = document.getElementById('steam-app-id');
+        if (steamAppIdInput) steamAppIdInput.value = item.steam_app_id ?? '';
+        const steamOverrideCheckbox = document.getElementById('steam-override');
+        if (steamOverrideCheckbox) steamOverrideCheckbox.checked = item.steam_override !== false;
     }
 
     document.getElementById('delete-btn').classList.remove('hidden');

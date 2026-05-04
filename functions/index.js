@@ -265,8 +265,8 @@ async function performSteamSync(apiKey) {
         steam_last_sync: admin.firestore.FieldValue.serverTimestamp(),
       };
 
-      // Only update playTime if Steam value is greater
-      if (steamPlaytimeHours > (item.playTime || 0)) {
+      // Only update playTime if override is enabled and Steam value is greater
+      if (item.steam_override !== false && steamPlaytimeHours > (item.playTime || 0)) {
         updateData.playTime = steamPlaytimeHours;
         updated++;
       }

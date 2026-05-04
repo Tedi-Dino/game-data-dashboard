@@ -46,9 +46,6 @@
                     <button id="steam-sync-btn" title="同步Steam游戏数据" class="w-10 h-10 hidden items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
                         <i class="fas fa-sync-alt text-xl"></i>
                     </button>
-                    <button id="steam-data-toggle" title="使用Steam云端数据" class="w-10 h-10 hidden items-center justify-center rounded-full transition-colors bg-emerald-100 text-emerald-600 hover:bg-emerald-200">
-                        <i class="fas fa-circle-check text-xl"></i>
-                    </button>
                     <a href="https://github.com/Tedi-Dino/game-data-dashboard" target="_blank" title="GitHub Repository" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
                         <i class="fab fa-github text-xl"></i>
                     </a>
@@ -292,6 +289,20 @@
                             <input type="number" id="play-time" step="0.01" class="form-input w-full mt-1">
                         </div>
                     </div>
+                    <div id="steam-fields" class="hidden space-y-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="steam-app-id" class="block text-sm font-medium text-stone-700">Steam App ID</label>
+                                <input type="number" id="steam-app-id" class="form-input w-full mt-1" placeholder="留空自动匹配">
+                            </div>
+                            <div class="flex items-end pb-1">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="steam-override" class="form-checkbox" checked>
+                                    <span class="text-sm font-medium text-stone-700">使用Steam云端数据</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label for="item-status" class="block text-sm font-medium text-stone-700">状态</label>
@@ -406,7 +417,7 @@
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="costPerHour">时间成本</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="from">来源</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="type">类型</th>
-                            <th scope="col" class="px-4 py-3 whitespace-nowrap">Steam</th>
+                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="steam">Steam</th>
                         </tr>
                     </thead>
                     <tbody id="items-table-body"></tbody>

@@ -26,7 +26,6 @@ export const updateUIAccess = () => {
     ];
 
     const steamSyncBtn = document.getElementById('steam-sync-btn');
-    const steamDataToggle = document.getElementById('steam-data-toggle');
 
     if (isReadOnly) {
         if (fabContainer) fabContainer.classList.add('hidden');
@@ -54,12 +53,6 @@ export const updateUIAccess = () => {
             steamSyncBtn.classList.remove('hidden');
             steamSyncBtn.classList.add('flex');
         }
-    }
-
-    // Steam data toggle is visible to all users
-    if (steamDataToggle) {
-        steamDataToggle.classList.remove('hidden');
-        steamDataToggle.classList.add('flex');
     }
 };
 

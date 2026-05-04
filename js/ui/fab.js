@@ -1,6 +1,6 @@
 import { openModal } from './modals.js';
 import { setIsEditingFromList } from '../core/state.js';
-import { setFormMode } from './item-form.js';
+import { setFormMode, updateSteamFieldsVisibility } from './item-form.js';
 
 /**
  * Setup the floating action button (FAB) behavior.
@@ -32,6 +32,7 @@ export const setupFab = () => {
             itemStatus.value = 'empty';
             passDateContainer.classList.add('hidden');
             setFormMode('game');
+            updateSteamFieldsVisibility();
             openModal(itemModal);
             fabContainer.classList.remove('open');
         } else {

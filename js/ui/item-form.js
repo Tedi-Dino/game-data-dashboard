@@ -21,6 +21,8 @@ const closeItemModalAndReturnToList = () => {
 /**
  * Switch between game and drama mode in the form.
  */
+export let updateSteamFieldsVisibility = () => {};
+
 export const setFormMode = (mode) => {
     const formMode = document.getElementById('form-mode');
     const modeGameBtn = document.getElementById('mode-game-btn');
@@ -89,7 +91,7 @@ const readFormData = () => {
     const passDateId = isDrama ? 'pass-date-drama' : 'pass-date';
     const ratingId = isDrama ? 'item-rating-drama' : 'item-rating';
 
-    return {
+    const data = {
         id: document.getElementById('item-custom-id').value,
         name: document.getElementById('item-name').value,
         sort: document.getElementById('item-sort').value,
@@ -106,6 +108,15 @@ const readFormData = () => {
         episodeCount,
         episodeDuration
     };
+
+    // Steam-specific fields
+    if (type === 'steam') {
+        const appIdVal = parseFloatOrNull(document.getElementById('steam-app-id').value);
+        data.steam_app_id = appIdVal != null ? Math.round(appIdVal) : null;
+        data.steam_override = document.getElementById('steam-override').checked;
+    }
+
+    return data;
 };
 
 /**
@@ -214,15 +225,25 @@ export const setupItemForm = () => {
     if (episodeCountInput) episodeCountInput.addEventListener('input', updateDramaPlayTime);
     if (episodeDurationInput) episodeDurationInput.addEventListener('input', updateDramaPlayTime);
 
-    // --- Auto-generate ID for new items ---
-    if (itemCustomId) {
-        const itemType = document.getElementById('item-type');
-        if (itemType) {
-            itemType.addEventListener('change', () => {
-                if (!itemIdEl.value && !itemCustomId.value) {
-                    itemCustomId.value = `${itemType.value.charAt(0)}-${crypto.randomUUID().slice(0, 8)}`;
-                }
-            });
+    // --- Platform type change: toggle Steam fields + auto-generate ID ---
+    const itemType = document.getElementById('item-type');
+    const steamFields = document.getElementById('steam-fields');
+
+    const _updateSteamFields = () => {
+        if (steamFields && itemType) {
+            steamFields.classList.toggle('hidden', itemType.value !== 'steam');
         }
+    };
+    updateSteamFieldsVisibility = _updateSteamFields;
+
+    if (itemType) {
+        itemType.addEventListener('change', () => {
+            _updateSteamFields();
+            if (!itemIdEl.value && !itemCustomId.value) {
+                itemCustomId.value = `${itemType.value.charAt(0)}-${crypto.randomUUID().slice(0, 8)}`;
+            }
+        });
+        // Set initial visibility based on default type
+        _updateSteamFields();
     }
 };
