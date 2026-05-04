@@ -1,22 +1,15 @@
 import { items, charts, gameDistributionMode } from '../core/state.js';
-import { TIME_RANGES, PRICE_RANGES } from '../config/constants.js';
-import { escapeHTML } from '../core/utils.js';
+import { escapeHTML, formatCurrency } from '../core/utils.js';
 import { createExternalTooltip } from './setup.js';
 
-/** Count items into range bins using inclusive lower bound for bin 0, exclusive for all others. */
-const binByRanges = (items, getValue, ranges) => {
-    const bins = Array(ranges.length).fill(0);
-    items.forEach(item => {
-        const val = getValue(item);
-        for (let i = 0; i < ranges.length; i++) {
-            const [min, max] = ranges[i];
-            if (i === 0 ? (val >= min && val <= max) : (val > min && val <= max)) {
-                bins[i]++;
-                break;
-            }
-        }
-    });
-    return bins;
+// Deterministic jitter from string hash → value in [0.1, 0.9]
+const jitter = (str) => {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) {
+        h = ((h << 5) - h) + str.charCodeAt(i);
+        h |= 0;
+    }
+    return 0.1 + (Math.abs(h) % 1000) / 1000 * 0.8;
 };
 
 export const renderGameDistributionChart = () => {
@@ -24,41 +17,47 @@ export const renderGameDistributionChart = () => {
     const dramas = items.filter(i => i.type === 'drama');
 
     const isTimeMode = gameDistributionMode === 'time';
-    const ranges = isTimeMode ? TIME_RANGES : PRICE_RANGES;
-    const labels = isTimeMode
-        ? ['0-1h', '1-5h', '5-10h', '10-30h', '30-50h', '50-80h', '80h+']
-        : ['0-10', '10-30', '30-50', '50-80', '80-100', '100-200', '200+'];
     const getValue = isTimeMode
         ? (item) => item.playTime || 0
         : (item) => (item.purchasePrice || 0) - (item.sellPrice || 0);
 
-    const gameData = binByRanges(games, getValue, ranges);
-    const dramaData = binByRanges(dramas, getValue, ranges);
+    const makePoints = (sourceItems) => sourceItems
+        .filter(item => getValue(item) > 0)
+        .map(item => ({
+            x: getValue(item),
+            y: jitter(item.name + item.type),
+            name: item.name,
+            type: item.type
+        }));
+
+    const gamePoints = makePoints(games);
+    const dramaPoints = makePoints(dramas);
 
     const el = document.getElementById('game-distribution-chart');
     if (!el) return;
     if (charts.gameDistribution) charts.gameDistribution.destroy();
 
     charts.gameDistribution = new Chart(el, {
-        type: 'bar',
+        type: 'scatter',
         data: {
-            labels,
             datasets: [
                 {
-                    label: '游戏数量',
-                    data: gameData,
-                    backgroundColor: '#d97706',
+                    label: '游戏',
+                    data: gamePoints,
+                    backgroundColor: '#d97706B3',
                     borderColor: '#f59e0b',
                     borderWidth: 1,
-                    borderRadius: 4
+                    pointRadius: 5,
+                    pointHoverRadius: 7
                 },
                 {
-                    label: '剧集数量',
-                    data: dramaData,
-                    backgroundColor: '#e11d48',
+                    label: '剧集',
+                    data: dramaPoints,
+                    backgroundColor: '#e11d48B3',
                     borderColor: '#f43f5e',
                     borderWidth: 1,
-                    borderRadius: 4
+                    pointRadius: 5,
+                    pointHoverRadius: 7
                 }
             ]
         },
@@ -66,39 +65,27 @@ export const renderGameDistributionChart = () => {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.06)' }, ticks: { precision: 0 } },
-                x: { grid: { display: false } }
+                x: {
+                    title: { display: true, text: isTimeMode ? '游戏时长 (h)' : '净花费 (¥)' },
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: isTimeMode ? {} : { callback: (v) => '¥' + v }
+                },
+                y: { display: false, min: 0, max: 1 }
             },
             plugins: {
                 legend: { display: true, position: 'top' },
                 tooltip: {
                     enabled: false,
                     external: createExternalTooltip((tooltip) => {
-                        if (!tooltip.body || !tooltip.dataPoints.length) return null;
-                        const dataPoint = tooltip.dataPoints[0];
-                        const label = dataPoint.label;
-                        const index = dataPoint.dataIndex;
-                        const datasetIndex = dataPoint.datasetIndex;
-                        const isDrama = datasetIndex === 1;
-                        const sourceItems = isDrama ? dramas : games;
-                        const count = dataPoint.raw;
-                        if (count === 0) return null;
-
-                        const [min, max] = ranges[index];
-                        const itemList = sourceItems.filter(g => {
-                            const val = getValue(g);
-                            return index === 0 ? (val >= min && val <= max) : (val > min && val <= max);
-                        }).map(g => g.name);
-
-                        const icon = isDrama ? '📺' : '🎮';
-                        const unit = isDrama ? '部' : '款';
-                        let listHtml = itemList.slice(0, 10).map(name => `<li class="truncate">${escapeHTML(name)}</li>`).join('');
-                        if (itemList.length > 10) listHtml += `<li class="text-stone-400">...等另外 ${itemList.length - 10} ${unit}</li>`;
-
-                        return `<div class="font-bold text-base mb-2 border-b border-stone-200 pb-1 flex justify-between">
-                            <span>${icon} ${escapeHTML(label)}</span><span>${count} ${unit}</span>
-                        </div>
-                        <ul class="text-sm space-y-1">${listHtml || `<li>暂无${isDrama ? '剧集' : '游戏'}</li>`}</ul>`;
+                        const pt = tooltip.dataPoints?.[0]?.raw;
+                        if (!pt) return null;
+                        const icon = pt.type === 'drama' ? '📺' : '🎮';
+                        const valueStr = isTimeMode
+                            ? `${pt.x.toFixed(1)}h`
+                            : formatCurrency(pt.x);
+                        return `<div class="font-bold text-base mb-1">${icon} ${escapeHTML(pt.name)}</div>` +
+                            `<div class="text-sm font-semibold">${valueStr}</div>`;
                     })
                 }
             }

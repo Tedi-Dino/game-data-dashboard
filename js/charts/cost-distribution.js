@@ -1,119 +1,81 @@
 import { items, charts } from '../core/state.js';
-import { PLATFORM_COLORS } from '../config/constants.js';
+import { PLATFORM_COLORS, COST_TYPE_MAP, COST_COLOR_MAP } from '../config/constants.js';
 import { formatCurrency, escapeHTML, netCost } from '../core/utils.js';
 import { createExternalTooltip } from './setup.js';
 
-const TYPE_COLOR_KEY = {
-    hardware: 'hardware',
-    physical: 'switch_physical',
-    digital: 'switch_digital',
-    steam: 'steam',
-    epic: 'epic',
-    ubi: 'ubi',
-    gog: 'gog',
-    ps: 'ps',
-    xbox: 'xbox',
-    ms: 'xbox',
-    appstore: 'appstore',
-    googleplay: 'googleplay',
-    emulator: 'emulator',
-    other: 'other'
-};
-
-const TYPE_LABEL = {
+const COST_LABELS = {
     hardware: '硬件设备',
     physical: 'Switch 实体',
     digital: 'Switch 数字',
-    steam: 'Steam',
-    epic: 'Epic',
-    ubi: 'Uplay',
-    gog: 'GOG',
-    ps: 'PlayStation',
-    xbox: 'Xbox/MS',
-    ms: 'Xbox/MS',
-    appstore: 'App Store',
-    googleplay: 'Google Play',
-    emulator: '模拟器',
-    other: 'Other'
+    steam: 'Steam 游戏',
+    epic: 'Epic 游戏',
+    ubi: 'Uplay 游戏',
+    gog: 'GOG 游戏',
+    ps: 'PlayStation 游戏',
+    xbox: 'Xbox/MS 游戏',
+    ms: 'Xbox/MS 游戏',
+    appstore: 'App Store 游戏',
+    googleplay: 'Google Play 游戏',
+    emulator: '模拟器游戏',
+    other: 'Other 游戏',
+    drama: '剧'
 };
 
 export const renderCostDistributionChart = () => {
+    const rawData = {};
+    items.forEach(i => {
+        const label = COST_LABELS[i.type];
+        if (label) rawData[label] = (rawData[label] || 0) + netCost(i);
+    });
+    const filteredData = Object.fromEntries(Object.entries(rawData).filter(([_, v]) => v > 0));
     const el = document.getElementById('cost-distribution-chart');
     if (!el) return;
 
     if (charts.costDistribution) charts.costDistribution.destroy();
 
-    // Filter out drama and items without purchase date or with zero/missing cost
-    const points = items
-        .filter(i => i.type !== 'drama' && i.purchaseDate && netCost(i) > 0)
-        .map(i => ({
-            x: new Date(i.purchaseDate).getTime(),
-            y: netCost(i),
-            name: i.name,
-            type: i.type,
-            label: TYPE_LABEL[i.type] || i.type,
-            colorKey: TYPE_COLOR_KEY[i.type] || 'other'
-        }))
-        .sort((a, b) => a.x - b.x);
-
-    // Group by type label for legend
-    const groups = {};
-    points.forEach(p => {
-        if (!groups[p.label]) groups[p.label] = { points: [], colorKey: p.colorKey };
-        groups[p.label].points.push(p);
-    });
-
-    const datasets = Object.entries(groups).map(([label, { points: pts, colorKey }]) => ({
-        label,
-        data: pts,
-        backgroundColor: PLATFORM_COLORS[colorKey] + 'B3',
-        borderColor: PLATFORM_COLORS[colorKey],
-        borderWidth: 1,
-        pointRadius: 5,
-        pointHoverRadius: 7
-    }));
-
     charts.costDistribution = new Chart(el, {
-        type: 'scatter',
-        data: { datasets },
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(filteredData),
+            datasets: [{
+                data: Object.values(filteredData),
+                backgroundColor: Object.keys(filteredData).map(label => PLATFORM_COLORS[COST_COLOR_MAP[label]]),
+                hoverOffset: 4
+            }]
+        },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: {
-                x: {
-                    type: 'linear',
-                    title: { display: true, text: '购买日期' },
-                    ticks: {
-                        callback: (v) => {
-                            const d = new Date(v);
-                            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-                        },
-                        maxTicksLimit: 10
-                    },
-                    grid: { color: 'rgba(0,0,0,0.05)' }
-                },
-                y: {
-                    title: { display: true, text: '净花费 (¥)' },
-                    beginAtZero: true,
-                    ticks: { callback: (v) => '¥' + v },
-                    grid: { color: 'rgba(0,0,0,0.05)' }
-                }
-            },
+            cutout: '60%',
             plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { usePointStyle: true, pointStyle: 'circle', padding: 12 }
-                },
+                legend: { display: false },
                 tooltip: {
                     enabled: false,
                     external: createExternalTooltip((tooltip) => {
-                        const pt = tooltip.dataPoints?.[0]?.raw;
-                        if (!pt) return null;
-                        const d = new Date(pt.x);
-                        const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-                        return `<div class="font-bold text-base mb-1">${escapeHTML(pt.name)}</div>` +
-                            `<div class="flex justify-between text-sm"><span>${escapeHTML(pt.label)}</span><span>${dateStr}</span></div>` +
-                            `<div class="font-bold text-lg mt-1 text-right">${formatCurrency(pt.y)}</div>`;
+                        if (!tooltip.body) return null;
+                        const label = tooltip.title?.[0];
+                        if (!label) return null;
+                        const value = tooltip.dataPoints[0].parsed;
+                        const total = tooltip.dataPoints[0].dataset.data.reduce((a, b) => a + b, 0);
+                        if (total === 0) return null;
+                        const percentage = ((value / total) * 100).toFixed(1);
+
+                        const topItems = items
+                            .filter(i => COST_TYPE_MAP[label]?.includes(i.type))
+                            .map(i => ({ name: i.name, value: netCost(i) }))
+                            .sort((a, b) => b.value - a.value)
+                            .slice(0, 5);
+
+                        let html = `<div class="font-bold text-base mb-2 border-b border-stone-200 pb-1 flex justify-between"><span>${escapeHTML(label)}</span><span>${formatCurrency(value)} (${percentage}%)</span></div>`;
+                        html += '<h4 class="font-semibold mt-2 mb-1">支出 Top 5</h4><ul class="text-sm">';
+                        topItems.forEach(item => {
+                            html += `<li class="flex justify-between my-1"><span>${escapeHTML(item.name.substring(0, 20))}</span><strong>${formatCurrency(item.value)}</strong></li>`;
+                        });
+                        if (topItems.length === 0 || topItems.every(i => i.value === 0)) {
+                            html += '<li>无支出记录</li>';
+                        }
+                        html += '</ul>';
+                        return html;
                     })
                 }
             }
