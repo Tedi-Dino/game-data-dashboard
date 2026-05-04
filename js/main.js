@@ -27,6 +27,7 @@ import { setupPlayNextModal } from './ui/play-next.js';
 import { setupOnThisDay } from './ui/on-this-day.js';
 import { setupCSVHandlers } from './ui/csv-handlers.js';
 import { setupChartControls } from './ui/chart-controls.js';
+import { triggerSteamSync, setupSteamSyncMetadataListener } from './services/steam.js';
 
 // --- Render all charts ---
 const renderCharts = () => {
@@ -101,6 +102,56 @@ const initApp = () => {
     setupPlayNextModal();
     setupOnThisDay();
     setupChartControls();
+
+    // Steam sync button
+    const steamSyncBtn = document.getElementById('steam-sync-btn');
+    const steamSyncStatus = document.getElementById('steam-sync-status');
+
+    if (steamSyncBtn) {
+        steamSyncBtn.addEventListener('click', async () => {
+            steamSyncBtn.disabled = true;
+            steamSyncBtn.querySelector('i').classList.add('fa-spin');
+            if (steamSyncStatus) {
+                steamSyncStatus.classList.remove('hidden');
+                steamSyncStatus.textContent = 'Steam同步中...';
+                steamSyncStatus.classList.remove('text-red-500');
+            }
+
+            const result = await triggerSteamSync();
+
+            steamSyncBtn.disabled = false;
+            steamSyncBtn.querySelector('i').classList.remove('fa-spin');
+
+            if (result.error) {
+                if (steamSyncStatus) {
+                    steamSyncStatus.textContent = result.error;
+                    steamSyncStatus.classList.add('text-red-500');
+                }
+            } else {
+                const parts = [];
+                if (result.matched > 0) parts.push(`匹配 ${result.matched} 款`);
+                if (result.updated > 0) parts.push(`更新 ${result.updated} 款时长`);
+                if (result.unmatched && result.unmatched.length > 0) parts.push(`${result.unmatched.length} 款未匹配`);
+                if (steamSyncStatus) {
+                    steamSyncStatus.textContent = parts.length > 0
+                        ? `Steam同步完成: ${parts.join(', ')}`
+                        : 'Steam同步完成';
+                    steamSyncStatus.classList.remove('text-red-500');
+                }
+            }
+        });
+    }
+
+    // Steam sync metadata listener
+    setupSteamSyncMetadataListener((data) => {
+        if (!steamSyncStatus) return;
+        if (data && data.lastSyncTime) {
+            const d = data.lastSyncTime.toDate();
+            const formatted = `${('0' + (d.getMonth() + 1)).slice(-2)}/${('0' + d.getDate()).slice(-2)} ${('0' + d.getHours()).slice(-2)}:${('0' + d.getMinutes()).slice(-2)}`;
+            steamSyncStatus.classList.remove('hidden');
+            steamSyncStatus.textContent = `Steam: 上次同步 ${formatted}, 匹配 ${data.matchedCount || 0} 款`;
+        }
+    });
 
     // Modal backdrop click-to-close (non-form modals)
     setupModalBackdrop('list-modal');
