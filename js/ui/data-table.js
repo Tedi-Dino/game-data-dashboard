@@ -6,14 +6,14 @@ import { isAdmin } from './auth.js';
 import { setFormMode } from './item-form.js';
 
 /**
- * Render the steam data-source icon for a table row.
- * ✓ Steam cloud data   ✗ Own data (override off)   — Steam game, no binding   / Non-Steam
+ * Render the steam data-source indicator (inline after playtime).
+ * All states use Font Awesome icons at consistent size.
  */
 const renderSteamSource = (item) => {
-    if (item.type !== 'steam') return '<span class="text-stone-300">/</span>';
-    if (!item.steam_app_id) return '<span class="text-stone-400" title="无云端数据"><i class="fas fa-minus"></i></span>';
-    if (item.steam_override === false) return '<span class="text-amber-500" title="使用本地数据"><i class="fas fa-cloud-arrow-down"></i></span>';
-    return '<span class="text-emerald-500" title="Steam 云端数据"><i class="fas fa-cloud"></i></span>';
+    if (item.type !== 'steam') return '<span class="steam-source text-stone-300" title="非 Steam"><i class="fas fa-minus"></i></span>';
+    if (!item.steam_app_id) return '<span class="steam-source text-stone-400" title="未绑定"><i class="fas fa-cloud-slash"></i></span>';
+    if (item.steam_override === false) return '<span class="steam-source text-amber-500" title="本地数据"><i class="fas fa-cloud-arrow-down"></i></span>';
+    return '<span class="steam-source text-emerald-500" title="Steam 云端"><i class="fas fa-cloud"></i></span>';
 };
 
 /**
@@ -75,8 +75,7 @@ export const renderItemsList = () => {
             <td class="px-4 py-3 font-medium">${escapeHTML(item.name) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.sort) || '/'}</td>
             <td class="px-4 py-3 text-center whitespace-nowrap">${renderStarsForTable(item.rating)}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${item.playTime != null ? `${item.playTime}h` : '/'}</td>
-            <td class="px-4 py-3 text-center text-xs">${renderSteamSource(item)}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${item.playTime != null ? `${item.playTime}h` : '/'} ${renderSteamSource(item)}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(STATUS_MAP[item.status]) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.passDate) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.purchaseDate) || '/'}</td>

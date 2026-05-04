@@ -244,6 +244,14 @@ main {
     z-index: 10;
 }
 
+/* === Steam Source Indicator (inline after playtime) === */
+.steam-source {
+    font-size: 0.65rem;
+    vertical-align: middle;
+    margin-left: 0.25rem;
+    opacity: 0.85;
+}
+
 /* === Readonly Mode === */
 .readonly-mode-disabled {
     cursor: not-allowed;
