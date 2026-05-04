@@ -5,7 +5,7 @@ import { bulkReplaceItems, updateLastModifiedTimestamp } from './firestore.js';
 // CSV header columns
 const HEADERS = ['id', 'name', 'type', 'sort', 'status', 'purchaseDate', 'purchasePrice',
     'from', 'playTime', 'passDate', 'sellDate', 'sellPrice', 'rating',
-    'episodeCount', 'episodeDuration'];
+    'episodeCount', 'episodeDuration', 'steam_app_id', 'steam_override'];
 
 // Parse a single CSV row into an item object
 const parseCSVRow = (values, headerIndexMap) => {
@@ -29,6 +29,11 @@ const parseCSVRow = (values, headerIndexMap) => {
         episodeCount: parseFloatOrNull(getVal('episodeCount')),
         episodeDuration: parseFloatOrNull(getVal('episodeDuration'))
     };
+    // Steam fields: only include when present in CSV
+    const rawAppId = getVal('steam_app_id');
+    if (rawAppId) item.steam_app_id = Math.round(parseFloat(rawAppId));
+    const rawOverride = getVal('steam_override').toLowerCase();
+    if (rawOverride) item.steam_override = rawOverride === 'true';
     return (!item.id || !item.name || !item.type) ? null : item;
 };
 
