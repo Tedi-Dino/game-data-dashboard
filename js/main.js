@@ -3,7 +3,7 @@ import { auth } from './config/firebase.js';
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
 
 // Core
-import { items, setSortConfig } from './core/state.js';
+import { items, setSortConfig, useSteamData, setUseSteamData } from './core/state.js';
 
 // Services
 import { setupFirestoreListener, setOnDataChange, setupMetadataListener } from './services/firestore.js';
@@ -47,7 +47,7 @@ const updateDashboard = () => {
     updateKpiTooltips();
 
     // Only re-render charts if data actually changed
-    const newHash = items.map(i => i.fb_id + '|' + i.playTime + '|' + i.purchasePrice + '|' + i.sellPrice).join(',');
+    const newHash = (useSteamData ? 'S' : 'L') + items.map(i => i.fb_id + '|' + i.playTime + '|' + i.purchasePrice + '|' + i.sellPrice).join(',');
     if (newHash !== lastItemsHash) {
         lastItemsHash = newHash;
         renderCharts();
@@ -149,9 +149,43 @@ const initApp = () => {
             const d = data.lastSyncTime.toDate();
             const formatted = `${('0' + (d.getMonth() + 1)).slice(-2)}/${('0' + d.getDate()).slice(-2)} ${('0' + d.getHours()).slice(-2)}:${('0' + d.getMinutes()).slice(-2)}`;
             steamSyncStatus.classList.remove('hidden');
-            steamSyncStatus.textContent = `Steam: 上次同步 ${formatted}, 匹配 ${data.matchedCount || 0} 款`;
+            const unmatched = data.unmatchedCount || 0;
+            const unmatchedText = unmatched > 0 ? `, <span class="text-amber-600 cursor-pointer underline" id="show-unmatched-link">${unmatched} 款未同步</span>` : '';
+            steamSyncStatus.innerHTML = `Steam: 上次同步 ${formatted}, 匹配 ${data.matchedCount || 0} 款${unmatchedText}`;
+
+            // Wire unmatched link
+            const unmatchedLink = document.getElementById('show-unmatched-link');
+            if (unmatchedLink && data.unmatchedGames && data.unmatchedGames.length > 0) {
+                unmatchedLink.addEventListener('click', () => {
+                    const list = data.unmatchedGames.map(g => `[${g.app_id}] ${g.name} (${g.playtime_hours}h)`).join('\n');
+                    alert(`未同步的Steam游戏 (${data.unmatchedGames.length}款):\n\n${list}`);
+                });
+            }
         }
     });
+
+    // Steam data toggle button
+    const steamDataToggle = document.getElementById('steam-data-toggle');
+    if (steamDataToggle) {
+        const updateToggleUI = () => {
+            if (useSteamData) {
+                steamDataToggle.className = 'w-10 h-10 flex items-center justify-center rounded-full transition-colors bg-emerald-100 text-emerald-600 hover:bg-emerald-200';
+                steamDataToggle.querySelector('i').className = 'fas fa-circle-check text-xl';
+                steamDataToggle.title = 'Steam云端数据: 已开启 (点击切换)';
+            } else {
+                steamDataToggle.className = 'w-10 h-10 flex items-center justify-center rounded-full transition-colors bg-stone-200 text-stone-400 hover:bg-stone-300';
+                steamDataToggle.querySelector('i').className = 'fas fa-circle-minus text-xl';
+                steamDataToggle.title = 'Steam云端数据: 已关闭 (点击切换)';
+            }
+        };
+        updateToggleUI();
+
+        steamDataToggle.addEventListener('click', () => {
+            setUseSteamData(!useSteamData);
+            updateToggleUI();
+            updateDashboard();
+        });
+    }
 
     // Modal backdrop click-to-close (non-form modals)
     setupModalBackdrop('list-modal');

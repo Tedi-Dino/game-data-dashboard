@@ -71,7 +71,8 @@ export const renderItemsList = () => {
             <td class="px-4 py-3 whitespace-nowrap">${formatCurrency(cost)}</td>
             <td class="px-4 py-3 whitespace-nowrap">${cph != null && isFinite(cph) ? formatCurrency(cph) : '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(FROM_MAP[item.from]) || '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(TYPE_MAP[item.type] || item.type) || '/'}</td>`;
+            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(TYPE_MAP[item.type] || item.type) || '/'}</td>
+            <td class="px-4 py-3 text-center">${item.steam_app_id ? '<span class="text-emerald-500" title="已同步Steam云端数据"><i class="fas fa-circle-check"></i></span>' : (item.type === 'steam' ? '<span class="text-stone-300" title="未同步"><i class="fas fa-circle-minus"></i></span>' : '/')}</td>`;
         row.addEventListener('click', () => handleEditItem(item.fb_id));
         tbody.appendChild(row);
     });

@@ -1,20 +1,22 @@
-import { items } from '../core/state.js';
+import { items, useSteamData } from '../core/state.js';
 import { formatCurrency, escapeHTML } from '../core/utils.js';
 
 // --- KPI Calculations ---
 const calcKPIs = () => {
     const games = items.filter(i => i.type !== 'hardware' && i.type !== 'drama');
+    // When useSteamData is OFF, only count games without steam_app_id for playtime
+    const gamesForPlaytime = useSteamData ? games : games.filter(g => !g.steam_app_id);
     const hardware = items.filter(i => i.type === 'hardware');
     const dramas = items.filter(i => i.type === 'drama');
-    const gamesForCostCalc = games.filter(g => g.from !== 'free');
+    const gamesForCostCalc = gamesForPlaytime.filter(g => g.from !== 'free');
 
     const totalActual = items.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0);
     const gameActual = games.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0);
     const hardwareActual = hardware.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0);
     const unfinishedCost = games.filter(g => g.status !== 'passed').reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0);
-    const totalPlaytime = games.reduce((s, i) => s + (i.playTime || 0), 0);
+    const totalPlaytime = gamesForPlaytime.reduce((s, i) => s + (i.playTime || 0), 0);
     const gameCount = games.length;
-    const avgPlaytime = gameCount > 0 ? totalPlaytime / gameCount : 0;
+    const avgPlaytime = gamesForPlaytime.length > 0 ? totalPlaytime / gamesForPlaytime.length : 0;
     const gameActualForCost = gamesForCostCalc.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0);
     const totalPlaytimeForCost = gamesForCostCalc.reduce((s, i) => s + (i.playTime || 0), 0);
     const costPerHour = totalPlaytimeForCost > 0 ? gameActualForCost / totalPlaytimeForCost : null;
