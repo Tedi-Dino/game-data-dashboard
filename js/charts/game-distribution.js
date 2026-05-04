@@ -13,7 +13,12 @@ const jitter = (str) => {
 };
 
 export const renderGameDistributionChart = () => {
-    const games = items.filter(i => i.type !== 'hardware' && i.type !== 'drama');
+    const excludeUnsoldPhysical = document.getElementById('exclude-unsold-physical-checkbox')?.checked ?? false;
+    const games = items.filter(i => {
+        if (i.type === 'hardware' || i.type === 'drama') return false;
+        if (excludeUnsoldPhysical && i.type === 'physical' && !i.sellDate) return false;
+        return true;
+    });
     const dramas = items.filter(i => i.type === 'drama');
 
     const isTimeMode = gameDistributionMode === 'time';

@@ -10,6 +10,7 @@ export const setupChartControls = () => {
     const distTimeBtn = document.getElementById('dist-time-btn');
     const distPriceBtn = document.getElementById('dist-price-btn');
     const excludeHardwareCheckbox = document.getElementById('exclude-hardware-checkbox');
+    const excludeUnsoldPhysicalCheckbox = document.getElementById('exclude-unsold-physical-checkbox');
     const fullscreenBtn = document.getElementById('monthly-chart-fullscreen-btn');
     const fullscreenModal = document.getElementById('monthly-chart-fullscreen-modal');
     const closeFullscreenBtn = document.getElementById('close-monthly-chart-fullscreen-btn');
@@ -51,6 +52,11 @@ export const setupChartControls = () => {
     // Exclude hardware checkbox
     if (excludeHardwareCheckbox) {
         excludeHardwareCheckbox.addEventListener('change', () => renderMonthlyTrendsChart());
+    }
+
+    // Exclude unsold physical games checkbox
+    if (excludeUnsoldPhysicalCheckbox) {
+        excludeUnsoldPhysicalCheckbox.addEventListener('change', () => renderGameDistributionChart());
     }
 
     // Monthly chart fullscreen
