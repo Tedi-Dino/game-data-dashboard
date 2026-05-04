@@ -32,6 +32,7 @@ js/
 ├── services/
 │   ├── firestore.js        # Firestore onSnapshot listener, CRUD helpers, bulk CSV replace
 │   ├── csv.js              # CSV import/export logic
+│   ├── steam.js            # Steam sync: callable wrapper + metadata listener
 │   └── recommendations.js  # AI game recommendations (Cloud Function + local DeepSeek API fallback)
 ├── charts/
 │   ├── setup.js            # Chart.js defaults, external tooltip factory, destroy helpers
@@ -56,7 +57,9 @@ js/
 
 **Data flow**: `firestore.js` listens to Firestore `items` collection via `onSnapshot`, writes items into `state.js` (the single source of truth), then fires an `onDataChange` callback. `main.js` sets up this callback to re-render all KPIs and charts. Everything downstream reads from `state.items`.
 
-**Auth model**: Google Sign-In via Firebase Auth. Admin UIDs are hardcoded in `constants.js`. Non-admin users see read-only UI (FAB hidden, form buttons disabled). Admin users can add/edit/delete items and import/export CSV.
+**Auth model**: Google Sign-In via Firebase Auth. Admin UIDs are hardcoded in `constants.js`. Non-admin users see read-only UI (FAB hidden, form buttons disabled). Admin users can add/edit/delete items, import/export CSV, and trigger Steam sync.
+
+**Steam sync**: Cloud Function `syncSteamData` (callable, admin-only) fetches the user's Steam library via Web API, fuzzy-matches game names (exact → normalized → substring → Levenshtein), and binds `steam_app_id` to existing items. `scheduledSteamSync` runs daily at 4:00 AM CST. Per-item `steam_override` field (default `true`) controls whether Steam playtime overwrites local data. The sync button and status display are in the header. Edit form has a Steam section with App ID input and override checkbox (visible when platform is `steam`).
 
 **AI recommendations**: The "接下来" modal calls DeepSeek API (model `deepseek-v4-pro`) to analyze played/backlog games **and dramas** (剧集), then suggest what to play/watch next. Primary path: Firebase Cloud Function (`getAiRecommendations`). Fallback: direct DeepSeek API call from the browser (user must provide their own API key in settings). The Cloud Function prompt only covers games; the browser-side prompt also includes drama data.
 
@@ -64,14 +67,17 @@ js/
 
 - **No framework**: All DOM manipulation is vanilla JS. Module state is shared via `js/core/state.js` getters/setters.
 - **Chart lifecycle**: Charts are stored in `state.charts` keyed by name. `destroyAllCharts()` is called before re-rendering all charts. A lightweight hash of all items' key fields (`fb_id`, `playTime`, `purchasePrice`, `sellPrice`) skips chart re-renders when data hasn't actually changed. Individual chart renders also destroy their own previous instance before creating a new one (needed when charts re-render independently, e.g., distribution mode toggle).
-- **Firestore doc shape**: Each item has `id`, `name`, `type`, `sort`, `status`, `purchaseDate`, `purchasePrice`, `from`, `playTime`, `passDate`, `sellDate`, `sellPrice`, `rating`, `episodeCount`, `episodeDuration`. Firestore doc IDs are stored as `fb_id` on the client side. Drama items (`type: 'drama'`) use `episodeCount` × `episodeDuration` / 60 to auto-calculate `playTime`.
-- **Metadata**: A separate Firestore doc at `metadata/dashboard` tracks `lastManualUpdate` for the "last updated" display.
+- **Firestore doc shape**: Each item has `id`, `name`, `type`, `sort`, `status`, `purchaseDate`, `purchasePrice`, `from`, `playTime`, `passDate`, `sellDate`, `sellPrice`, `rating`, `episodeCount`, `episodeDuration`. Steam items additionally have `steam_app_id` (number), `steam_override` (boolean, default true), `steam_last_sync` (timestamp). Firestore doc IDs are stored as `fb_id` on the client side. Drama items (`type: 'drama'`) use `episodeCount` × `episodeDuration` / 60 to auto-calculate `playTime`.
+- **Metadata**: `metadata/dashboard` tracks `lastManualUpdate` for the "last updated" display. `metadata/steamSync` tracks `lastSyncTime`, `matchedCount`, `unmatchedCount`, `unmatchedGames` for Steam sync status.
 
 ## Standalone tools
 
 ```
 tools/
-└── cost_per_hour_trend.py   # Python script: cost-per-hour trend chart from CSV export
+├── cost_per_hour_trend.py   # Python script: cost-per-hour trend chart from CSV export
+└── bind_steam_ids.js        # Node.js script: batch-bind Steam App IDs to Firestore items
 ```
 
 `cost_per_hour_trend.py` reads `game_cost_export_*.csv` from the project root, filters out hardware/drama/free/zero-playtime games, and generates a cumulative cost-per-hour curve (`tools/cost_per_hour_trend.png`). Uses matplotlib; no dependencies beyond Python 3 + matplotlib. Run with `python tools/cost_per_hour_trend.py`.
+
+`bind_steam_ids.js` uses the Firebase REST API with an access token from `~/.config/configstore/firebase-tools.json` to PATCH `steam_app_id` onto existing Firestore items. Supports `--dry-run` for preview. Run with `node tools/bind_steam_ids.js`.
