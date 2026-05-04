@@ -6,6 +6,17 @@ import { isAdmin } from './auth.js';
 import { setFormMode } from './item-form.js';
 
 /**
+ * Render the steam data-source icon for a table row.
+ * ✓ Steam cloud data   ✗ Own data (override off)   — Steam game, no binding   / Non-Steam
+ */
+const renderSteamSource = (item) => {
+    if (item.type !== 'steam') return '<span class="text-stone-300">/</span>';
+    if (!item.steam_app_id) return '<span class="text-stone-400" title="无云端数据"><i class="fas fa-minus"></i></span>';
+    if (item.steam_override === false) return '<span class="text-amber-500" title="使用本地数据"><i class="fas fa-cloud-arrow-down"></i></span>';
+    return '<span class="text-emerald-500" title="Steam 云端数据"><i class="fas fa-cloud"></i></span>';
+};
+
+/**
  * Render the items data table in the list modal.
  */
 export const renderItemsList = () => {
@@ -65,6 +76,7 @@ export const renderItemsList = () => {
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.sort) || '/'}</td>
             <td class="px-4 py-3 text-center whitespace-nowrap">${renderStarsForTable(item.rating)}</td>
             <td class="px-4 py-3 whitespace-nowrap">${item.playTime != null ? `${item.playTime}h` : '/'}</td>
+            <td class="px-4 py-3 text-center text-xs">${renderSteamSource(item)}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(STATUS_MAP[item.status]) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.passDate) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.purchaseDate) || '/'}</td>
@@ -72,8 +84,7 @@ export const renderItemsList = () => {
             <td class="px-4 py-3 whitespace-nowrap">${formatCurrency(cost)}</td>
             <td class="px-4 py-3 whitespace-nowrap">${cph != null && isFinite(cph) ? formatCurrency(cph) : '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(FROM_MAP[item.from]) || '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(TYPE_MAP[item.type] || item.type) || '/'}</td>
-            <td class="px-4 py-3 text-center">${item.steam_app_id ? '<span class="text-emerald-500" title="已同步Steam云端数据"><i class="fas fa-circle-check"></i></span>' : (item.type === 'steam' ? '<span class="text-stone-300" title="未同步"><i class="fas fa-circle-minus"></i></span>' : '/')}</td>`;
+            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(TYPE_MAP[item.type] || item.type) || '/'}</td>`;
         row.addEventListener('click', () => handleEditItem(item.fb_id));
         tbody.appendChild(row);
     });

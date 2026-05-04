@@ -74,10 +74,19 @@ js/
 
 ```
 tools/
-├── cost_per_hour_trend.py   # Python script: cost-per-hour trend chart from CSV export
-└── bind_steam_ids.js        # Node.js script: batch-bind Steam App IDs to Firestore items
+├── bind_steam_ids/
+│   └── bind_steam_ids.js        # Node.js: batch-bind Steam App IDs to Firestore items
+├── cost_per_hour/
+│   ├── cost_per_hour_trend.py   # Python: cost-per-hour trend chart from CSV export
+│   └── cost_per_hour_trend.png
+└── steam_info/
+    ├── steam_info.py            # Python: fetch comprehensive Steam profile and library data
+    ├── run.bat                  # Windows launcher (double-click to run)
+    └── .env                     # STEAM_API_KEY (gitignored)
 ```
 
-`cost_per_hour_trend.py` reads `game_cost_export_*.csv` from the project root, filters out hardware/drama/free/zero-playtime games, and generates a cumulative cost-per-hour curve (`tools/cost_per_hour_trend.png`). Uses matplotlib; no dependencies beyond Python 3 + matplotlib. Run with `python tools/cost_per_hour_trend.py`.
+`cost_per_hour_trend.py` reads `game_cost_export_*.csv` from the project root, filters out hardware/drama/free/zero-playtime games, and generates a cumulative cost-per-hour curve. Uses matplotlib; no dependencies beyond Python 3 + matplotlib. Run with `python tools/cost_per_hour/cost_per_hour_trend.py`.
 
-`bind_steam_ids.js` uses the Firebase REST API with an access token from `~/.config/configstore/firebase-tools.json` to PATCH `steam_app_id` onto existing Firestore items. Supports `--dry-run` for preview. Run with `node tools/bind_steam_ids.js`.
+`bind_steam_ids.js` uses the Firebase REST API with an access token from `~/.config/configstore/firebase-tools.json` to PATCH `steam_app_id` onto existing Firestore items. Supports `--dry-run` for preview. Run with `node tools/bind_steam_ids/bind_steam_ids.js`.
+
+`steam_info.py` calls 7 Steam Web API endpoints (player summary, owned games, recently played, level, badges, friends, bans) and writes one CSV per endpoint under `tools/steam_info/output/`. Reads `STEAM_API_KEY` from env var or `.env` file (gitignored). Defaults to project Steam ID; override with `--steamid`. Run with `python tools/steam_info/steam_info.py` or double-click `run.bat`.

@@ -6,8 +6,8 @@
  * then PATCHes each matched item in Firestore to add steam_app_id.
  *
  * Usage:
- *   node tools/bind_steam_ids.js            # live run
- *   node tools/bind_steam_ids.js --dry-run  # preview only, no writes
+ *   node tools/bind_steam_ids/bind_steam_ids.js            # live run
+ *   node tools/bind_steam_ids/bind_steam_ids.js --dry-run  # preview only, no writes
  */
 
 const fs = require('fs');
