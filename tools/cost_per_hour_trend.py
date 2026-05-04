@@ -5,8 +5,9 @@ Standalone script that reads game data from CSV and generates a chart
 showing how the aggregate cost-per-hour evolves as games are purchased over time.
 
 Rules:
-- Excludes hardware (type='hardware'), dramas (type='drama'), and free games (from='free')
-- Only includes games with playTime > 0
+- Excludes hardware (type='hardware') and dramas (type='drama')
+- Free games are included (0 net cost, but their playtime counts)
+- Games with zero playtime are included (cost counts toward cumulative, playtime contribution is 0)
 - Net cost = purchasePrice - sellPrice (for unsold physical games, sellPrice defaults to 0)
 - X axis: purchase date (chronological)
 - Y axis: cumulative cost per hour = cumulative net cost / cumulative playtime
@@ -39,11 +40,7 @@ def load_games(csv_path):
         for row in reader:
             if row['type'] in ('hardware', 'drama'):
                 continue
-            if row['from'] == 'free':
-                continue
             play_time = float(row['playTime']) if row['playTime'] else 0
-            if play_time <= 0:
-                continue
             purchase_date = row['purchaseDate']
             if not purchase_date:
                 continue
@@ -70,6 +67,8 @@ def compute_trend(games):
     for g in games:
         cum_cost += g['net_cost']
         cum_time += g['play_time']
+        if cum_time <= 0:
+            continue
         cph = cum_cost / cum_time
         dates.append(g['date'])
         cph_values.append(cph)
@@ -147,7 +146,7 @@ def main():
     csv_path = find_latest_csv()
     print(f'Using CSV: {csv_path.name}')
     games = load_games(csv_path)
-    print(f'Loaded {len(games)} games (excluded hardware, drama, free, and zero-playtime)')
+    print(f'Loaded {len(games)} games (excluded hardware and drama)')
     dates, cph_values = compute_trend(games)
     print(f'Final cost-per-hour: {cph_values[-1]:.2f} yuan/h')
     print(f'Date range: {dates[0].strftime("%Y-%m-%d")} ~ {dates[-1].strftime("%Y-%m-%d")}')

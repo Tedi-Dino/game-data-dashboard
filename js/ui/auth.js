@@ -25,6 +25,8 @@ export const updateUIAccess = () => {
         document.getElementById('save-btn')
     ];
 
+    const steamSyncBtn = document.getElementById('steam-sync-btn');
+
     if (isReadOnly) {
         if (fabContainer) fabContainer.classList.add('hidden');
         writeButtons.forEach(btn => {
@@ -34,6 +36,10 @@ export const updateUIAccess = () => {
             }
         });
         if (tableBody) tableBody.style.pointerEvents = 'none';
+        if (steamSyncBtn) {
+            steamSyncBtn.classList.add('hidden');
+            steamSyncBtn.classList.remove('flex');
+        }
     } else {
         if (fabContainer) fabContainer.classList.remove('hidden');
         writeButtons.forEach(btn => {
@@ -43,6 +49,10 @@ export const updateUIAccess = () => {
             }
         });
         if (tableBody) tableBody.style.pointerEvents = 'auto';
+        if (steamSyncBtn) {
+            steamSyncBtn.classList.remove('hidden');
+            steamSyncBtn.classList.add('flex');
+        }
     }
 };
 
