@@ -1,12 +1,14 @@
 import { charts } from '../core/state.js';
+import { renderGameDistributionChart } from '../charts/game-distribution.js';
 import { renderMonthlyTrendsChart } from '../charts/monthly-trends.js';
 import { openModal, closeModal } from './modals.js';
 
 /**
- * Setup chart control UI: monthly fullscreen, hardware checkbox.
+ * Setup chart control UI: monthly fullscreen, hardware checkbox, unsold physical checkbox.
  */
 export const setupChartControls = () => {
     const excludeHardwareCheckbox = document.getElementById('exclude-hardware-checkbox');
+    const excludeUnsoldPhysicalCheckbox = document.getElementById('exclude-unsold-physical-checkbox');
     const fullscreenBtn = document.getElementById('monthly-chart-fullscreen-btn');
     const fullscreenModal = document.getElementById('monthly-chart-fullscreen-modal');
     const closeFullscreenBtn = document.getElementById('close-monthly-chart-fullscreen-btn');
@@ -15,6 +17,11 @@ export const setupChartControls = () => {
     // Exclude hardware checkbox
     if (excludeHardwareCheckbox) {
         excludeHardwareCheckbox.addEventListener('change', () => renderMonthlyTrendsChart());
+    }
+
+    // Exclude unsold physical checkbox
+    if (excludeUnsoldPhysicalCheckbox) {
+        excludeUnsoldPhysicalCheckbox.addEventListener('change', () => renderGameDistributionChart());
     }
 
     // Monthly chart fullscreen

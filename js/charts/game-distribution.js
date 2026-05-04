@@ -1,6 +1,6 @@
 import { items, charts } from '../core/state.js';
 import { PLATFORM_COLORS } from '../config/constants.js';
-import { escapeHTML, formatCurrency } from '../core/utils.js';
+import { escapeHTML, formatCurrency, netCost } from '../core/utils.js';
 import { createExternalTooltip } from './setup.js';
 
 // Platform grouping: item.type → display label + color key
@@ -21,18 +21,19 @@ const PLATFORM_MAP = {
     drama:     { label: '剧集',         colorKey: 'drama' },
 };
 
-// Rating → point radius (3 = unrated, 4–12 = rated 1–5)
+// Rating → point radius (unrated=2, rated 1–5 → 3–6)
 const ratingToRadius = (rating) => {
-    if (!rating || rating <= 0) return 3;
-    return 4 + (rating - 1) * 2; // 1→4, 2→6, 3→8, 4→10, 5→12
+    if (!rating || rating <= 0) return 2;
+    return 2 + rating; // 1→3, 2→4, 3→5, 4→6, 5→7
 };
 
 export const renderGameDistributionChart = () => {
-    const filtered = items.filter(i =>
-        i.type !== 'hardware' &&
-        (i.playTime || 0) > 0 &&
-        (i.purchasePrice || 0) > 0
-    );
+    const excludeUnsoldPhysical = document.getElementById('exclude-unsold-physical-checkbox')?.checked ?? false;
+    const filtered = items.filter(i => {
+        if (i.type === 'hardware') return false;
+        if (excludeUnsoldPhysical && i.type === 'physical' && !i.sellDate) return false;
+        return (i.playTime || 0) > 0 && (i.purchasePrice || 0) > 0;
+    });
 
     // Group by platform
     const groups = {};
@@ -44,11 +45,13 @@ export const renderGameDistributionChart = () => {
         }
         groups[map.label].points.push({
             x: item.playTime || 0,
-            y: item.purchasePrice || 0,
+            y: netCost(item),
             name: item.name,
             type: item.type,
             rating: item.rating || 0,
-            from: item.from
+            from: item.from,
+            purchasePrice: item.purchasePrice || 0,
+            sellPrice: item.sellPrice || 0,
         });
     });
 
@@ -85,14 +88,14 @@ export const renderGameDistributionChart = () => {
                     grid: { color: 'rgba(0,0,0,0.05)' },
                 },
                 y: {
-                    title: { display: true, text: '购买价格 (¥)' },
+                    title: { display: true, text: '实际花费 (¥)' },
                     beginAtZero: true,
                     grid: { color: 'rgba(0,0,0,0.05)' },
                     ticks: { callback: (v) => '¥' + v },
                 },
             },
             plugins: {
-                legend: { display: true, position: 'top' },
+                legend: { display: false },
                 tooltip: {
                     enabled: false,
                     external: createExternalTooltip((tooltip) => {
@@ -102,10 +105,14 @@ export const renderGameDistributionChart = () => {
                         const stars = pt.rating > 0
                             ? ' ' + '★'.repeat(pt.rating) + '☆'.repeat(5 - pt.rating)
                             : '';
-                        return `<div class="font-bold text-base mb-1">${icon} ${escapeHTML(pt.name)}</div>` +
+                        let html = `<div class="font-bold text-base mb-1">${icon} ${escapeHTML(pt.name)}</div>` +
                             `<div class="text-sm">时长: <strong>${pt.x.toFixed(1)}h</strong></div>` +
-                            `<div class="text-sm">价格: <strong>${formatCurrency(pt.y)}</strong></div>` +
-                            (stars ? `<div class="text-sm mt-1">${stars}</div>` : '');
+                            `<div class="text-sm">实际花费: <strong>${formatCurrency(pt.y)}</strong></div>`;
+                        if (pt.sellPrice > 0) {
+                            html += `<div class="text-xs text-stone-500">购入 ${formatCurrency(pt.purchasePrice)} - 回血 ${formatCurrency(pt.sellPrice)}</div>`;
+                        }
+                        if (stars) html += `<div class="text-sm mt-1">${stars}</div>`;
+                        return html;
                     }),
                 },
             },
