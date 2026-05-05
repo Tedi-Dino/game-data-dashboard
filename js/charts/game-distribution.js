@@ -21,10 +21,16 @@ const PLATFORM_MAP = {
     drama:     { label: '剧集',         colorKey: 'drama' },
 };
 
-// Rating → point radius (unrated=2, rated 1–5 → 3–5)
+// Rating → point radius (unrated=2, rated 1–5 → 2.6–5)
 const ratingToRadius = (rating) => {
     if (!rating || rating <= 0) return 2;
     return 2 + rating * 0.6; // 1→2.6, 2→3.2, 3→3.8, 4→4.4, 5→5
+};
+
+// Scriptable radius function for Chart.js (receives context)
+const radiusFromContext = (ctx) => {
+    const rating = ctx.raw?.rating || 0;
+    return ratingToRadius(rating);
 };
 
 export const renderGameDistributionChart = () => {
@@ -65,8 +71,9 @@ export const renderGameDistributionChart = () => {
                 data: points,
                 backgroundColor: color + 'B3',
                 borderWidth: 0,
-                pointRadius: points.map(p => ratingToRadius(p.rating)),
-                pointHoverRadius: points.map(p => ratingToRadius(p.rating) + 1.5),
+                pointRadius: radiusFromContext,
+                pointHoverRadius: (ctx) => radiusFromContext(ctx) + 1.5,
+                hitRadius: 8,
             };
         });
 
