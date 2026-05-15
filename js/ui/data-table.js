@@ -16,6 +16,29 @@ const renderSteamSource = (item) => {
     return '<span class="steam-source text-emerald-500" title="Steam 云端"><i class="fas fa-cloud"></i></span>';
 };
 
+let detailColsExpanded = false;
+
+/**
+ * Setup the detail columns expand/collapse toggle button.
+ */
+export const setupDetailColsToggle = () => {
+    const toggleBtn = document.getElementById('toggle-detail-cols');
+    if (!toggleBtn) return;
+
+    toggleBtn.addEventListener('click', () => {
+        detailColsExpanded = !detailColsExpanded;
+        const cols = document.querySelectorAll('.collapsible-col');
+        cols.forEach(col => col.classList.toggle('expanded', detailColsExpanded));
+
+        const icon = toggleBtn.querySelector('i');
+        if (detailColsExpanded) {
+            toggleBtn.innerHTML = '<i class="fas fa-caret-up"></i> 折叠详情';
+        } else {
+            toggleBtn.innerHTML = '<i class="fas fa-caret-down"></i> 展开详情';
+        }
+    });
+};
+
 /**
  * Render the items data table in the list modal.
  */
@@ -33,7 +56,35 @@ export const renderItemsList = () => {
     if (noDataMsg) noDataMsg.classList.add('hidden');
 
     // Sort items
+    const getDateVal = (item, key) => {
+        const raw = item[key];
+        return raw ? new Date(raw).getTime() : -Infinity;
+    };
+
     const sorted = [...items].sort((a, b) => {
+        // Multi-tier default sort
+        if (sortConfig.key === '_default') {
+            const statusOrder = { playing: 0, passed: 1 };
+            const aStatus = statusOrder[a.status] ?? 2;
+            const bStatus = statusOrder[b.status] ?? 2;
+            if (aStatus !== bStatus) return aStatus - bStatus;
+
+            if (a.status === 'playing') {
+                const aDate = getDateVal(a, 'purchaseDate');
+                const bDate = getDateVal(b, 'purchaseDate');
+                return aDate - bDate;
+            }
+            if (a.status === 'passed') {
+                const aDate = getDateVal(a, 'passDate');
+                const bDate = getDateVal(b, 'passDate');
+                return bDate - aDate;
+            }
+            const aDate = getDateVal(a, 'purchaseDate');
+            const bDate = getDateVal(b, 'purchaseDate');
+            return bDate - aDate;
+        }
+
+        // Single-key sort
         const getVal = (item, key) => {
             const cost = (item.purchasePrice || 0) - (item.sellPrice || 0);
             switch (key) {
@@ -43,8 +94,8 @@ export const renderItemsList = () => {
                 case 'type': return item.type || '';
                 case 'from': return item.from || '';
                 case 'status': return item.status || '';
-                case 'purchaseDate': return item.purchaseDate ? new Date(item.purchaseDate).getTime() : -Infinity;
-                case 'passDate': return item.passDate ? new Date(item.passDate).getTime() : -Infinity;
+                case 'purchaseDate': return getDateVal(item, 'purchaseDate');
+                case 'passDate': return getDateVal(item, 'passDate');
                 case 'purchasePrice': return item.purchasePrice ?? -1;
                 case 'actualCost': return cost;
                 case 'playTime': return item.playTime ?? -1;
@@ -69,7 +120,11 @@ export const renderItemsList = () => {
 
         const row = document.createElement('tr');
         const baseClass = 'border-b border-stone-200 hover:bg-stone-100 cursor-pointer';
-        row.className = item.fullyCompleted ? `${baseClass} achievement-gold-row` : baseClass;
+        const statusClass = item.status && item.status !== 'empty' ? `status-${item.status}-row` : '';
+        const classes = [baseClass];
+        if (item.fullyCompleted) classes.push('achievement-gold-row');
+        if (statusClass) classes.push(statusClass);
+        row.className = classes.join(' ');
         row.dataset.fb_id = item.fb_id;
         row.innerHTML = `
             <td class="px-4 py-3 font-mono whitespace-nowrap">${escapeHTML(item.id) || '/'}</td>
@@ -77,14 +132,14 @@ export const renderItemsList = () => {
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.sort) || '/'}</td>
             <td class="px-4 py-3 text-center whitespace-nowrap">${renderStarsForTable(item.rating)}</td>
             <td class="px-4 py-3 whitespace-nowrap">${item.playTime != null ? `${item.playTime}h` : '/'} ${renderSteamSource(item)}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(STATUS_MAP[item.status]) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.passDate) || '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.purchaseDate) || '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${item.purchasePrice != null ? formatCurrency(item.purchasePrice) : '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(item.purchaseDate) || '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap collapsible-col">${item.purchasePrice != null ? formatCurrency(item.purchasePrice) : '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${formatCurrency(cost)}</td>
             <td class="px-4 py-3 whitespace-nowrap">${cph != null && isFinite(cph) ? formatCurrency(cph) : '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(FROM_MAP[item.from]) || '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(TYPE_MAP[item.type] || item.type) || '/'}</td>`;
+            <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(FROM_MAP[item.from]) || '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(TYPE_MAP[item.type] || item.type) || '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(STATUS_MAP[item.status]) || '/'}</td>`;
         row.addEventListener('click', () => handleEditItem(item.fb_id));
         tbody.appendChild(row);
     });
@@ -97,7 +152,7 @@ export const updateSortHeaders = () => {
     document.querySelectorAll('.sortable-header').forEach(header => {
         const key = header.dataset.sort;
         let text = header.textContent.replace(/[▾▴]/, '').trim();
-        if (key === sortConfig.key) {
+        if (sortConfig.key !== '_default' && key === sortConfig.key) {
             header.textContent = `${text} ${sortConfig.direction === 'desc' ? '▾' : '▴'}`;
         } else {
             header.textContent = text;

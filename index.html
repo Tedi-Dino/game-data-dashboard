@@ -396,13 +396,16 @@
                 <h2 id="list-modal-title" class="text-xl font-bold text-stone-900">数据详情</h2>
                 <button id="close-list-modal-btn" class="text-stone-500 hover:text-stone-900"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
-            <div class="mb-4">
-                <div class="relative">
+            <div class="mb-4 flex items-center gap-3">
+                <div class="relative flex-1">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <i class="fas fa-search text-stone-400"></i>
                     </div>
                     <input type="text" id="list-search-input" class="form-input w-full pl-10" placeholder="搜索名称、分类、类型...">
                 </div>
+                <button id="toggle-detail-cols" class="text-xs text-stone-400 hover:text-stone-600 whitespace-nowrap px-3 py-2 rounded border border-stone-200 hover:border-stone-300 transition-colors">
+                    <i class="fas fa-caret-down"></i> 展开详情
+                </button>
             </div>
             <div class="overflow-auto">
                 <table class="w-full text-sm text-left text-stone-700">
@@ -413,14 +416,14 @@
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="sort">分类</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="rating">评分</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="playTime">游玩时长</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="status">状态</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="passDate">通关日期</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="purchaseDate">购入日期</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="purchasePrice">购入价格</th>
+                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap collapsible-col" data-sort="purchaseDate">购入日期</th>
+                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap collapsible-col" data-sort="purchasePrice">购入价格</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="actualCost">实际支出</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="costPerHour">时间成本</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="from">来源</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="type">类型</th>
+                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap collapsible-col" data-sort="from">来源</th>
+                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap collapsible-col" data-sort="type">类型</th>
+                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="status">状态</th>
                         </tr>
                     </thead>
                     <tbody id="items-table-body"></tbody>

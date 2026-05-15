@@ -316,3 +316,44 @@ body {
     50% { transform: scale(1) rotate(0deg); }
     75% { transform: scale(1.15) rotate(5deg); }
 }
+
+/* === Collapsible Table Columns === */
+.collapsible-col {
+    display: none;
+}
+.collapsible-col.expanded {
+    display: table-cell;
+}
+
+/* === Status Color Rows === */
+.status-playing-row {
+    border-left: 3px solid #10b981;
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+}
+.status-playing-row:hover {
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.10) 0%, rgba(16, 185, 129, 0.03) 50%);
+}
+
+.status-backlog-row {
+    border-left: 3px solid #f59e0b;
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.05) 0%, transparent 50%);
+}
+.status-backlog-row:hover {
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.10) 0%, rgba(245, 158, 11, 0.03) 50%);
+}
+
+.status-passed-row {
+    border-left: 3px solid #3b82f6;
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+}
+.status-passed-row:hover {
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.10) 0%, rgba(59, 130, 246, 0.03) 50%);
+}
+
+.status-abandoned-row {
+    border-left: 3px solid #f43f5e;
+    background: linear-gradient(90deg, rgba(244, 63, 94, 0.05) 0%, transparent 50%);
+}
+.status-abandoned-row:hover {
+    background: linear-gradient(90deg, rgba(244, 63, 94, 0.10) 0%, rgba(244, 63, 94, 0.03) 50%);
+}

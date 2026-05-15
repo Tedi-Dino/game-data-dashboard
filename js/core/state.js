@@ -6,7 +6,7 @@
 export let items = [];
 
 // Current table sort configuration
-export let sortConfig = { key: 'passDate', direction: 'desc' };
+export let sortConfig = { key: '_default', direction: 'desc' };
 
 // Whether we're editing an item from the list modal (vs direct add)
 export let isEditingFromList = false;
