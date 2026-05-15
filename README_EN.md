@@ -71,6 +71,14 @@ js/
 
 -----
 
+## 🎨 Design System
+
+The dashboard uses a **warm, low-saturation palette** built on Tailwind Stone (`#f5f0ed` background) with Amber accent. All platform colors are desaturated 30-40% from their brand originals and warmed to blend with the page atmosphere.
+
+Trend lines use smooth curves without data point markers; the scatter chart's light amber gradient hints at the cost-performance sweet spot. See **[design.md](design.md)** for the full color rationale and swatch table.
+
+-----
+
 ## 🧐 How is the data calculated?
 
 Some core charts and metrics have specific calculation logic behind them:
