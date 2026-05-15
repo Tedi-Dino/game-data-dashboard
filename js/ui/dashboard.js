@@ -124,31 +124,40 @@ export const updateKpiTooltips = () => {
 
     const totalGamesTooltip = document.getElementById('total-games-tooltip');
     if (totalGamesTooltip) {
-        const passedGames = games.filter(g => g.status === 'passed')
-            .sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        const fullyCompletedGames = games.filter(g => g.fullyCompleted === true)
-            .sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        const passedGames = games.filter(g => g.status === 'passed');
+        const fullyCompletedGames = games.filter(g => g.fullyCompleted === true);
 
         let html = '<div class="grid grid-cols-3 gap-3">';
 
-        // Left: 全成就
+        // Left: 全成就 by platform
         html += '<div><h3 class="font-bold mb-1 text-amber-600">全成就</h3>';
-        if (fullyCompletedGames.length > 0) {
-            html += '<ul>' + fullyCompletedGames.map(g =>
-                `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 14))}</span>${g.rating ? `<strong>${g.rating}分</strong>` : ''}</li>`
+        const fcaPlatform = {};
+        fullyCompletedGames.forEach(i => {
+            const p = TYPE_TO_PLATFORM[i.type] || 'Other';
+            fcaPlatform[p] = (fcaPlatform[p] || 0) + 1;
+        });
+        const sortedFca = Object.entries(fcaPlatform).filter(([_, c]) => c > 0).sort((a, b) => b[1] - a[1]);
+        if (sortedFca.length > 0) {
+            html += '<ul>' + sortedFca.map(([platform, count]) =>
+                `<li class="flex justify-between"><span>${escapeHTML(platform)}</span><strong>${count}</strong></li>`
             ).join('') + '</ul>';
         } else {
             html += '<p class="text-stone-400 text-xs">暂无</p>';
         }
         html += '</div>';
 
-        // Middle: 通关
+        // Middle: 通关 by platform
         html += '<div><h3 class="font-bold mb-1 text-emerald-600">通关</h3>';
-        if (passedGames.length > 0) {
-            html += '<ul>' + passedGames.slice(0, 10).map(g =>
-                `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 14))}</span>${g.rating ? `<strong>${g.rating}分</strong>` : ''}</li>`
+        const passedPlatform = {};
+        passedGames.forEach(i => {
+            const p = TYPE_TO_PLATFORM[i.type] || 'Other';
+            passedPlatform[p] = (passedPlatform[p] || 0) + 1;
+        });
+        const sortedPassed = Object.entries(passedPlatform).filter(([_, c]) => c > 0).sort((a, b) => b[1] - a[1]);
+        if (sortedPassed.length > 0) {
+            html += '<ul>' + sortedPassed.map(([platform, count]) =>
+                `<li class="flex justify-between"><span>${escapeHTML(platform)}</span><strong>${count}</strong></li>`
             ).join('') + '</ul>';
-            if (passedGames.length > 10) html += `<p class="text-stone-400 text-xs">+${passedGames.length - 10} 款</p>`;
         } else {
             html += '<p class="text-stone-400 text-xs">暂无</p>';
         }
