@@ -73,7 +73,8 @@ export const renderGameDistributionChart = () => {
                 borderWidth: 0,
                 pointRadius: radiusFromContext,
                 pointHoverRadius: (ctx) => radiusFromContext(ctx) + 1.5,
-                hitRadius: 8,
+                pointHitRadius: 12,
+                hitRadius: 12,
             };
         });
 
@@ -87,6 +88,10 @@ export const renderGameDistributionChart = () => {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'nearest',
+                intersect: false,
+            },
             scales: {
                 x: {
                     title: { display: true, text: '游戏时长 (h)' },
