@@ -123,7 +123,7 @@ export const renderItemsList = () => {
         const statusClass = item.status && item.status !== 'empty' ? `status-${item.status}-row` : '';
         const classes = [baseClass];
         if (item.fullyCompleted) classes.push('achievement-gold-row');
-        if (statusClass) classes.push(statusClass);
+        if (statusClass && !item.fullyCompleted) classes.push(statusClass);
         row.className = classes.join(' ');
         row.dataset.fb_id = item.fb_id;
         row.innerHTML = `
