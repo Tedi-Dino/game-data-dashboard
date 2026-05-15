@@ -27,7 +27,7 @@ export const renderCostDistributionChart = () => {
         const label = COST_LABELS[i.type];
         if (label) rawData[label] = (rawData[label] || 0) + netCost(i);
     });
-    const filteredData = Object.fromEntries(Object.entries(rawData).filter(([_, v]) => v > 0));
+    const sortedEntries = Object.entries(rawData).filter(([_, v]) => v > 0).sort((a, b) => b[1] - a[1]);
     const el = document.getElementById('cost-distribution-chart');
     if (!el) return;
 
@@ -36,14 +36,15 @@ export const renderCostDistributionChart = () => {
     charts.costDistribution = new Chart(el, {
         type: 'doughnut',
         data: {
-            labels: Object.keys(filteredData),
+            labels: sortedEntries.map(([l]) => l),
             datasets: [{
-                data: Object.values(filteredData),
-                backgroundColor: Object.keys(filteredData).map(label => PLATFORM_COLORS[COST_COLOR_MAP[label]]),
+                data: sortedEntries.map(([_, v]) => v),
+                backgroundColor: sortedEntries.map(([l]) => PLATFORM_COLORS[COST_COLOR_MAP[l]]),
                 hoverOffset: 4
             }]
         },
         options: {
+            rotation: 0,
             responsive: true,
             maintainAspectRatio: false,
             cutout: '60%',
