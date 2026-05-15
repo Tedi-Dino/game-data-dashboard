@@ -27,6 +27,7 @@ export const renderGameSortChart = () => {
             datasets: [{ data, backgroundColor: backgroundColors, hoverOffset: 4 }]
         },
         options: {
+            rotation: 0,
             responsive: true,
             maintainAspectRatio: false,
             cutout: '60%',
