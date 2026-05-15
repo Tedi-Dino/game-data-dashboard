@@ -21,6 +21,13 @@ export const formatDateForInput = (value) => {
     return str.replace(/\//g, '-');
 };
 
+// Format a Date/Timestamp to "MM/DD HH:mm"
+export const formatDateTime = (value) => {
+    const d = value?.toDate ? value.toDate() : (value instanceof Date ? value : null);
+    if (!d) return '';
+    return `${('0' + (d.getMonth() + 1)).slice(-2)}/${('0' + d.getDate()).slice(-2)} ${('0' + d.getHours()).slice(-2)}:${('0' + d.getMinutes()).slice(-2)}`;
+};
+
 // Normalize a date string to "YYYY-MM" format
 export const normalizeMonth = (dateStr) => {
     if (!dateStr) return null;

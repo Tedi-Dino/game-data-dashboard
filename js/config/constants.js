@@ -89,7 +89,3 @@ export const TIME_COLOR_MAP = {
     'Google Play': 'googleplay', '模拟器': 'emulator', 'Other': 'other',
     '剧': 'drama'
 };
-
-// Distribution chart range definitions
-export const TIME_RANGES = [[0, 1], [1, 5], [5, 10], [10, 30], [30, 50], [50, 80], [80, Infinity]];
-export const PRICE_RANGES = [[0, 10], [10, 30], [30, 50], [50, 80], [80, 100], [100, 200], [200, Infinity]];

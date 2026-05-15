@@ -1,9 +1,11 @@
 import { collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, query, writeBatch } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { db } from '../config/firebase.js';
 import { setItems } from '../core/state.js';
+import { formatDateTime } from '../core/utils.js';
 
 let itemsCollectionRef = null;
 let unsubscribe = null;
+let metadataUnsubscribe = null;
 
 // Callback invoked whenever items update (set by main.js)
 let onDataChange = null;
@@ -31,13 +33,13 @@ export const setupFirestoreListener = () => {
 
 // --- Metadata Listener ---
 export const setupMetadataListener = () => {
+    if (metadataUnsubscribe) metadataUnsubscribe();
     const metadataRef = doc(db, 'metadata', 'dashboard');
-    onSnapshot(metadataRef, (docSnap) => {
+    metadataUnsubscribe = onSnapshot(metadataRef, (docSnap) => {
         const el = document.getElementById('last-updated');
         if (!el) return;
         if (docSnap.exists() && docSnap.data().lastManualUpdate) {
-            const d = docSnap.data().lastManualUpdate.toDate();
-            const formatted = `${('0' + (d.getMonth() + 1)).slice(-2)}/${('0' + d.getDate()).slice(-2)} ${('0' + d.getHours()).slice(-2)}:${('0' + d.getMinutes()).slice(-2)}`;
+            const formatted = formatDateTime(docSnap.data().lastManualUpdate);
             el.textContent = `数据更新于 ${formatted}`;
         } else {
             el.textContent = '暂无更新记录';

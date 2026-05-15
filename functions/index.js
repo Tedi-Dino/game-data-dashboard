@@ -33,6 +33,25 @@ exports.getAiRecommendations = onCall({secrets: [deepseekApiKey], timeoutSeconds
 
   const { passedGames, unpassedGames, passedDramas, unpassedDramas, customPrompt, thinking } = request.data;
 
+  // Input validation
+  const MAX_FIELD_LENGTH = 10000;
+  const MAX_PROMPT_LENGTH = 500;
+  const stringFields = { passedGames, unpassedGames, passedDramas, unpassedDramas };
+  for (const [key, val] of Object.entries(stringFields)) {
+    if (val && typeof val !== 'string') {
+      throw new HttpsError("invalid-argument", `${key} 必须是字符串。`);
+    }
+    if (val && val.length > MAX_FIELD_LENGTH) {
+      throw new HttpsError("invalid-argument", `${key} 超过最大长度限制。`);
+    }
+  }
+  if (customPrompt && typeof customPrompt !== 'string') {
+    throw new HttpsError("invalid-argument", "customPrompt 必须是字符串。");
+  }
+  if (customPrompt && customPrompt.length > MAX_PROMPT_LENGTH) {
+    throw new HttpsError("invalid-argument", `自定义需求不能超过${MAX_PROMPT_LENGTH}个字符。`);
+  }
+
   const prompt = `你是一个资深的影音娱乐推荐助手。请分析一个用户的游戏和剧集数据。
 
 ### 用户【已通关】的游戏 (包含用户评分 1-10分):

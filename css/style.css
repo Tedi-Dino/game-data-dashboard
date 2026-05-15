@@ -9,10 +9,6 @@ body {
     color: #2d2927;
 }
 
-main {
-    min-height: 0;
-}
-
 /* === Dashboard Grid === */
 .dashboard-grid {
     display: grid;
@@ -73,7 +69,7 @@ main {
 }
 
 /* === Card Styles === */
-.dark-card {
+.card {
     display: flex;
     flex-direction: column;
     background-color: #ffffff;
@@ -85,7 +81,7 @@ main {
     transition: transform 0.3s ease, box-shadow 0.3s ease, z-index 0s;
 }
 
-.dark-card:hover {
+.card:hover {
     z-index: 40;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
@@ -125,6 +121,10 @@ main {
 }
 
 /* === Scrollbar === */
+* {
+    scrollbar-color: #a8a29e #e5e0dc;
+    scrollbar-width: thin;
+}
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: #e5e0dc; }
 ::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 4px; }
@@ -160,7 +160,7 @@ main {
     justify-content: center;
     color: white;
     box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
 }
 .fab-main {
     background-color: #d97706;

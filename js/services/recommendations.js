@@ -105,13 +105,13 @@ const parseRecommendations = (text) => {
 /**
  * Call DeepSeek API directly (for local dev / bypass Cloud Function).
  */
-const callDeepSeekDirectly = async (customPrompt) => {
+const callDeepSeekDirectly = async (customPrompt, promptData) => {
     const apiKey = getLocalApiKey();
     if (!apiKey) {
         return { error: '本地API密钥未配置，请在设置中填入DeepSeek API Key。' };
     }
 
-    const { prompt } = buildPrompt(customPrompt);
+    const { prompt } = promptData;
 
     try {
         const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -153,8 +153,8 @@ const callDeepSeekDirectly = async (customPrompt) => {
 /**
  * Call the Firebase Cloud Function for AI recommendations.
  */
-const callCloudFunction = async (customPrompt) => {
-    const { passedGames, unpassedGames, passedDramas, unpassedDramas } = buildPrompt(customPrompt);
+const callCloudFunction = async (customPrompt, promptData) => {
+    const { passedGames, unpassedGames, passedDramas, unpassedDramas } = promptData;
     const thinking = isThinkingMode();
 
     try {
@@ -191,7 +191,8 @@ const callCloudFunction = async (customPrompt) => {
  * @returns {{ recommendations?: Array, error?: string }}
  */
 export const getAIRecommendations = async (customPrompt = '') => {
-    const { unpassedGames, unpassedDramas } = buildPrompt(customPrompt);
+    const promptData = buildPrompt(customPrompt);
+    const { unpassedGames, unpassedDramas } = promptData;
 
     if (!unpassedGames && !unpassedDramas && !customPrompt) {
         return { recommendations: [{ name: '太棒了！', reason: '您的待玩/待看清单已经一干二净！' }] };
@@ -199,17 +200,17 @@ export const getAIRecommendations = async (customPrompt = '') => {
 
     // If user explicitly set local mode, use direct API call
     if (isLocalMode()) {
-        return await callDeepSeekDirectly(customPrompt);
+        return await callDeepSeekDirectly(customPrompt, promptData);
     }
 
     // Otherwise try Cloud Function first
-    const cfResult = await callCloudFunction(customPrompt);
+    const cfResult = await callCloudFunction(customPrompt, promptData);
     if (!cfResult.error) return cfResult;
 
     // Cloud Function failed — try local API key as fallback
     if (getLocalApiKey()) {
         console.log('Cloud Function unavailable, falling back to direct DeepSeek call...');
-        return await callDeepSeekDirectly(customPrompt);
+        return await callDeepSeekDirectly(customPrompt, promptData);
     }
 
     // Neither works — give helpful error
