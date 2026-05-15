@@ -170,10 +170,12 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
     const playtimeDataset = {
         label: '游戏时长',
         data: sortedMonths.map(m => trends[m]?.playtime || 0),
-        borderColor: '#eab308',
-        backgroundColor: '#eab308',
+        borderColor: '#c4a040',
+        backgroundColor: '#c4a040',
         type: 'line',
         tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 4,
         yAxisID: 'y1',
         order: 1
     };
@@ -182,10 +184,12 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
     const dramaPlaytimeDataset = {
         label: '剧集时长',
         data: sortedMonths.map(m => trends[m]?.dramaPlaytime || 0),
-        borderColor: '#e11d48',
-        backgroundColor: '#e11d48',
+        borderColor: '#c4556a',
+        backgroundColor: '#c4556a',
         type: 'line',
         tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 4,
         yAxisID: 'y1',
         order: 1
     };
@@ -195,10 +199,12 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
         label: '合计时长',
         data: sortedMonths.map(m => (trends[m]?.playtime || 0) + (trends[m]?.dramaPlaytime || 0)),
         borderColor: 'transparent',
-        backgroundColor: 'rgba(234, 179, 8, 0.15)',
+        backgroundColor: 'rgba(196, 160, 64, 0.12)',
         type: 'line',
         fill: true,
         tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 4,
         yAxisID: 'y1',
         order: 0
     };

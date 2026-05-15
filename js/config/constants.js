@@ -3,20 +3,20 @@ export const ADMIN_UIDS = ['ZPyHfPGUI4elNvRN2Q30ZqfzT6X2'];
 
 // Platform/category colors for charts
 export const PLATFORM_COLORS = {
-    hardware: '#6b7280',
-    switch_physical: '#E60012',
-    switch_digital: '#ff4e5c',
-    steam: '#3b82f6',
-    epic: '#f2f2f2',
-    ubi: '#a855f7',
-    gog: '#D3008D',
-    ps: '#0070D1',
-    xbox: '#107C10',
-    appstore: '#525252',
-    googleplay: '#3DDC84',
-    emulator: '#fde047',
-    other: '#9ca3af',
-    drama: '#e11d48'
+    hardware: '#78716c',
+    switch_physical: '#c2410c',
+    switch_digital: '#d97757',
+    steam: '#5b7a9a',
+    epic: '#bfb0a0',
+    ubi: '#8b7aaa',
+    gog: '#b8707f',
+    ps: '#4d7c9e',
+    xbox: '#5e8f5e',
+    appstore: '#6b6560',
+    googleplay: '#5e9a7a',
+    emulator: '#c4a040',
+    other: '#a39a92',
+    drama: '#c4556a'
 };
 
 // Type display name maps
