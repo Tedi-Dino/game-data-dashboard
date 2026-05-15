@@ -280,9 +280,39 @@ body {
     }
 }
 
-/* === Achievement Trophy Icon === */
-.achievement-trophy {
+/* === Achievement Game Name === */
+.achievement-name {
     color: #d4a017;
-    font-size: 0.9rem;
-    filter: drop-shadow(0 0 2px rgba(212, 160, 23, 0.4));
+    font-weight: 700;
+    position: relative;
+    display: inline-block;
+    background: linear-gradient(90deg, #d4a017 0%, #f5d77a 25%, #d4a017 50%, #f5d77a 75%, #d4a017 100%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: achievement-shimmer 3s linear infinite;
+    text-shadow: none;
+}
+
+@keyframes achievement-shimmer {
+    0% { background-position: 200% center; }
+    100% { background-position: -200% center; }
+}
+
+.achievement-name-trophy {
+    color: #d4a017;
+    font-size: 0.85rem;
+    margin-right: 4px;
+    display: inline-block;
+    animation: trophy-bounce 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 4px rgba(212, 160, 23, 0.6));
+    -webkit-text-fill-color: initial;
+}
+
+@keyframes trophy-bounce {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    25% { transform: scale(1.15) rotate(-5deg); }
+    50% { transform: scale(1) rotate(0deg); }
+    75% { transform: scale(1.15) rotate(5deg); }
 }
