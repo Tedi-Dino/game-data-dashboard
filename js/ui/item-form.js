@@ -1,9 +1,8 @@
 import { setIsEditingFromList, isEditingFromList } from '../core/state.js';
 import { parseFloatOrNull, parseDateOrNull } from '../core/utils.js';
 import { saveItem, deleteItem as deleteFirestoreItem, updateLastModifiedTimestamp } from '../services/firestore.js';
-import { closeModal, showConfirmation } from './modals.js';
+import { closeModal, openModal, showConfirmation, showAlert } from './modals.js';
 import { renderItemsList, updateSortHeaders } from './data-table.js';
-import { openModal } from './modals.js';
 
 /**
  * Close the item modal. If we came from the list modal, re-render it.
@@ -21,7 +20,10 @@ const closeItemModalAndReturnToList = () => {
 /**
  * Switch between game and drama mode in the form.
  */
-export let updateSteamFieldsVisibility = () => {};
+
+const ACTIVE_MODE_CLASS = 'bg-amber-600 text-white';
+const INACTIVE_MODE_CLASS = 'text-stone-600 hover:bg-stone-200';
+const BASE_MODE_CLASS = 'flex-1 px-3 py-1.5 font-medium rounded-md transition-colors cursor-pointer';
 
 export const setFormMode = (mode) => {
     const formMode = document.getElementById('form-mode');
@@ -36,30 +38,33 @@ export const setFormMode = (mode) => {
 
     if (formMode) formMode.value = mode;
 
-    if (mode === 'drama') {
-        if (modeGameBtn) {
-            modeGameBtn.className = 'flex-1 px-3 py-1.5 font-medium rounded-md text-stone-600 hover:bg-stone-200 transition-colors cursor-pointer';
-        }
-        if (modeDramaBtn) {
-            modeDramaBtn.className = 'flex-1 px-3 py-1.5 font-medium rounded-md bg-amber-600 text-white transition-colors cursor-pointer';
-        }
-        if (gameFields) gameFields.classList.add('hidden');
-        if (dramaFields) dramaFields.classList.remove('hidden');
-        if (fromPriceRow) fromPriceRow.classList.add('hidden');
-        if (resellFields) resellFields.classList.add('hidden');
+    const isDrama = mode === 'drama';
+
+    if (modeGameBtn) {
+        modeGameBtn.className = `${BASE_MODE_CLASS} ${isDrama ? INACTIVE_MODE_CLASS : ACTIVE_MODE_CLASS}`;
+    }
+    if (modeDramaBtn) {
+        modeDramaBtn.className = `${BASE_MODE_CLASS} ${isDrama ? ACTIVE_MODE_CLASS : INACTIVE_MODE_CLASS}`;
+    }
+    if (gameFields) gameFields.classList.toggle('hidden', isDrama);
+    if (dramaFields) dramaFields.classList.toggle('hidden', !isDrama);
+    if (fromPriceRow) fromPriceRow.classList.toggle('hidden', isDrama);
+    if (resellFields) resellFields.classList.toggle('hidden', isDrama);
+
+    if (isDrama) {
         if (itemFrom) itemFrom.value = 'free';
         if (purchasePrice) purchasePrice.value = '0';
-    } else {
-        if (modeGameBtn) {
-            modeGameBtn.className = 'flex-1 px-3 py-1.5 font-medium rounded-md bg-amber-600 text-white transition-colors cursor-pointer';
-        }
-        if (modeDramaBtn) {
-            modeDramaBtn.className = 'flex-1 px-3 py-1.5 font-medium rounded-md text-stone-600 hover:bg-stone-200 transition-colors cursor-pointer';
-        }
-        if (gameFields) gameFields.classList.remove('hidden');
-        if (dramaFields) dramaFields.classList.add('hidden');
-        if (fromPriceRow) fromPriceRow.classList.remove('hidden');
-        if (resellFields) resellFields.classList.remove('hidden');
+    }
+};
+
+/**
+ * Toggle Steam fields visibility based on platform type selection.
+ */
+export const updateSteamFieldsVisibility = () => {
+    const itemType = document.getElementById('item-type');
+    const steamFields = document.getElementById('steam-fields');
+    if (steamFields && itemType) {
+        steamFields.classList.toggle('hidden', itemType.value !== 'steam');
     }
 };
 
@@ -167,7 +172,7 @@ export const setupItemForm = () => {
                 closeItemModalAndReturnToList();
             } catch (error) {
                 console.error('Error saving item:', error);
-                showConfirmation('保存失败，请检查网络连接后重试。').then(() => {});
+                showAlert('保存失败，请检查网络连接后重试。');
             } finally {
                 saveBtn.disabled = false;
                 saveBtn.textContent = '保存';
@@ -186,7 +191,7 @@ export const setupItemForm = () => {
                     closeItemModalAndReturnToList();
                 } catch (error) {
                     console.error('Error deleting item:', error);
-                    showConfirmation('删除失败，请检查网络连接后重试。').then(() => {});
+                    showAlert('删除失败，请检查网络连接后重试。');
                 }
             });
         });
@@ -231,23 +236,15 @@ export const setupItemForm = () => {
 
     // --- Platform type change: toggle Steam fields + auto-generate ID ---
     const itemType = document.getElementById('item-type');
-    const steamFields = document.getElementById('steam-fields');
-
-    const _updateSteamFields = () => {
-        if (steamFields && itemType) {
-            steamFields.classList.toggle('hidden', itemType.value !== 'steam');
-        }
-    };
-    updateSteamFieldsVisibility = _updateSteamFields;
 
     if (itemType) {
         itemType.addEventListener('change', () => {
-            _updateSteamFields();
+            updateSteamFieldsVisibility();
             if (!itemIdEl.value && !itemCustomId.value) {
                 itemCustomId.value = `${itemType.value.charAt(0)}-${crypto.randomUUID().slice(0, 8)}`;
             }
         });
         // Set initial visibility based on default type
-        _updateSteamFields();
+        updateSteamFieldsVisibility();
     }
 };

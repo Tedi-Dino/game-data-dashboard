@@ -172,28 +172,34 @@ export const setupPlayNextModal = () => {
                 aiRecommendationsList.innerHTML = '<div class="flex justify-center items-center h-24"><p class="text-stone-400 animate-pulse">🤖 正在向AI咨询中，请稍候...</p></div>';
             }
 
-            const result = await getAIRecommendations(customPrompt);
+            try {
+                const result = await getAIRecommendations(customPrompt);
 
-            if (!aiRecommendationsList) return;
+                if (!aiRecommendationsList) return;
 
-            if (result.error) {
-                // Show error with whiteSpace pre-line to preserve formatting
-                aiRecommendationsList.innerHTML = `<div class="p-4 bg-red-50 rounded-lg text-red-600 text-center border border-red-200" style="white-space: pre-line">${result.error}</div>`;
-            } else if (result.recommendations && result.recommendations.length > 0) {
-                if (myPlayNextList) myPlayNextList.classList.add('hidden');
-                if (myBacklogToggleIcon) myBacklogToggleIcon.classList.add('rotate-180');
+                if (result.error) {
+                    aiRecommendationsList.innerHTML = `<div class="p-4 bg-red-50 rounded-lg text-red-600 text-center border border-red-200" style="white-space: pre-line">${escapeHTML(result.error)}</div>`;
+                } else if (result.recommendations && result.recommendations.length > 0) {
+                    if (myPlayNextList) myPlayNextList.classList.add('hidden');
+                    if (myBacklogToggleIcon) myBacklogToggleIcon.classList.add('rotate-180');
 
-                aiRecommendationsList.innerHTML = result.recommendations
-                    .map(rec => {
-                        const isDrama = rec.type === '剧集';
-                        const bgColor = isDrama ? 'bg-rose-50' : 'bg-stone-100';
-                        const ringColor = isDrama ? 'ring-rose-200' : 'ring-stone-200';
-                        const icon = isDrama ? '📺' : '🎮';
-                        return `<div class="p-3 ${bgColor} rounded-md ring-1 ${ringColor}"><h4 class="font-bold text-stone-900 text-md">${icon} ${escapeHTML(rec.name)}</h4><p class="text-stone-600 mt-1 text-sm">${escapeHTML(rec.reason)}</p></div>`;
-                    })
-                    .join('');
-            } else {
-                aiRecommendationsList.innerHTML = '<p class="text-stone-400 text-center">AI暂时没有找到合适的推荐。</p>';
+                    aiRecommendationsList.innerHTML = result.recommendations
+                        .map(rec => {
+                            const isDrama = rec.type === '剧集';
+                            const bgColor = isDrama ? 'bg-rose-50' : 'bg-stone-100';
+                            const ringColor = isDrama ? 'ring-rose-200' : 'ring-stone-200';
+                            const icon = isDrama ? '📺' : '🎮';
+                            return `<div class="p-3 ${bgColor} rounded-md ring-1 ${ringColor}"><h4 class="font-bold text-stone-900 text-md">${icon} ${escapeHTML(rec.name)}</h4><p class="text-stone-600 mt-1 text-sm">${escapeHTML(rec.reason)}</p></div>`;
+                        })
+                        .join('');
+                } else {
+                    aiRecommendationsList.innerHTML = '<p class="text-stone-400 text-center">AI暂时没有找到合适的推荐。</p>';
+                }
+            } catch (error) {
+                console.error('AI recommendation request failed:', error);
+                if (aiRecommendationsList) {
+                    aiRecommendationsList.innerHTML = `<div class="p-4 bg-red-50 rounded-lg text-red-600 text-center border border-red-200">请求失败，请检查网络连接后重试。</div>`;
+                }
             }
         });
     }

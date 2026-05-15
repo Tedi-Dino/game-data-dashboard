@@ -1,5 +1,5 @@
 import { items } from '../core/state.js';
-import { showConfirmation } from './modals.js';
+import { showConfirmation, showAlert } from './modals.js';
 import { importCSV, exportCSV } from '../services/csv.js';
 
 /**
@@ -14,7 +14,7 @@ export const setupCSVHandlers = () => {
     if (exportBtn) {
         exportBtn.addEventListener('click', () => {
             if (items.length === 0) {
-                showConfirmation('没有数据可以导出。').then(() => {});
+                showAlert('没有数据可以导出。');
                 return;
             }
             exportCSV();
@@ -39,15 +39,15 @@ export const setupCSVHandlers = () => {
                 reader.onload = async (re) => {
                     const text = re.target.result;
                     if (!text) {
-                        showConfirmation('文件为空或无法读取。').then(() => {});
+                        showAlert('文件为空或无法读取。');
                         return;
                     }
                     try {
                         await importCSV(text);
-                        showConfirmation('导入成功！').then(() => {});
+                        showAlert('导入成功！');
                     } catch (error) {
                         console.error(error);
-                        showConfirmation(`导入失败：${error.message || '请检查CSV格式或控制台日志。'}`).then(() => {});
+                        showAlert(`导入失败：${error.message || '请检查CSV格式或控制台日志。'}`);
                     }
                 };
                 reader.readAsText(file, 'UTF-8');

@@ -31,7 +31,8 @@ const parseCSVRow = (values, headerIndexMap) => {
     };
     // Steam fields: only include when present in CSV
     const rawAppId = getVal('steam_app_id');
-    if (rawAppId) item.steam_app_id = Math.round(parseFloat(rawAppId));
+    const parsedAppId = parseFloatOrNull(rawAppId);
+    if (parsedAppId != null) item.steam_app_id = Math.round(parsedAppId);
     const rawOverride = getVal('steam_override').toLowerCase();
     if (rawOverride) item.steam_override = rawOverride === 'true';
     const rawCompleted = getVal('fullyCompleted').toLowerCase();
@@ -74,6 +75,9 @@ const parseCSVLine = (line) => {
 
 // Parse CSV text into items array
 export const importCSV = async (text) => {
+    if (text.length > 5 * 1024 * 1024) {
+        throw new Error('CSV文件过大（超过5MB），请检查文件。');
+    }
     const rows = text.split(/\r\n|\n/);
     const headers = parseCSVLine(rows[0]).map(h => h.replace(/"/g, ''));
     const headerIndexMap = {};
@@ -106,19 +110,21 @@ export const importCSV = async (text) => {
 export const exportCSV = () => {
     if (items.length === 0) return false;
 
-    const csv = 'data:text/csv;charset=utf-8,﻿' +
-        HEADERS.join(',') + '\r\n' +
+    const csvContent = HEADERS.join(',') + '\r\n' +
         items.map(i => HEADERS.map(h => {
             const val = String(i[h] ?? '');
             return `"${val.replace(/"/g, '""')}"`;
         }).join(',')).join('\r\n');
 
+    const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = Object.assign(document.createElement('a'), {
-        href: encodeURI(csv),
+        href: url,
         download: `game_cost_export_${new Date().toISOString().split('T')[0]}.csv`
     });
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
     return true;
 };
