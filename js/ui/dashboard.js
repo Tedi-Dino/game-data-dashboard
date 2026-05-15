@@ -24,9 +24,10 @@ const calcKPIs = () => {
     const dramaCount = dramas.length;
     const totalDramaTime = dramas.reduce((s, i) => s + (i.playTime || 0), 0);
     const avgDramaTime = dramaCount > 0 ? totalDramaTime / dramaCount : 0;
+    const passedCount = games.filter(g => g.status === 'passed').length;
     const fullyCompletedCount = games.filter(g => g.fullyCompleted === true).length;
 
-    return { totalActual, gameActual, hardwareActual, unfinishedCost, totalPlaytime, gameCount, avgPlaytime, costPerHour, dramaCount, totalDramaTime, avgDramaTime, fullyCompletedCount };
+    return { totalActual, gameActual, hardwareActual, unfinishedCost, totalPlaytime, gameCount, avgPlaytime, costPerHour, dramaCount, totalDramaTime, avgDramaTime, passedCount, fullyCompletedCount };
 };
 
 // --- Update KPI DOM Elements ---
@@ -42,8 +43,7 @@ export const updateDashboardKPIs = () => {
     setText('game-actual-cost', formatCurrency(kpi.gameActual));
     setText('hardware-actual-cost', formatCurrency(kpi.hardwareActual));
     setText('unfinished-games-cost', formatCurrency(kpi.unfinishedCost));
-    setText('total-games', `${kpi.gameCount} 款`);
-    setText('fully-completed-count', `${kpi.fullyCompletedCount} 款`);
+    setText('total-games', `${kpi.fullyCompletedCount} / ${kpi.passedCount} / ${kpi.gameCount} 款`);
     setText('total-playtime', `${kpi.totalPlaytime.toFixed(2)} 小时`);
     setText('avg-playtime', `${kpi.avgPlaytime.toFixed(2)} 小时/款`);
     setText('cost-per-hour', kpi.costPerHour !== null ? formatCurrency(kpi.costPerHour) : '/');
@@ -124,21 +124,17 @@ export const updateKpiTooltips = () => {
 
     const totalGamesTooltip = document.getElementById('total-games-tooltip');
     if (totalGamesTooltip) {
-        totalGamesTooltip.innerHTML = '<h3 class="font-bold mb-1">各平台游戏数量</h3><ul>' +
+        let html = '<h3 class="font-bold mb-1">各平台游戏数量</h3><ul>' +
             sortedGameCount.map(([platform, count]) => `<li class="flex justify-between"><span>${escapeHTML(platform)}</span><strong>${count} 款</strong></li>`).join('') + '</ul>';
-    }
 
-    // Fully completed games tooltip
-    const fullyCompletedGames = games.filter(g => g.fullyCompleted === true)
-        .sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    const fullyCompletedTooltip = document.getElementById('fully-completed-tooltip');
-    if (fullyCompletedTooltip) {
+        const fullyCompletedGames = games.filter(g => g.fullyCompleted === true)
+            .sort((a, b) => (b.rating || 0) - (a.rating || 0));
         if (fullyCompletedGames.length > 0) {
-            fullyCompletedTooltip.innerHTML = '<h3 class="font-bold mb-1">全成就游戏列表</h3><ul>' +
+            html += '<h3 class="font-bold mt-2 mb-1 border-t border-stone-200 pt-1">全成就游戏列表</h3><ul>' +
                 fullyCompletedGames.map(g => `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 18))}</span>${g.rating ? `<strong>${g.rating}分</strong>` : ''}</li>`).join('') + '</ul>';
-        } else {
-            fullyCompletedTooltip.innerHTML = '<p class="text-stone-400">暂无全成就游戏</p>';
         }
+
+        totalGamesTooltip.innerHTML = html;
     }
 
     // Drama count by sort/genre
