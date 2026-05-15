@@ -22,7 +22,7 @@ import { updateAuthUI } from './ui/auth.js';
 import { openModal, closeModal } from './ui/modals.js';
 import { setupFab } from './ui/fab.js';
 import { updateDashboardKPIs, updateKpiTooltips, setupKpiTooltips } from './ui/dashboard.js';
-import { renderItemsList, updateSortHeaders, setupSortHeaders, setupListSearch } from './ui/data-table.js';
+import { renderItemsList, updateSortHeaders, setupSortHeaders, setupListSearch, setupDetailColsToggle } from './ui/data-table.js';
 import { setupItemForm } from './ui/item-form.js';
 import { setupPlayNextModal } from './ui/play-next.js';
 import { setupOnThisDay } from './ui/on-this-day.js';
@@ -100,6 +100,7 @@ const initApp = () => {
     setupCSVHandlers();
     setupSortHeaders();
     setupListSearch();
+    setupDetailColsToggle();
     setupPlayNextModal();
     setupOnThisDay();
     setupChartControls();
@@ -184,7 +185,7 @@ const initApp = () => {
         const searchInput = document.getElementById('list-search-input');
         if (title) title.textContent = '数据详情';
         if (searchInput) searchInput.value = '';
-        setSortConfig('passDate', 'desc');
+        setSortConfig('_default', 'desc');
         renderItemsList();
         updateSortHeaders();
         openModal(document.getElementById('list-modal'));
