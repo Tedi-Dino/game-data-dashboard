@@ -124,16 +124,43 @@ export const updateKpiTooltips = () => {
 
     const totalGamesTooltip = document.getElementById('total-games-tooltip');
     if (totalGamesTooltip) {
-        let html = '<h3 class="font-bold mb-1">各平台游戏数量</h3><ul>' +
-            sortedGameCount.map(([platform, count]) => `<li class="flex justify-between"><span>${escapeHTML(platform)}</span><strong>${count} 款</strong></li>`).join('') + '</ul>';
-
+        const passedGames = games.filter(g => g.status === 'passed')
+            .sort((a, b) => (b.rating || 0) - (a.rating || 0));
         const fullyCompletedGames = games.filter(g => g.fullyCompleted === true)
             .sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        if (fullyCompletedGames.length > 0) {
-            html += '<h3 class="font-bold mt-2 mb-1 border-t border-stone-200 pt-1">全成就游戏列表</h3><ul>' +
-                fullyCompletedGames.map(g => `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 18))}</span>${g.rating ? `<strong>${g.rating}分</strong>` : ''}</li>`).join('') + '</ul>';
-        }
 
+        let html = '<div class="grid grid-cols-3 gap-3">';
+
+        // Left: 全成就
+        html += '<div><h3 class="font-bold mb-1 text-amber-600">全成就</h3>';
+        if (fullyCompletedGames.length > 0) {
+            html += '<ul>' + fullyCompletedGames.map(g =>
+                `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 14))}</span>${g.rating ? `<strong>${g.rating}分</strong>` : ''}</li>`
+            ).join('') + '</ul>';
+        } else {
+            html += '<p class="text-stone-400 text-xs">暂无</p>';
+        }
+        html += '</div>';
+
+        // Middle: 通关
+        html += '<div><h3 class="font-bold mb-1 text-emerald-600">通关</h3>';
+        if (passedGames.length > 0) {
+            html += '<ul>' + passedGames.slice(0, 10).map(g =>
+                `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 14))}</span>${g.rating ? `<strong>${g.rating}分</strong>` : ''}</li>`
+            ).join('') + '</ul>';
+            if (passedGames.length > 10) html += `<p class="text-stone-400 text-xs">+${passedGames.length - 10} 款</p>`;
+        } else {
+            html += '<p class="text-stone-400 text-xs">暂无</p>';
+        }
+        html += '</div>';
+
+        // Right: 平台分布
+        html += '<div><h3 class="font-bold mb-1 text-sky-600">平台分布</h3><ul>' +
+            sortedGameCount.map(([platform, count]) =>
+                `<li class="flex justify-between"><span>${escapeHTML(platform)}</span><strong>${count}</strong></li>`
+            ).join('') + '</ul></div>';
+
+        html += '</div>';
         totalGamesTooltip.innerHTML = html;
     }
 
