@@ -51,7 +51,6 @@ export const renderItemsList = () => {
                 case 'costPerHour': return (!item.playTime || item.playTime <= 0 ? Infinity : cost / item.playTime);
                 case 'rating': return item.rating ?? 0;
                 case 'steam': return item.steam_app_id ? 1 : 0;
-                case 'fullyCompleted': return item.fullyCompleted ? 1 : 0;
                 default: return '';
             }
         };
@@ -74,7 +73,7 @@ export const renderItemsList = () => {
         row.dataset.fb_id = item.fb_id;
         row.innerHTML = `
             <td class="px-4 py-3 font-mono whitespace-nowrap">${escapeHTML(item.id) || '/'}</td>
-            <td class="px-4 py-3 font-medium">${escapeHTML(item.name) || '/'}</td>
+            <td class="px-4 py-3 font-medium">${item.fullyCompleted ? `<span class="achievement-name"><i class="fas fa-trophy achievement-name-trophy"></i> ${escapeHTML(item.name)}</span>` : escapeHTML(item.name) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.sort) || '/'}</td>
             <td class="px-4 py-3 text-center whitespace-nowrap">${renderStarsForTable(item.rating)}</td>
             <td class="px-4 py-3 whitespace-nowrap">${item.playTime != null ? `${item.playTime}h` : '/'} ${renderSteamSource(item)}</td>
@@ -85,7 +84,6 @@ export const renderItemsList = () => {
             <td class="px-4 py-3 whitespace-nowrap">${formatCurrency(cost)}</td>
             <td class="px-4 py-3 whitespace-nowrap">${cph != null && isFinite(cph) ? formatCurrency(cph) : '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(FROM_MAP[item.from]) || '/'}</td>
-            <td class="px-4 py-3 text-center whitespace-nowrap">${item.fullyCompleted ? '<i class="fas fa-trophy achievement-trophy"></i>' : '<span class="text-stone-300">-</span>'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(TYPE_MAP[item.type] || item.type) || '/'}</td>`;
         row.addEventListener('click', () => handleEditItem(item.fb_id));
         tbody.appendChild(row);
