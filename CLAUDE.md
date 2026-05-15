@@ -19,13 +19,17 @@ Open `http://localhost:<port>` in a browser. ES modules are loaded from the Fire
 
 The Firebase Cloud Function source is at `functions/index.js`. Deploy with `firebase deploy --only functions`. The root `index.js` is a copy kept for reference; the authoritative source is in `functions/`.
 
+## Design system
+
+Page palette: warm Tailwind Stone base (`#f5f0ed` background, `#e5e0dc` borders), Amber accent (`#d97706`). All 14 platform colors are desaturated ~30-40% from brand originals and warmed to blend — see `js/config/constants.js` `PLATFORM_COLORS`. Trend lines use `pointRadius: 0` (smooth curves only). Scatter gradient uses warm amber tint. Full rationale in **[design.md](design.md)**.
+
 ## Architecture
 
 ```
 js/
 ├── config/
 │   ├── firebase.js        # Firebase app/auth/firestore/functions init
-│   └── constants.js        # Admin UIDs, platform colors, type/status maps, chart range configs
+│   └── constants.js        # Admin UIDs, platform colors (14 muted warm), type/status maps, chart range configs
 ├── core/
 │   ├── state.js            # Centralized mutable state: items[], sortConfig, charts{}, etc.
 │   └── utils.js            # Formatters (currency, dates, stars), escapeHTML, netCost, hash utility
@@ -35,7 +39,7 @@ js/
 │   ├── steam.js            # Steam sync: callable wrapper + metadata listener
 │   └── recommendations.js  # AI game recommendations (Cloud Function + local DeepSeek API fallback)
 ├── charts/
-│   ├── setup.js            # Chart.js defaults, external tooltip factory, destroy helpers
+│   ├── setup.js            # Chart.js defaults, external tooltip factory, destroy helpers, scatter gradient
 │   ├── cost-distribution.js
 │   ├── time-distribution.js
 │   ├── game-sort.js
