@@ -132,6 +132,8 @@ const initApp = () => {
                 if (result.matched > 0) parts.push(`匹配 ${result.matched} 款`);
                 if (result.updated > 0) parts.push(`更新 ${result.updated} 款时长`);
                 if (result.unmatched && result.unmatched.length > 0) parts.push(`${result.unmatched.length} 款未匹配`);
+                if (result.achievementsChecked > 0) parts.push(`检查 ${result.achievementsChecked} 个成就`);
+                if (result.fullyCompletedCount > 0) parts.push(`${result.fullyCompletedCount} 款全成就`);
                 if (steamSyncStatus) {
                     steamSyncStatus.textContent = parts.length > 0
                         ? `Steam同步完成: ${parts.join(', ')}`

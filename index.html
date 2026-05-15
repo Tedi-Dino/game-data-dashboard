@@ -102,6 +102,14 @@
                         <div id="total-games-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
                     </div>
                     <div class="relative group">
+                        <p class="text-sm text-stone-600">全成就游戏</p>
+                        <div class="flex items-center">
+                           <p id="fully-completed-count" class="text-2xl font-bold text-amber-600">0 款</p>
+                           <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                        </div>
+                        <div id="fully-completed-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
+                    </div>
+                    <div class="relative group">
                         <p class="text-sm text-stone-600">总计游玩</p>
                         <div class="flex items-center">
                            <p id="total-playtime" class="text-xl font-semibold text-stone-900">0.00 小时</p>
@@ -323,6 +331,10 @@
                         <label for="item-rating" class="block text-sm font-medium text-stone-700">我的评分 (1-10)</label>
                         <input type="number" id="item-rating" min="1" max="10" step="0.5" class="form-input w-full mt-1" placeholder="输入1到10的评分">
                     </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="fully-completed" class="form-checkbox">
+                        <label for="fully-completed" class="text-sm font-medium text-stone-700">🏆 已全成就通关</label>
+                    </div>
                     <div id="resell-fields" class="hidden grid grid-cols-2 gap-4">
                         <div><label for="sell-date" class="block text-sm font-medium text-stone-700">售出日期</label><input type="date" id="sell-date" class="form-input w-full mt-1"></div>
                         <div><label for="sell-price" class="block text-sm font-medium text-stone-700">售出价格 (¥)</label><input type="number" id="sell-price" step="0.01" class="form-input w-full mt-1"></div>
@@ -416,6 +428,7 @@
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="actualCost">实际支出</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="costPerHour">时间成本</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="from">来源</th>
+                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="fullyCompleted">全成就</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="type">类型</th>
                         </tr>
                     </thead>

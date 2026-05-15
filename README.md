@@ -24,6 +24,7 @@
 - **⭐ 更精细的数据维度**:
   - **游戏状态** — 精确追踪游戏是"正在玩"、"待玩"、"已通关"还是"已弃坑"。
   - **个人评分** — 为您的游戏打分（1-10分，支持半星），让数据更具个人色彩，并用于AI推荐分析。
+  - **🏆 全成就追踪** — 标记已达成100%成就的游戏。Steam游戏可通过同步自动检测，其他平台手动标记。数据表中全成就行以金色边框+脉冲动画高亮显示。
 - **🎭 剧集追踪** — 除了游戏，还可以追踪您观看的剧集，自动计算观看时长。
 - **📥 灵活的导入/导出** — 支持 CSV 格式的数据迁移和备份。
 
@@ -99,7 +100,7 @@ js/
 为确保顺利导入，CSV 文件**必须包含表头行**，且**必须包含** `id`, `name`, `type` 三列。每一行的 `id` **必须是独一无二的**。
 
 **标准表头**:
-`id,name,type,sort,status,purchaseDate,purchasePrice,from,playTime,passDate,sellDate,sellPrice,rating`
+`id,name,type,sort,status,purchaseDate,purchasePrice,from,playTime,passDate,sellDate,sellPrice,rating,fullyCompleted`
 
 **剧集额外字段**: `episodeCount`, `episodeDuration`（每集时长，分钟）
 

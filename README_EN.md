@@ -24,6 +24,7 @@ Whether you're a core gamer seeking detailed data analysis or just want a simple
 - **⭐ More Granular Data**:
   - **Game Status** — Precisely track whether a game is "Playing," "Backlog," "Passed," or "Abandoned."
   - **Personal Rating** — Rate your games on a 1-10 scale (half-star support) to add a personal touch to your data and feed the AI recommendation engine.
+  - **🏆 Achievement Tracking** — Mark games with 100% achievements. Steam games are auto-detected via sync; other platforms use manual toggle. Fully-completed rows in the data table are highlighted with a gold border and pulse animation.
 - **🎭 Drama Tracking** — Besides games, also track TV dramas you've watched with automatic duration calculation.
 - **📥 Flexible Import/Export** — Supports data migration and backup in CSV format.
 
@@ -99,7 +100,7 @@ Some core charts and metrics have specific calculation logic behind them:
 To ensure a smooth import, your CSV file **must contain a header row** and **must include** `id`, `name`, and `type` columns. Each row's `id` **must be unique**.
 
 **Standard Header**:
-`id,name,type,sort,status,purchaseDate,purchasePrice,from,playTime,passDate,sellDate,sellPrice,rating`
+`id,name,type,sort,status,purchaseDate,purchasePrice,from,playTime,passDate,sellDate,sellPrice,rating,fullyCompleted`
 
 **Drama Extra Fields**: `episodeCount`, `episodeDuration` (minutes per episode)
 

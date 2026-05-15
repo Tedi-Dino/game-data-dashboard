@@ -116,6 +116,10 @@ const readFormData = () => {
         data.steam_override = document.getElementById('steam-override').checked;
     }
 
+    // Achievement completion (all game platforms)
+    const fullyCompletedCheckbox = document.getElementById('fully-completed');
+    data.fullyCompleted = fullyCompletedCheckbox ? fullyCompletedCheckbox.checked : false;
+
     return data;
 };
 
