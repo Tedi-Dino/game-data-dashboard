@@ -16,75 +16,71 @@ export const setupChartDefaults = () => {
 
 /**
  * Factory: create an external tooltip handler for a Chart.js instance.
- * Mounts tooltip inside chart.canvas.parentNode so rotation transforms inherit.
+ * Uses position:fixed + document.body to guarantee viewport-visible tooltips,
+ * avoiding issues with small/overflow-hidden ancestor containers.
  * @param {Function} formatter - (tooltip) => htmlString | null
  */
 export const createExternalTooltip = (formatter) => {
     return (context) => {
         const { chart, tooltip } = context;
 
-        // Find or create tooltip element inside chart's parent
-        let tooltipEl = chart.canvas.parentNode.querySelector('div.chartjs-tooltip');
+        // Each chart gets its own tooltip element on document.body
+        const tipId = `chartjs-tooltip-${chart.id}`;
+        let tooltipEl = document.getElementById(tipId);
         if (!tooltipEl) {
             tooltipEl = document.createElement('div');
-            tooltipEl.className = 'chartjs-tooltip absolute bg-white text-stone-800 text-sm rounded-lg shadow-lg p-3 opacity-0 pointer-events-none transition-opacity duration-100 w-72 z-[9999] border border-stone-200';
-            chart.canvas.parentNode.appendChild(tooltipEl);
+            tooltipEl.id = tipId;
+            tooltipEl.className = 'fixed bg-white text-stone-800 text-sm rounded-lg shadow-lg p-3 pointer-events-none w-72 border border-stone-200';
+            tooltipEl.style.opacity = '0';
+            tooltipEl.style.transition = 'opacity 100ms ease';
+            tooltipEl.style.zIndex = '99999';
+            document.body.appendChild(tooltipEl);
         }
 
         // Hide if not active
         if (tooltip.opacity === 0) {
-            tooltipEl.style.opacity = 0;
+            tooltipEl.style.opacity = '0';
             return;
         }
 
         const html = formatter(tooltip);
         if (!html) {
-            tooltipEl.style.opacity = 0;
+            tooltipEl.style.opacity = '0';
             return;
         }
 
         tooltipEl.innerHTML = html;
+        // Force reflow so offsetWidth/offsetHeight reflect the new content
+        void tooltipEl.offsetHeight;
 
-        // Positioning relative to parent container
+        // Caret position in viewport coordinates
+        const canvasRect = chart.canvas.getBoundingClientRect();
+        const caretVX = canvasRect.left + tooltip.caretX;
+        const caretVY = canvasRect.top + tooltip.caretY;
+
         const tooltipWidth = tooltipEl.offsetWidth;
         const tooltipHeight = tooltipEl.offsetHeight;
-        const containerWidth = chart.canvas.parentNode.clientWidth;
-        const containerHeight = chart.canvas.parentNode.clientHeight;
-        const pad = 4; // px padding from edges
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const pad = 8;
 
-        // --- Horizontal ---
-        // Center on the caret, then clamp within container
-        let finalLeft = tooltip.caretX - (tooltipWidth / 2);
-        // If tooltip wider than container, just pin left
-        if (tooltipWidth >= containerWidth) {
+        // --- Horizontal: center on caret, clamp within viewport ---
+        let finalLeft = caretVX - (tooltipWidth / 2);
+        if (tooltipWidth >= vw) {
             finalLeft = pad;
         } else {
-            if (finalLeft < pad) finalLeft = pad;
-            if (finalLeft + tooltipWidth > containerWidth - pad) {
-                finalLeft = containerWidth - tooltipWidth - pad;
-            }
+            finalLeft = Math.max(pad, Math.min(finalLeft, vw - tooltipWidth - pad));
         }
 
-        // --- Vertical ---
-        // Prefer above the data point; flip below if that overflows the top
-        let finalTop = tooltip.caretY - tooltipHeight - 10;
-
+        // --- Vertical: prefer above the point, flip below if needed ---
+        let finalTop = caretVY - tooltipHeight - 12;
         if (finalTop < pad) {
-            // Not enough room above — try below
-            if ((tooltip.caretY + 20 + tooltipHeight) <= containerHeight - pad) {
-                finalTop = tooltip.caretY + 20;  // below
-            } else {
-                // Neither fits well — pin to top of container
-                finalTop = pad;
-            }
+            finalTop = caretVY + 16;
         }
+        // Final clamp: keep within viewport
+        finalTop = Math.max(pad, Math.min(finalTop, vh - tooltipHeight - pad));
 
-        // Final safety clamp: never overflow container bottom
-        if (finalTop + tooltipHeight > containerHeight - pad) {
-            finalTop = Math.max(pad, containerHeight - tooltipHeight - pad);
-        }
-
-        tooltipEl.style.opacity = 1;
+        tooltipEl.style.opacity = '1';
         tooltipEl.style.left = finalLeft + 'px';
         tooltipEl.style.top = finalTop + 'px';
     };
@@ -93,7 +89,12 @@ export const createExternalTooltip = (formatter) => {
 // Destroy all charts and reset the chart store
 export const destroyAllCharts = () => {
     Object.values(charts).forEach(chart => {
-        if (chart && chart.destroy) chart.destroy();
+        if (chart && chart.destroy) {
+            // Remove the chart's tooltip element from body
+            const tipEl = document.getElementById(`chartjs-tooltip-${chart.id}`);
+            if (tipEl) tipEl.remove();
+            chart.destroy();
+        }
     });
     for (const key of Object.keys(charts)) {
         charts[key] = undefined;
