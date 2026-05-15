@@ -12,6 +12,24 @@ export const setupChartDefaults = () => {
     Chart.defaults.plugins.tooltip.borderWidth = 1;
     Chart.defaults.plugins.tooltip.padding = 10;
     Chart.defaults.plugins.tooltip.titleFont = { weight: 'bold' };
+
+    // Global plug-in: light green gradient indicating cost-performance direction
+    // on scatter/price-time charts (bottom-right = best value)
+    Chart.register({
+        id: 'costPerformanceGradient',
+        beforeDraw(chart) {
+            if (chart.config.type !== 'scatter') return;
+            const { ctx, chartArea } = chart;
+            if (!chartArea || chartArea.width <= 0 || chartArea.height <= 0) return;
+            const g = ctx.createLinearGradient(chartArea.left, chartArea.top, chartArea.right, chartArea.bottom);
+            g.addColorStop(0, 'rgba(220, 252, 231, 0)');
+            g.addColorStop(1, 'rgba(220, 252, 231, 0.28)');
+            ctx.save();
+            ctx.fillStyle = g;
+            ctx.fillRect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
+            ctx.restore();
+        }
+    });
 };
 
 /**
