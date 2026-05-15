@@ -22,8 +22,8 @@ export const setupChartDefaults = () => {
             const { ctx, chartArea } = chart;
             if (!chartArea || chartArea.width <= 0 || chartArea.height <= 0) return;
             const g = ctx.createLinearGradient(chartArea.left, chartArea.top, chartArea.right, chartArea.bottom);
-            g.addColorStop(0, 'rgba(220, 252, 231, 0)');
-            g.addColorStop(1, 'rgba(220, 252, 231, 0.28)');
+            g.addColorStop(0, 'rgba(212, 160, 23, 0)');
+            g.addColorStop(1, 'rgba(212, 160, 23, 0.18)');
             ctx.save();
             ctx.fillStyle = g;
             ctx.fillRect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);

@@ -13,7 +13,7 @@ export const renderGameSortChart = () => {
     const sortedData = Object.entries(timeBySort).sort((a, b) => b[1] - a[1]);
     const labels = sortedData.map(d => d[0]);
     const data = sortedData.map(d => d[1]);
-    const backgroundColors = labels.map(label => `hsl(${hashCode(label) % 360}, 70%, 60%)`);
+    const backgroundColors = labels.map(label => `hsl(${hashCode(label) % 360}, 30%, 55%)`);
 
     const el = document.getElementById('game-sort-chart');
     if (!el) return;
