@@ -1,6 +1,6 @@
 import { items, charts } from '../core/state.js';
 import { hashCode, renderStars, escapeHTML } from '../core/utils.js';
-import { createExternalTooltip } from './setup.js';
+import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
 
 export const renderGameSortChart = () => {
     const itemsWithSort = items.filter(i => i.type !== 'hardware' && i.sort && i.playTime > 0);
@@ -18,7 +18,7 @@ export const renderGameSortChart = () => {
     const el = document.getElementById('game-sort-chart');
     if (!el) return;
 
-    if (charts.gameSort) charts.gameSort.destroy();
+    if (charts.gameSort) destroyChartWithTooltip(charts.gameSort);
 
     charts.gameSort = new Chart(el, {
         type: 'doughnut',

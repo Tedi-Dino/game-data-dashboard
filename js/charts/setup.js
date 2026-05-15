@@ -86,15 +86,18 @@ export const createExternalTooltip = (formatter) => {
     };
 };
 
+// Destroy a single chart and remove its tooltip element from document.body
+export const destroyChartWithTooltip = (chart) => {
+    if (!chart) return;
+    const tipEl = document.getElementById(`chartjs-tooltip-${chart.id}`);
+    if (tipEl) tipEl.remove();
+    chart.destroy();
+};
+
 // Destroy all charts and reset the chart store
 export const destroyAllCharts = () => {
     Object.values(charts).forEach(chart => {
-        if (chart && chart.destroy) {
-            // Remove the chart's tooltip element from body
-            const tipEl = document.getElementById(`chartjs-tooltip-${chart.id}`);
-            if (tipEl) tipEl.remove();
-            chart.destroy();
-        }
+        destroyChartWithTooltip(chart);
     });
     for (const key of Object.keys(charts)) {
         charts[key] = undefined;

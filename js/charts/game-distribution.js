@@ -1,7 +1,7 @@
 import { items, charts } from '../core/state.js';
 import { PLATFORM_COLORS } from '../config/constants.js';
 import { escapeHTML, formatCurrency, netCost } from '../core/utils.js';
-import { createExternalTooltip } from './setup.js';
+import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
 
 // Platform grouping: item.type → display label + color key
 const PLATFORM_MAP = {
@@ -21,10 +21,10 @@ const PLATFORM_MAP = {
     drama:     { label: '剧集',         colorKey: 'drama' },
 };
 
-// Rating → point radius (unrated=2, rated 1–5 → 2.6–5)
+// Rating → point radius (unrated=2, rated 1→2.2, 5→3, 10→4)
 const ratingToRadius = (rating) => {
     if (!rating || rating <= 0) return 2;
-    return 2 + rating * 0.6; // 1→2.6, 2→3.2, 3→3.8, 4→4.4, 5→5
+    return 2 + rating * 0.2;
 };
 
 // Scriptable radius function for Chart.js (receives context)
@@ -74,13 +74,12 @@ export const renderGameDistributionChart = () => {
                 pointRadius: radiusFromContext,
                 pointHoverRadius: (ctx) => radiusFromContext(ctx) + 1.5,
                 pointHitRadius: 12,
-                hitRadius: 12,
             };
         });
 
     const el = document.getElementById('game-distribution-chart');
     if (!el) return;
-    if (charts.gameDistribution) charts.gameDistribution.destroy();
+    if (charts.gameDistribution) destroyChartWithTooltip(charts.gameDistribution);
 
     charts.gameDistribution = new Chart(el, {
         type: 'scatter',
@@ -113,8 +112,9 @@ export const renderGameDistributionChart = () => {
                         const pt = tooltip.dataPoints?.[0]?.raw;
                         if (!pt) return null;
                         const icon = pt.type === 'drama' ? '📺' : '🎮';
+                        const fullStars = Math.floor(pt.rating / 2);
                         const stars = pt.rating > 0
-                            ? ' ' + '★'.repeat(pt.rating) + '☆'.repeat(5 - pt.rating)
+                            ? ' ' + '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars)
                             : '';
                         let html = `<div class="font-bold text-base mb-1">${icon} ${escapeHTML(pt.name)}</div>` +
                             `<div class="text-sm">时长: <strong>${pt.x.toFixed(1)}h</strong></div>` +

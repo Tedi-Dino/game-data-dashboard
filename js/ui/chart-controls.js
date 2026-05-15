@@ -1,4 +1,5 @@
 import { charts } from '../core/state.js';
+import { destroyChartWithTooltip } from '../charts/setup.js';
 import { renderGameDistributionChart } from '../charts/game-distribution.js';
 import { renderMonthlyTrendsChart } from '../charts/monthly-trends.js';
 import { openModal, closeModal } from './modals.js';
@@ -59,7 +60,7 @@ export const setupChartControls = () => {
             closeModal(fullscreenModal);
             if (fullscreenContainer) fullscreenContainer.style = '';
             if (charts.monthlyTrendsFullscreen) {
-                charts.monthlyTrendsFullscreen.destroy();
+                destroyChartWithTooltip(charts.monthlyTrendsFullscreen);
                 charts.monthlyTrendsFullscreen = undefined;
             }
         });

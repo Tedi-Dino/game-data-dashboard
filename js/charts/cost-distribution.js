@@ -1,7 +1,7 @@
 import { items, charts } from '../core/state.js';
 import { PLATFORM_COLORS, COST_TYPE_MAP, COST_COLOR_MAP } from '../config/constants.js';
 import { formatCurrency, escapeHTML, netCost } from '../core/utils.js';
-import { createExternalTooltip } from './setup.js';
+import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
 
 const COST_LABELS = {
     hardware: '硬件设备',
@@ -31,7 +31,7 @@ export const renderCostDistributionChart = () => {
     const el = document.getElementById('cost-distribution-chart');
     if (!el) return;
 
-    if (charts.costDistribution) charts.costDistribution.destroy();
+    if (charts.costDistribution) destroyChartWithTooltip(charts.costDistribution);
 
     charts.costDistribution = new Chart(el, {
         type: 'doughnut',

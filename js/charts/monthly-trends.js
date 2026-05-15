@@ -1,7 +1,7 @@
 import { items, charts } from '../core/state.js';
 import { PLATFORM_COLORS } from '../config/constants.js';
 import { formatCurrency, normalizeMonth, renderStars, escapeHTML } from '../core/utils.js';
-import { createExternalTooltip } from './setup.js';
+import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
 
 const DEFAULT_TREND = {
     hardware: 0, switch_physical: 0, switch_digital: 0, steam: 0, epic: 0,
@@ -206,7 +206,7 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
     const el = document.getElementById(canvasId);
     if (!el) return;
 
-    if (charts[chartKey]) charts[chartKey].destroy();
+    if (charts[chartKey]) destroyChartWithTooltip(charts[chartKey]);
 
     charts[chartKey] = new Chart(el, {
         type: 'bar',

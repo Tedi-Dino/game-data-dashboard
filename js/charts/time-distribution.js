@@ -1,7 +1,7 @@
 import { items, charts } from '../core/state.js';
 import { PLATFORM_COLORS, TIME_TYPE_MAP, TIME_COLOR_MAP } from '../config/constants.js';
 import { escapeHTML } from '../core/utils.js';
-import { createExternalTooltip } from './setup.js';
+import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
 
 const TIME_LABELS = {
     physical: 'Switch', digital: 'Switch',
@@ -21,7 +21,7 @@ export const renderTimeDistributionChart = () => {
     const el = document.getElementById('time-distribution-chart');
     if (!el) return;
 
-    if (charts.timeDistribution) charts.timeDistribution.destroy();
+    if (charts.timeDistribution) destroyChartWithTooltip(charts.timeDistribution);
 
     charts.timeDistribution = new Chart(el, {
         type: 'doughnut',
