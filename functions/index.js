@@ -221,6 +221,16 @@ function fuzzyMatch(steamGames, existingItems) {
   return {matched, unmatched};
 }
 
+async function fetchGameAchievements(apiKey, appId) {
+  const url = `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key=${apiKey}&steamid=${STEAM_ID}&appid=${appId}&format=json`;
+  const response = await fetch(url);
+  if (!response.ok) return null;
+  const data = await response.json();
+  const stats = data?.playerstats;
+  if (!stats || !stats.achievements || stats.achievements.length === 0) return null;
+  return stats.achievements;
+}
+
 async function performSteamSync(apiKey) {
   // 1. Fetch owned games from Steam
   const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${apiKey}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
@@ -250,6 +260,8 @@ async function performSteamSync(apiKey) {
 
   // 4. Batch update matched items
   let updated = 0;
+  let achievementsChecked = 0;
+  let fullyCompletedCount = 0;
   const BATCH_LIMIT = 400;
   const entries = [...matched.entries()];
 
@@ -271,6 +283,19 @@ async function performSteamSync(apiKey) {
         updated++;
       }
 
+      // Fetch achievement data
+      try {
+        const achievements = await fetchGameAchievements(apiKey, info.app_id);
+        if (achievements !== null) {
+          achievementsChecked++;
+          const allAchieved = achievements.length > 0 && achievements.every(a => a.achieved === 1);
+          updateData.fullyCompleted = allAchieved;
+          if (allAchieved) fullyCompletedCount++;
+        }
+      } catch (err) {
+        logger.warn(`Achievement fetch failed for appid ${info.app_id}: ${err.message}`);
+      }
+
       batch.set(db.doc(`items/${fbId}`), updateData, {merge: true});
     }
 
@@ -284,14 +309,16 @@ async function performSteamSync(apiKey) {
     matchedCount: matched.size,
     unmatchedCount: unmatched.length,
     unmatchedGames: unmatchedTop,
+    achievementsChecked: achievementsChecked,
+    fullyCompletedCount: fullyCompletedCount,
   }, {merge: true});
 
-  logger.info(`Steam sync complete: matched=${matched.size}, updated=${updated}, unmatched=${unmatched.length}`);
+  logger.info(`Steam sync complete: matched=${matched.size}, updated=${updated}, unmatched=${unmatched.length}, achievements=${achievementsChecked}, fullyCompleted=${fullyCompletedCount}`);
 
-  return {matched: matched.size, updated, unmatched: unmatchedTop};
+  return {matched: matched.size, updated, unmatched: unmatchedTop, achievementsChecked, fullyCompletedCount};
 }
 
-exports.syncSteamData = onCall({secrets: [STEAM_API_KEY], timeoutSeconds: 120}, async (request) => {
+exports.syncSteamData = onCall({secrets: [STEAM_API_KEY], timeoutSeconds: 300}, async (request) => {
   // Admin-only access
   if (!request.auth || !ADMIN_UIDS.includes(request.auth.uid)) {
     throw new HttpsError("permission-denied", "只有管理员才能同步Steam数据。");
@@ -313,7 +340,7 @@ exports.syncSteamData = onCall({secrets: [STEAM_API_KEY], timeoutSeconds: 120}, 
 });
 
 exports.scheduledSteamSync = onSchedule(
-    {schedule: "0 4 * * *", timeZone: "Asia/Shanghai", secrets: [STEAM_API_KEY], timeoutSeconds: 120},
+    {schedule: "0 4 * * *", timeZone: "Asia/Shanghai", secrets: [STEAM_API_KEY], timeoutSeconds: 300},
     async () => {
       const apiKey = STEAM_API_KEY.value();
       if (!apiKey) {

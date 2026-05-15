@@ -51,6 +51,7 @@ export const renderItemsList = () => {
                 case 'costPerHour': return (!item.playTime || item.playTime <= 0 ? Infinity : cost / item.playTime);
                 case 'rating': return item.rating ?? 0;
                 case 'steam': return item.steam_app_id ? 1 : 0;
+                case 'fullyCompleted': return item.fullyCompleted ? 1 : 0;
                 default: return '';
             }
         };
@@ -68,7 +69,8 @@ export const renderItemsList = () => {
         const cph = item.playTime > 0 ? cost / item.playTime : null;
 
         const row = document.createElement('tr');
-        row.className = 'border-b border-stone-200 hover:bg-stone-100 cursor-pointer';
+        const baseClass = 'border-b border-stone-200 hover:bg-stone-100 cursor-pointer';
+        row.className = item.fullyCompleted ? `${baseClass} achievement-gold-row` : baseClass;
         row.dataset.fb_id = item.fb_id;
         row.innerHTML = `
             <td class="px-4 py-3 font-mono whitespace-nowrap">${escapeHTML(item.id) || '/'}</td>
@@ -83,6 +85,7 @@ export const renderItemsList = () => {
             <td class="px-4 py-3 whitespace-nowrap">${formatCurrency(cost)}</td>
             <td class="px-4 py-3 whitespace-nowrap">${cph != null && isFinite(cph) ? formatCurrency(cph) : '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(FROM_MAP[item.from]) || '/'}</td>
+            <td class="px-4 py-3 text-center whitespace-nowrap">${item.fullyCompleted ? '<i class="fas fa-trophy achievement-trophy"></i>' : '<span class="text-stone-300">-</span>'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(TYPE_MAP[item.type] || item.type) || '/'}</td>`;
         row.addEventListener('click', () => handleEditItem(item.fb_id));
         tbody.appendChild(row);
@@ -202,6 +205,10 @@ const handleEditItem = (fbId) => {
         if (steamAppIdInput) steamAppIdInput.value = item.steam_app_id ?? '';
         const steamOverrideCheckbox = document.getElementById('steam-override');
         if (steamOverrideCheckbox) steamOverrideCheckbox.checked = item.steam_override !== false;
+
+        // Achievement completion checkbox
+        const fullyCompletedCheckbox = document.getElementById('fully-completed');
+        if (fullyCompletedCheckbox) fullyCompletedCheckbox.checked = !!item.fullyCompleted;
     }
 
     document.getElementById('delete-btn').classList.remove('hidden');
