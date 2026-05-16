@@ -23,8 +23,6 @@
                  <input type="file" id="csv-import-input" class="hidden" accept=".csv">
 
                  <div class="text-center sm:text-right">
-                    <p id="last-updated" class="text-sm text-stone-500">正在加载数据...</p>
-                    <p id="steam-sync-status" class="text-xs text-stone-400 mt-1 hidden"></p>
                     <p class="text-xs text-stone-400 mt-1">Powered by Firebase. Co-Developed by Tedi-Dino & AI ❤️</p>
                  </div>
 
@@ -406,6 +404,10 @@
                 <button id="toggle-detail-cols" class="text-xs text-stone-400 hover:text-stone-600 whitespace-nowrap px-3 py-2 rounded border border-stone-200 hover:border-stone-300 transition-colors">
                     <i class="fas fa-caret-down"></i> 展开详情
                 </button>
+            </div>
+            <div class="mb-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+                <p id="last-updated" class="text-stone-500">正在加载数据...</p>
+                <p id="steam-sync-status" class="text-stone-400 hidden"></p>
             </div>
             <div class="overflow-auto">
                 <table class="w-full text-sm text-left text-stone-700">
