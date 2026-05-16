@@ -1,5 +1,5 @@
 import { items } from '../core/state.js';
-import { formatCurrency, escapeHTML } from '../core/utils.js';
+import { formatCurrency, formatNumber, escapeHTML } from '../core/utils.js';
 
 // --- KPI Calculations ---
 const calcKPIs = () => {
@@ -39,17 +39,26 @@ export const updateDashboardKPIs = () => {
         if (el) el.textContent = text;
     };
 
-    setText('total-actual-cost', formatCurrency(kpi.totalActual));
-    setText('game-actual-cost', formatCurrency(kpi.gameActual));
-    setText('hardware-actual-cost', formatCurrency(kpi.hardwareActual));
-    setText('unfinished-games-cost', formatCurrency(kpi.unfinishedCost));
-    setText('total-games', `${kpi.fullyCompletedCount} / ${kpi.passedCount} / ${kpi.gameCount} 款`);
-    setText('total-playtime', `${kpi.totalPlaytime.toFixed(2)} 小时`);
-    setText('avg-playtime', `${kpi.avgPlaytime.toFixed(2)} 小时/款`);
-    setText('cost-per-hour', kpi.costPerHour !== null ? formatCurrency(kpi.costPerHour) : '/');
-    setText('total-dramas', `${kpi.dramaCount} 部`);
-    setText('total-drama-time', `${kpi.totalDramaTime.toFixed(2)} 小时`);
-    setText('avg-drama-time', `${kpi.avgDramaTime.toFixed(2)} 小时/部`);
+    setText('total-actual-cost', formatNumber(kpi.totalActual));
+    setText('game-actual-cost', formatNumber(kpi.gameActual));
+    setText('hardware-actual-cost', formatNumber(kpi.hardwareActual));
+    setText('unfinished-games-cost', formatNumber(kpi.unfinishedCost));
+    setText('total-games', `${kpi.fullyCompletedCount} / ${kpi.passedCount} / ${kpi.gameCount}`);
+    setText('total-playtime', kpi.totalPlaytime.toFixed(2));
+    setText('avg-playtime', kpi.avgPlaytime.toFixed(2));
+    setText('cost-per-hour', kpi.costPerHour !== null ? formatNumber(kpi.costPerHour) : '/');
+    setText('total-dramas', kpi.dramaCount);
+    setText('total-drama-time', kpi.totalDramaTime.toFixed(2));
+    setText('avg-drama-time', kpi.avgDramaTime.toFixed(2));
+
+    // Hide/show currency symbol for cost-per-hour when it's "/"
+    const cphEl = document.getElementById('cost-per-hour');
+    if (cphEl) {
+        const currencySpan = cphEl.parentElement.querySelector('.kpi-currency');
+        if (currencySpan) {
+            currencySpan.style.display = kpi.costPerHour !== null ? '' : 'none';
+        }
+    }
 };
 
 // --- Update KPI Tooltips ---

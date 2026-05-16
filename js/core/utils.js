@@ -1,6 +1,9 @@
 // Currency formatter
 export const formatCurrency = (value) => `¥${(value || 0).toFixed(2)}`;
 
+// Plain number formatter (no ¥ symbol — for use with separate currency spans)
+export const formatNumber = (value) => (value || 0).toFixed(2);
+
 // Safe numeric parser: returns null for empty/invalid input
 export const parseFloatOrNull = (value) =>
     (value === '' || value === null || isNaN(parseFloat(value)) ? null : parseFloat(value));

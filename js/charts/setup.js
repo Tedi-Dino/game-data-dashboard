@@ -6,24 +6,24 @@ export const setupChartDefaults = () => {
     Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.08)';
     Chart.defaults.plugins.legend.position = 'bottom';
     Chart.defaults.plugins.tooltip.backgroundColor = '#ffffff';
-    Chart.defaults.plugins.tooltip.borderColor = '#e5e0dc';
+    Chart.defaults.plugins.tooltip.borderColor = 'transparent';
     Chart.defaults.plugins.tooltip.titleColor = '#1c1917';
     Chart.defaults.plugins.tooltip.bodyColor = '#2d2927';
     Chart.defaults.plugins.tooltip.borderWidth = 1;
     Chart.defaults.plugins.tooltip.padding = 10;
     Chart.defaults.plugins.tooltip.titleFont = { weight: 'bold' };
 
-    // Global plug-in: light green gradient indicating cost-performance direction
+    // Global plug-in: misty cyan gradient indicating cost-performance direction
     // on scatter/price-time charts (bottom-right = best value)
     Chart.register({
-        id: 'costPerformanceGradient',
+        id: 'valueDirectionGradient',
         beforeDraw(chart) {
             if (chart.config.type !== 'scatter') return;
             const { ctx, chartArea } = chart;
             if (!chartArea || chartArea.width <= 0 || chartArea.height <= 0) return;
             const g = ctx.createLinearGradient(chartArea.left, chartArea.top, chartArea.right, chartArea.bottom);
-            g.addColorStop(0, 'rgba(212, 160, 23, 0)');
-            g.addColorStop(1, 'rgba(212, 160, 23, 0.18)');
+            g.addColorStop(0, 'rgba(106, 184, 238, 0)');
+            g.addColorStop(1, 'rgba(106, 184, 238, 0.10)');
             ctx.save();
             ctx.fillStyle = g;
             ctx.fillRect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
@@ -48,7 +48,8 @@ export const createExternalTooltip = (formatter) => {
         if (!tooltipEl) {
             tooltipEl = document.createElement('div');
             tooltipEl.id = tipId;
-            tooltipEl.className = 'fixed bg-white text-stone-800 text-sm rounded-lg shadow-lg p-3 pointer-events-none w-72 border border-stone-200';
+            tooltipEl.className = 'fixed bg-white text-stone-800 text-sm rounded-lg p-3 pointer-events-none w-72';
+            tooltipEl.style.boxShadow = '0 10px 30px rgba(0,0,0,0.06)';
             tooltipEl.style.opacity = '0';
             tooltipEl.style.transition = 'opacity 100ms ease';
             tooltipEl.style.zIndex = '99999';
