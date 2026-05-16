@@ -104,6 +104,7 @@ ${customPrompt || "无特定需求，请综合推荐。"}
             ],
             max_tokens: 2000,
             temperature: 0.3,
+            response_format: { type: "json_object" },
             ...(thinking ? { thinking: { type: "enabled", reasoning_effort: "high" } } : { thinking: { type: "disabled" } }),
           }),
         },
@@ -127,15 +128,24 @@ ${customPrompt || "无特定需求，请综合推荐。"}
     if (!textContent && msg) {
       logger.warn("message.content is empty. Full message keys:", JSON.stringify(Object.keys(msg)));
       logger.warn("Full message:", JSON.stringify(msg));
+      return { output: { text: "" }, error: "DeepSeek API 返回了空响应。" };
     }
 
     logger.info("DeepSeek response received, length:", textContent.length);
 
-    return {
-      output: {
-        text: textContent
+    // With response_format json_object, content is guaranteed valid JSON
+    try {
+      const parsed = JSON.parse(textContent);
+      const arr = Array.isArray(parsed) ? parsed : parsed.recommendations || parsed.data || [];
+      if (Array.isArray(arr) && arr.every(r => r.name && r.reason)) {
+        return { recommendations: arr };
       }
-    };
+      logger.warn("JSON structure mismatch:", textContent);
+      return { output: { text: "" }, error: "AI返回的JSON结构不符合预期。" };
+    } catch (parseErr) {
+      logger.error("Failed to parse JSON response:", parseErr.message, textContent);
+      return { output: { text: "" }, error: "AI返回的格式不正确，无法解析推荐内容。" };
+    }
 
   } catch (error) {
     logger.error("Error calling getAiRecommendations:", error.message, error.stack);
