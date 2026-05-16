@@ -74,16 +74,15 @@ body {
     flex-direction: column;
     background-color: #ffffff;
     color: #1c1917;
-    border: 1px solid #e5e0dc;
     border-radius: 0.75rem;
     position: relative;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
     transition: transform 0.3s ease, box-shadow 0.3s ease, z-index 0s;
 }
 
 .card:hover {
     z-index: 40;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 14px 36px rgba(0,0,0,0.06);
 }
 
 /* === Canvas Sizing === */
@@ -211,8 +210,8 @@ body {
     max-width: calc(100vw - 2rem);
     background-color: #ffffff;
     color: #1c1917;
-    border: 1px solid #e5e0dc;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.06);
 }
 .relative.group:hover .kpi-tooltip {
     opacity: 1;
@@ -356,4 +355,27 @@ body {
 }
 .status-abandoned-row:hover {
     background: linear-gradient(90deg, rgba(244, 63, 94, 0.10) 0%, rgba(244, 63, 94, 0.03) 50%);
+}
+
+/* === KPI Typography === */
+.kpi-number {
+    font-family: 'Georgia', 'Times New Roman', 'Source Han Serif SC', serif;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+.kpi-currency,
+.kpi-unit {
+    font-size: 0.72em;
+    font-weight: 400;
+    opacity: 0.55;
+}
+
+/* === KPI Color Accents === */
+.kpi-primary {
+    color: #f5b642;
+}
+
+.kpi-secondary {
+    color: #6b7280;
 }

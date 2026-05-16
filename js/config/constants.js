@@ -2,21 +2,22 @@
 export const ADMIN_UIDS = ['ZPyHfPGUI4elNvRN2Q30ZqfzT6X2'];
 
 // Platform/category colors for charts
+// White-tinted pastels: brand originals lightened with white + subtle hue shifts
 export const PLATFORM_COLORS = {
-    hardware: '#78716c',
-    switch_physical: '#c2410c',
-    switch_digital: '#d97757',
-    steam: '#5b7a9a',
-    epic: '#bfb0a0',
-    ubi: '#8b7aaa',
-    gog: '#b8707f',
-    ps: '#4d7c9e',
-    xbox: '#5e8f5e',
-    appstore: '#6b6560',
-    googleplay: '#5e9a7a',
-    emulator: '#c4a040',
-    other: '#a39a92',
-    drama: '#c4556a'
+    hardware: '#b0a498',
+    switch_physical: '#d89888',
+    switch_digital: '#e8c8b0',
+    steam: '#8abcd8',
+    epic: '#d8ccc0',
+    ubi: '#bcb4d4',
+    gog: '#d0a8c0',
+    ps: '#8ca8c8',
+    xbox: '#8cbc98',
+    appstore: '#a0a8b4',
+    googleplay: '#90c0a8',
+    emulator: '#d8c898',
+    other: '#c0b8b0',
+    drama: '#d8a8b8'
 };
 
 // Type display name maps

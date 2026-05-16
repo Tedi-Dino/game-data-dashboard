@@ -70,12 +70,40 @@ export const renderGameDistributionChart = () => {
                 label,
                 data: points,
                 backgroundColor: color + 'B3',
-                borderWidth: 0,
+                borderColor: '#ffffff',
+                borderWidth: 1,
                 pointRadius: radiusFromContext,
                 pointHoverRadius: (ctx) => radiusFromContext(ctx) + 1.5,
                 pointHitRadius: 12,
             };
         });
+
+    // Glow datasets for high-rated games (rating >= 8) — subtle halo
+    const glowDatasets = Object.entries(groups)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([label, { colorKey, points }]) => {
+            const highRated = points.filter(p => (p.rating || 0) >= 8);
+            if (highRated.length === 0) return null;
+            const color = PLATFORM_COLORS[colorKey] || '#9ca3af';
+            return {
+                label: '',
+                data: highRated,
+                backgroundColor: color + '30',
+                borderWidth: 0,
+                pointRadius: (ctx) => {
+                    const rating = ctx.raw?.rating || 0;
+                    return ratingToRadius(rating) + 3;
+                },
+                pointHoverRadius: (ctx) => {
+                    const rating = ctx.raw?.rating || 0;
+                    return ratingToRadius(rating) + 4;
+                },
+                pointHitRadius: 0,
+            };
+        })
+        .filter(Boolean);
+
+    const allDatasets = [...datasets, ...glowDatasets];
 
     const el = document.getElementById('game-distribution-chart');
     if (!el) return;
@@ -83,7 +111,7 @@ export const renderGameDistributionChart = () => {
 
     charts.gameDistribution = new Chart(el, {
         type: 'scatter',
-        data: { datasets },
+        data: { datasets: allDatasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -105,7 +133,12 @@ export const renderGameDistributionChart = () => {
                 },
             },
             plugins: {
-                legend: { display: false },
+                legend: {
+                    display: false,
+                    labels: {
+                        filter: (item) => item.text !== ''
+                    }
+                },
                 tooltip: {
                     enabled: false,
                     external: createExternalTooltip((tooltip) => {

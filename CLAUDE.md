@@ -21,7 +21,7 @@ The Firebase Cloud Function source is at `functions/index.js`. Deploy with `fire
 
 ## Design system
 
-Page palette: warm Tailwind Stone base (`#f5f0ed` background, `#e5e0dc` borders), Amber accent (`#d97706`). All 14 platform colors are desaturated ~30-40% from brand originals and warmed to blend — see `js/config/constants.js` `PLATFORM_COLORS`. Trend lines use `pointRadius: 0` (smooth curves only). Scatter gradient uses warm amber tint. Full rationale in **[design.md](design.md)**.
+Page palette: warm Tailwind Stone base (`#f5f0ed` background), Amber accent (`#d97706`). All 14 platform colors are white-tinted pastels derived from brand originals with subtle hue shifts — see `js/config/constants.js` `PLATFORM_COLORS`. Trend lines use `pointRadius: 0` (smooth curves only). Scatter chart uses misty cyan tint gradient with white-bordered points and glow halos for high-rated games. Full rationale in **[design.md](design.md)**.
 
 ## Architecture
 
