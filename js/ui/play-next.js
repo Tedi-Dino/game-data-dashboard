@@ -163,10 +163,14 @@ export const setupPlayNextModal = () => {
     }
 
     // --- AI recommendation request ---
+    let aiRequestPending = false;
     if (aiPromptSendBtn && aiPromptInput) {
         aiPromptSendBtn.addEventListener('click', async () => {
+            if (aiRequestPending) return;
             const customPrompt = aiPromptInput.value;
 
+            aiRequestPending = true;
+            aiPromptSendBtn.disabled = true;
             if (aiRecommendationsList) {
                 aiRecommendationsList.classList.remove('hidden');
                 aiRecommendationsList.innerHTML = '<div class="flex justify-center items-center h-24"><p class="text-stone-400 animate-pulse">🤖 正在向AI咨询中，请稍候...</p></div>';
@@ -200,6 +204,9 @@ export const setupPlayNextModal = () => {
                 if (aiRecommendationsList) {
                     aiRecommendationsList.innerHTML = `<div class="p-4 bg-red-50 rounded-lg text-red-600 text-center border border-red-200">请求失败，请检查网络连接后重试。</div>`;
                 }
+            } finally {
+                aiRequestPending = false;
+                aiPromptSendBtn.disabled = false;
             }
         });
     }

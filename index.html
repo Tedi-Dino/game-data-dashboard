@@ -10,6 +10,8 @@
     <link href="css/style.css" rel="stylesheet">
 </head>
 <body class="h-full flex flex-col p-4">
+    <!-- Skip Navigation -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-amber-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">跳转到主内容</a>
 
     <!-- Main App Container -->
     <div id="app-container" class="max-w-screen-2xl mx-auto flex flex-col flex-grow w-full min-h-0">
@@ -28,23 +30,23 @@
 
                  <div class="flex items-center space-x-2">
                     <div id="auth-controls">
-                        <button id="login-btn" title="管理员登录" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
+                        <button id="login-btn" title="管理员登录" aria-label="管理员登录" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
                             <i class="fab fa-google text-xl"></i>
                         </button>
                         <div id="user-info" class="hidden items-center space-x-2">
                            <img id="user-avatar" class="w-10 h-10 rounded-full" alt="User Avatar">
-                           <button id="logout-btn" title="登出" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
+                           <button id="logout-btn" title="登出" aria-label="登出" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
                                <i class="fas fa-sign-out-alt text-xl"></i>
                            </button>
                         </div>
                     </div>
-                    <a href="https://steamcommunity.com/profiles/76561199530798696/" target="_blank" rel="noopener noreferrer" title="Steam Profile" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
+                    <a href="https://steamcommunity.com/profiles/76561199530798696/" target="_blank" rel="noopener noreferrer" title="Steam Profile" aria-label="Steam 个人资料" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
                         <i class="fab fa-steam text-xl"></i>
                     </a>
-                    <button id="steam-sync-btn" title="同步Steam游戏数据" class="w-10 h-10 hidden items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
+                    <button id="steam-sync-btn" title="同步Steam游戏数据" aria-label="同步Steam游戏数据" class="w-10 h-10 hidden items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
                         <i class="fas fa-sync-alt text-xl"></i>
                     </button>
-                    <a href="https://github.com/Tedi-Dino/game-data-dashboard" target="_blank" rel="noopener noreferrer" title="GitHub Repository" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
+                    <a href="https://github.com/Tedi-Dino/game-data-dashboard" target="_blank" rel="noopener noreferrer" title="GitHub Repository" aria-label="GitHub 仓库" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
                         <i class="fab fa-github text-xl"></i>
                     </a>
                 </div>
@@ -55,7 +57,7 @@
         </header>
 
         <!-- Main Content -->
-        <main class="dashboard-grid pb-28 lg:pb-2 flex-grow">
+        <main id="main-content" class="dashboard-grid pb-28 lg:pb-2 flex-grow">
             <!-- KPI: 消费总览 -->
             <div id="kpi-card-1" class="card p-4 card-animation lg:col-span-1 lg:row-start-1">
                 <h3 class="text-lg font-normal text-stone-500 mb-2">💰 消费总览</h3>
@@ -154,15 +156,15 @@
                 <h3 class="text-lg font-normal text-stone-500 mb-1">📊 消费、时间与爱好统计</h3>
                 <div class="flex-grow doughnut-grid gap-4">
                     <div class="relative flex flex-col doughnut-item-1">
-                        <div class="flex-grow relative"><canvas id="cost-distribution-chart"></canvas></div>
+                        <div class="flex-grow relative"><canvas id="cost-distribution-chart" role="img" aria-label="消费金额分布饼图"></canvas></div>
                         <h4 class="text-center text-sm font-normal text-stone-500 mt-1">金额分布</h4>
                     </div>
                     <div class="relative flex flex-col doughnut-item-2">
-                        <div class="flex-grow relative"><canvas id="time-distribution-chart"></canvas></div>
+                        <div class="flex-grow relative"><canvas id="time-distribution-chart" role="img" aria-label="游戏时间分布饼图"></canvas></div>
                          <h4 class="text-center text-sm font-normal text-stone-500 mt-1">时间分布</h4>
                     </div>
                     <div class="relative flex flex-col doughnut-item-3">
-                        <div class="flex-grow relative"><canvas id="game-sort-chart"></canvas></div>
+                        <div class="flex-grow relative"><canvas id="game-sort-chart" role="img" aria-label="游戏类型分布饼图"></canvas></div>
                         <h4 class="text-center text-sm font-normal text-stone-500 mt-1">玩的最多的游戏/剧集类型</h4>
                     </div>
                 </div>
@@ -178,7 +180,7 @@
                     </div>
                 </div>
                 <div class="flex-grow relative">
-                    <canvas id="game-distribution-chart"></canvas>
+                    <canvas id="game-distribution-chart" role="img" aria-label="价格时间分布散点图"></canvas>
                 </div>
             </div>
 
@@ -191,13 +193,13 @@
                             <input type="checkbox" id="exclude-hardware-checkbox" class="form-checkbox">
                             <label for="exclude-hardware-checkbox" class="text-sm font-medium text-stone-600 whitespace-nowrap">不计硬件</label>
                         </div>
-                        <button id="monthly-chart-fullscreen-btn" class="lg:hidden text-stone-600 hover:text-stone-900" title="全屏查看">
+                        <button id="monthly-chart-fullscreen-btn" class="lg:hidden text-stone-600 hover:text-stone-900" title="全屏查看" aria-label="全屏查看月度趋势图">
                             <i class="fas fa-expand-alt fa-lg"></i>
                         </button>
                     </div>
                 </div>
                 <div class="flex-grow relative">
-                    <canvas id="monthly-trends-chart"></canvas>
+                    <canvas id="monthly-trends-chart" role="img" aria-label="月度消费与时间统计图"></canvas>
                 </div>
             </div>
         </main>
@@ -205,19 +207,19 @@
 
     <!-- Floating Action Button -->
     <div class="fab-container hidden">
-        <button id="export-btn" class="fab-secondary" title="导出 CSV"><i class="fas fa-upload fa-lg"></i></button>
-        <button id="import-btn" class="fab-secondary" title="导入 CSV"><i class="fas fa-download fa-lg"></i></button>
-        <div id="add-item-fab" class="fab-main" title="添加记录">
+        <button id="export-btn" class="fab-secondary" title="导出 CSV" aria-label="导出 CSV"><i class="fas fa-upload fa-lg"></i></button>
+        <button id="import-btn" class="fab-secondary" title="导入 CSV" aria-label="导入 CSV"><i class="fas fa-download fa-lg"></i></button>
+        <div id="add-item-fab" class="fab-main" title="添加记录" aria-label="添加记录">
             <i class="fas fa-plus fa-lg"></i>
         </div>
     </div>
 
     <!-- Item Add/Edit Modal -->
-    <div id="item-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal);">
-        <div class="card w-full max-w-lg mx-auto rounded-lg shadow-xl p-6 relative">
+    <div id="item-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop overflow-y-auto" style="z-index: var(--z-modal);" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="card w-full max-w-lg mx-auto rounded-lg shadow-xl p-6 relative my-4">
             <h2 id="modal-title" class="text-xl font-bold text-stone-900 mb-4">添加记录</h2>
             <!-- Mode Toggle -->
-            <div id="mode-toggle" class="flex items-center bg-stone-100 rounded-lg p-1 text-sm mb-4 relative" style="z-index: 10;">
+            <div id="mode-toggle" class="flex items-center bg-stone-100 rounded-lg p-1 text-sm mb-4 relative">
                 <button type="button" id="mode-game-btn" class="flex-1 px-3 py-1.5 font-medium rounded-md bg-amber-600 text-white transition-colors cursor-pointer">🎮 游戏</button>
                 <button type="button" id="mode-drama-btn" class="flex-1 px-3 py-1.5 font-medium rounded-md text-stone-600 hover:bg-stone-200 transition-colors cursor-pointer">📺 剧集</button>
             </div>
@@ -225,7 +227,7 @@
                 <input type="hidden" id="item-id">
                 <input type="hidden" id="form-mode" value="game">
                 <!-- Common Fields -->
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="item-custom-id" class="block text-sm font-medium text-stone-700">ID (自定义)</label>
                         <input type="text" id="item-custom-id" class="form-input w-full mt-1" required>
@@ -235,7 +237,7 @@
                         <input type="text" id="item-name" class="form-input w-full mt-1" required>
                     </div>
                 </div>
-                <div id="from-price-row" class="grid grid-cols-2 gap-4">
+                <div id="from-price-row" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="item-from" class="block text-sm font-medium text-stone-700">来源</label>
                         <select id="item-from" class="form-select w-full mt-1">
@@ -250,7 +252,7 @@
                         <input type="number" id="purchase-price" step="0.01" class="form-input w-full mt-1">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="purchase-date" class="block text-sm font-medium text-stone-700">购入/开始日期</label>
                         <input type="date" id="purchase-date" class="form-input w-full mt-1">
@@ -263,7 +265,7 @@
 
                 <!-- Game-specific Fields -->
                 <div id="game-fields" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label for="item-type" class="block text-sm font-medium text-stone-700">平台</label>
                             <select id="item-type" class="form-select w-full mt-1">
@@ -288,7 +290,7 @@
                         </div>
                     </div>
                     <div id="steam-fields" class="hidden space-y-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label for="steam-app-id" class="block text-sm font-medium text-stone-700">Steam App ID</label>
                                 <input type="number" id="steam-app-id" class="form-input w-full mt-1" placeholder="留空自动匹配">
@@ -301,7 +303,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label for="item-status" class="block text-sm font-medium text-stone-700">状态</label>
                             <select id="item-status" class="form-select w-full mt-1">
@@ -333,7 +335,7 @@
 
                 <!-- Drama-specific Fields -->
                 <div id="drama-fields" class="hidden space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label for="drama-type" class="block text-sm font-medium text-stone-700">剧集类型</label>
                             <select id="drama-type" class="form-select w-full mt-1">
@@ -345,7 +347,7 @@
                             <input type="number" id="episode-count" min="1" step="1" class="form-input w-full mt-1" placeholder="总集数">
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label for="episode-duration" class="block text-sm font-medium text-stone-700">每集时长 (分钟)</label>
                             <input type="number" id="episode-duration" min="1" step="1" class="form-input w-full mt-1" placeholder="如 45">
@@ -355,7 +357,7 @@
                             <div id="calculated-time" class="form-input w-full mt-1 bg-stone-50 text-stone-500">-</div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label for="item-status-drama" class="block text-sm font-medium text-stone-700">状态</label>
                             <select id="item-status-drama" class="form-select w-full mt-1">
@@ -383,16 +385,16 @@
                     <button type="submit" id="save-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg">保存</button>
                 </div>
             </form>
-            <button id="close-modal-btn" class="absolute top-4 right-4 text-stone-500 hover:text-stone-900"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-stone-500 hover:text-stone-900" aria-label="关闭"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
         </div>
     </div>
 
     <!-- Data List Modal -->
-    <div id="list-modal" class="fixed inset-0 p-4 hidden modal-backdrop overflow-y-auto" style="z-index: var(--z-modal);">
+    <div id="list-modal" class="fixed inset-0 p-4 hidden modal-backdrop overflow-y-auto" style="z-index: var(--z-modal);" role="dialog" aria-modal="true" aria-labelledby="list-modal-title">
         <div class="card w-full max-w-7xl mx-auto rounded-lg shadow-xl p-6 relative my-auto flex flex-col">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h2 id="list-modal-title" class="text-xl font-bold text-stone-900">数据详情</h2>
-                <button id="close-list-modal-btn" class="text-stone-500 hover:text-stone-900"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                <button id="close-list-modal-btn" class="text-stone-500 hover:text-stone-900" aria-label="关闭"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
             <div class="mb-4 flex items-center gap-3">
                 <div class="relative flex-1">
@@ -436,30 +438,30 @@
     </div>
 
     <!-- Monthly Chart Fullscreen Modal -->
-    <div id="monthly-chart-fullscreen-modal" class="fixed inset-0 hidden modal-backdrop" style="z-index: var(--z-modal-fullscreen); overflow: hidden;">
+    <div id="monthly-chart-fullscreen-modal" class="fixed inset-0 hidden modal-backdrop" style="z-index: var(--z-modal-fullscreen); overflow: hidden;" role="dialog" aria-modal="true" aria-label="月度趋势全屏">
         <div id="fullscreen-chart-container" class="card relative bg-white border-none shadow-none">
-             <button id="close-monthly-chart-fullscreen-btn" class="absolute top-4 right-4 text-stone-600 hover:text-stone-900" title="退出全屏" style="z-index: var(--z-modal-confirm); background: rgba(0,0,0,0.08); padding: 8px; border-radius: 50%;">
+             <button id="close-monthly-chart-fullscreen-btn" class="absolute top-4 right-4 text-stone-600 hover:text-stone-900" title="退出全屏" aria-label="退出全屏" style="z-index: var(--z-modal-confirm); background: rgba(0,0,0,0.08); padding: 8px; border-radius: 50%;">
                 <i class="fas fa-compress-alt fa-lg"></i>
             </button>
             <div class="w-full h-full relative">
-                 <canvas id="monthly-trends-chart-fullscreen"></canvas>
+                 <canvas id="monthly-trends-chart-fullscreen" role="img" aria-label="月度消费与时间统计全屏图"></canvas>
             </div>
         </div>
     </div>
 
     <!-- On This Day Modal -->
-    <div id="on-this-day-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal);">
+    <div id="on-this-day-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal);" role="dialog" aria-modal="true" aria-labelledby="on-this-day-title">
         <div class="card w-full max-w-md mx-auto rounded-lg shadow-xl p-6 relative">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-stone-900">💡 那年今日</h2>
-                <button id="close-on-this-day-modal-btn" class="text-stone-500 hover:text-stone-900"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                <h2 id="on-this-day-title" class="text-xl font-bold text-stone-900">💡 那年今日</h2>
+                <button id="close-on-this-day-modal-btn" class="text-stone-500 hover:text-stone-900" aria-label="关闭"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
             <div id="on-this-day-content" class="space-y-4 max-h-[60vh] overflow-y-auto text-stone-700"></div>
         </div>
     </div>
 
     <!-- Confirm Modal -->
-    <div id="confirm-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal-confirm);">
+    <div id="confirm-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal-confirm);" role="alertdialog" aria-modal="true" aria-labelledby="confirm-modal-title">
         <div class="card w-full max-w-sm mx-auto rounded-lg shadow-xl p-6 relative">
             <h2 id="confirm-modal-title" class="text-lg font-bold text-stone-900 mb-4">请确认</h2>
             <p id="confirm-modal-message" class="text-stone-600 mb-6">您确定要执行此操作吗？</p>
@@ -471,11 +473,11 @@
     </div>
 
     <!-- Play Next Modal -->
-    <div id="play-next-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal);">
+    <div id="play-next-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal);" role="dialog" aria-modal="true" aria-labelledby="play-next-modal-title">
         <div class="card w-full max-w-4xl mx-auto rounded-lg shadow-xl p-6 relative flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
-                <h2 class="text-xl font-bold text-stone-900">💡 接下来</h2>
-                <button id="close-play-next-modal-btn" class="text-stone-500 hover:text-stone-900"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                <h2 id="play-next-modal-title" class="text-xl font-bold text-stone-900">💡 接下来</h2>
+                <button id="close-play-next-modal-btn" class="text-stone-500 hover:text-stone-900" aria-label="关闭"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow min-h-0">
                 <div id="my-backlog-container" class="flex flex-col min-h-0 transition-all duration-300 ease-in-out">
@@ -488,14 +490,14 @@
                 <div id="ai-section" class="flex flex-col min-h-0">
                     <div class="flex items-center gap-2 mb-2 flex-shrink-0">
                         <h3 class="text-lg font-semibold text-amber-700">🤖 AI 推荐</h3>
-                        <button id="ai-settings-toggle" class="text-stone-500 hover:text-amber-600 transition-colors ml-auto" title="API 设置">
+                        <button id="ai-settings-toggle" class="text-stone-500 hover:text-amber-600 transition-colors ml-auto" title="API 设置" aria-label="API 设置">
                             <i class="fas fa-cog"></i>
                         </button>
                     </div>
                     <!-- API Settings Panel -->
                     <div id="ai-settings-panel" class="hidden mb-3 p-3 bg-stone-50 rounded-lg border border-stone-200 flex-shrink-0 space-y-3 text-sm">
                         <div>
-                            <label class="text-stone-700 font-medium block mb-1">DeepSeek API Key</label>
+                            <label for="ai-api-key-input" class="text-stone-700 font-medium block mb-1">DeepSeek API Key</label>
                             <div class="flex gap-2">
                                 <input type="password" id="ai-api-key-input" class="form-input flex-grow" placeholder="粘贴你的 DeepSeek API Key">
                                 <button id="ai-api-key-save-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-1 px-3 rounded text-xs transition-colors">保存</button>
@@ -514,7 +516,7 @@
                     </div>
                     <div class="flex gap-2 mb-3 flex-shrink-0">
                         <input type="text" id="ai-prompt-input" class="form-input flex-grow" placeholder="输入你想玩/看的类型或风格...">
-                        <button id="ai-prompt-send-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-3 rounded-lg transition-colors">
+                        <button id="ai-prompt-send-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-3 rounded-lg transition-colors" aria-label="发送AI推荐请求">
                             <i class="fas fa-paper-plane"></i>
                         </button>
                     </div>

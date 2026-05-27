@@ -1,8 +1,8 @@
 // Currency formatter
-export const formatCurrency = (value) => `¥${(value || 0).toFixed(2)}`;
+export const formatCurrency = (value) => `¥${(value ?? 0).toFixed(2)}`;
 
 // Plain number formatter (no ¥ symbol — for use with separate currency spans)
-export const formatNumber = (value) => (value || 0).toFixed(2);
+export const formatNumber = (value) => (value ?? 0).toFixed(2);
 
 // Safe numeric parser: returns null for empty/invalid input
 export const parseFloatOrNull = (value) =>
@@ -12,7 +12,8 @@ export const parseFloatOrNull = (value) =>
 export const parseDateOrNull = (value) => {
     if (!value) return null;
     const d = new Date(value);
-    return isNaN(d.getTime()) ? null : value;
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString().slice(0, 10);
 };
 
 // Convert Firestore Timestamp, Date, or string to YYYY-MM-DD for <input type="date">
@@ -26,7 +27,11 @@ export const formatDateForInput = (value) => {
 
 // Format a Date/Timestamp to "MM/DD HH:mm"
 export const formatDateTime = (value) => {
-    const d = value?.toDate ? value.toDate() : (value instanceof Date ? value : null);
+    let d = value?.toDate ? value.toDate() : (value instanceof Date ? value : null);
+    if (!d && typeof value === 'string') {
+        const parsed = new Date(value);
+        if (!isNaN(parsed.getTime())) d = parsed;
+    }
     if (!d) return '';
     return `${('0' + (d.getMonth() + 1)).slice(-2)}/${('0' + d.getDate()).slice(-2)} ${('0' + d.getHours()).slice(-2)}:${('0' + d.getMinutes()).slice(-2)}`;
 };
@@ -44,9 +49,11 @@ const SOLID_STAR = '★';
 
 export const renderStars = (rating, withMargin = true) => {
     if (!rating || rating < 1) return '';
+    // Cap at 10 (5 full stars) to avoid negative empty stars
+    const clamped = Math.min(rating, 10);
     const margin = withMargin ? 'ml-2' : '';
-    const fullStars = Math.floor(rating / 2);
-    const hasHalf = (rating % 2) >= 1;
+    const fullStars = Math.floor(clamped / 2);
+    const hasHalf = (clamped % 2) >= 1;
     const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
     const halfStarHtml = '<span style="position:relative;display:inline-block;width:1em"><span style="position:absolute;overflow:hidden;width:50%">★</span><span style="color:#d4d4d8">★</span></span>';
     return `<span class="text-yellow-400 ${margin}">${SOLID_STAR.repeat(fullStars)}${hasHalf ? halfStarHtml : ''}${'<span style="color:#d4d4d8">' + SOLID_STAR.repeat(emptyStars) + '</span>'}</span>`;
