@@ -17,6 +17,7 @@ export const setupFirestoreListener = () => {
     if (unsubscribe) unsubscribe();
     itemsCollectionRef = collection(db, 'items');
     unsubscribe = onSnapshot(itemsCollectionRef, (snapshot) => {
+        if (importing) return; // skip partial renders during bulk import
         setItems(snapshot.docs.map(doc => ({ fb_id: doc.id, ...doc.data() })));
         if (onDataChange) onDataChange();
     }, (error) => {
@@ -71,25 +72,47 @@ export const deleteItem = async (fbId) => {
 };
 
 // --- CSV Import (bulk replace) ---
+let importing = false;
+export const isImporting = () => importing;
+
 export const bulkReplaceItems = async (newItems) => {
+    // Backup current items in case partial failure leaves empty state
     const snapshot = await getDocs(query(itemsCollectionRef));
+    const backup = snapshot.docs.map(d => ({ fb_id: d.id, ...d.data() }));
     const BATCH_LIMIT = 400; // conservative: Firestore hard limit is 500
 
-    // Delete in chunks
-    const allDocs = snapshot.docs;
-    for (let i = 0; i < allDocs.length; i += BATCH_LIMIT) {
-        const batch = writeBatch(db);
-        allDocs.slice(i, i + BATCH_LIMIT).forEach(d => batch.delete(d.ref));
-        await batch.commit();
-    }
+    importing = true;
+    try {
+        // Delete in chunks
+        const allDocs = snapshot.docs;
+        for (let i = 0; i < allDocs.length; i += BATCH_LIMIT) {
+            const batch = writeBatch(db);
+            allDocs.slice(i, i + BATCH_LIMIT).forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
 
-    // Insert in chunks
-    for (let i = 0; i < newItems.length; i += BATCH_LIMIT) {
-        const batch = writeBatch(db);
-        newItems.slice(i, i + BATCH_LIMIT).forEach(item => {
-            const newDocRef = doc(itemsCollectionRef);
-            batch.set(newDocRef, item);
-        });
-        await batch.commit();
+        // Insert in chunks
+        for (let i = 0; i < newItems.length; i += BATCH_LIMIT) {
+            const batch = writeBatch(db);
+            newItems.slice(i, i + BATCH_LIMIT).forEach(item => {
+                const newDocRef = doc(itemsCollectionRef);
+                batch.set(newDocRef, item);
+            });
+            await batch.commit();
+        }
+    } catch (error) {
+        console.error('Bulk replace failed, restoring backup:', error);
+        // Attempt to restore from backup if insertion failed after deletion
+        for (let i = 0; i < backup.length; i += BATCH_LIMIT) {
+            const batch = writeBatch(db);
+            backup.slice(i, i + BATCH_LIMIT).forEach(item => {
+                const ref = doc(itemsCollectionRef, item.fb_id);
+                batch.set(ref, item);
+            });
+            await batch.commit();
+        }
+        throw error;
+    } finally {
+        importing = false;
     }
 };

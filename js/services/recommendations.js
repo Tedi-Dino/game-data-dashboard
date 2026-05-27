@@ -84,10 +84,36 @@ const parseRecommendations = (text) => {
     let cleaned = text.trim();
     cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
 
-    // Try to extract JSON array from the text
-    const match = cleaned.match(/\[[\s\S]*\]/);
-    if (match) {
-        cleaned = match[0];
+    // Find the first complete JSON array by tracking bracket depth
+    const startIdx = cleaned.indexOf('[');
+    if (startIdx !== -1) {
+        let depth = 0;
+        let inString = false;
+        let escaped = false;
+        for (let i = startIdx; i < cleaned.length; i++) {
+            const ch = cleaned[i];
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+            if (ch === '\\') {
+                escaped = true;
+                continue;
+            }
+            if (ch === '"') {
+                inString = !inString;
+                continue;
+            }
+            if (inString) continue;
+            if (ch === '[') depth++;
+            else if (ch === ']') {
+                depth--;
+                if (depth === 0) {
+                    cleaned = cleaned.substring(startIdx, i + 1);
+                    break;
+                }
+            }
+        }
     }
 
     try {
@@ -195,7 +221,7 @@ export const getAIRecommendations = async (customPrompt = '') => {
     const { unpassedGames, unpassedDramas } = promptData;
 
     if (!unpassedGames && !unpassedDramas && !customPrompt) {
-        return { recommendations: [{ name: '太棒了！', reason: '您的待玩/待看清单已经一干二净！' }] };
+        return { recommendations: [{ name: '太棒了！', reason: '您的待玩/待看清单已经一干二净！', type: '消息' }] };
     }
 
     // If user explicitly set local mode, use direct API call

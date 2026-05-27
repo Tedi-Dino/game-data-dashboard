@@ -81,16 +81,22 @@ const buildTrends = (currentItems) => {
                     const totalDurationDays = Math.max(1, (endDate - startDate) / (1000 * 60 * 60 * 24) + 1);
                     const dailyPlaytime = item.playTime / totalDurationDays;
 
-                    const maxIter = new Date();
-                    maxIter.setFullYear(maxIter.getFullYear() + 10);
-
-                    for (let d = new Date(startDate); d <= endDate && d <= maxIter; d.setDate(d.getDate() + 1)) {
+                    // Distribute to months using direct arithmetic (no day-by-day loop)
+                    const d = new Date(startDate);
+                    while (d <= endDate) {
                         const monthStr = normalizeMonth(d);
+                        const year = d.getFullYear();
+                        const month = d.getMonth();
+                        const monthEnd = new Date(year, month + 1, 0);
+                        const effEnd = new Date(Math.min(endDate.getTime(), monthEnd.getTime()));
+                        const daysInMonth = (effEnd - d) / (1000 * 60 * 60 * 24) + 1;
+
                         if (monthStr) {
                             allMonths.add(monthStr);
                             if (!trends[monthStr]) trends[monthStr] = { ...DEFAULT_TREND };
-                            trends[monthStr][playtimeKey] += dailyPlaytime;
+                            trends[monthStr][playtimeKey] += dailyPlaytime * daysInMonth;
                         }
+                        d.setMonth(month + 1, 1);
                     }
                 } else if (purchaseMonth) {
                     allMonths.add(purchaseMonth);
@@ -155,7 +161,7 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
     // Platform datasets (stacked bars)
     const platformDatasets = PLATFORM_DATA_KEYS
         .filter(({ key }) => {
-            const hasData = sortedMonths.some(m => (trends[m]?.[key] || 0) > 0);
+            const hasData = sortedMonths.some(m => (trends[m]?.[key] || 0) !== 0);
             return hasData;
         })
         .map(({ label, key, color }) => ({
@@ -250,8 +256,7 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
                 legend: {
                     labels: {
                         filter: (item) => {
-                            // Hide platform bar chart legends, only show line legends
-                            return ['游戏时长', '剧集时长', '合计时长'].includes(item.text);
+                            return item.text !== '合计时长';
                         }
                     }
                 },
@@ -278,8 +283,9 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
                             .slice(0, 5);
 
                         // Top 5 playtimes for this month (amortized) - combined games and dramas
-                        const currentMonthStart = new Date(month + '-01');
-                        const currentMonthEnd = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() + 1, 0);
+                        const [y, m] = month.split('-').map(Number);
+                        const currentMonthStart = new Date(Date.UTC(y, m - 1, 1));
+                        const currentMonthEnd = new Date(Date.UTC(y, m, 0));
 
                         const topPlaytimeItems = items
                             .filter(i => i.type !== 'hardware')

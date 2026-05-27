@@ -48,7 +48,7 @@ const updateDashboard = () => {
     updateKpiTooltips();
 
     // Only re-render charts if data actually changed
-    const newHash = items.map(i => i.fb_id + '|' + i.playTime + '|' + i.purchasePrice + '|' + i.sellPrice + '|' + i.rating + '|' + i.status + '|' + i.type + '|' + i.sort + '|' + i.fullyCompleted).join(',');
+    const newHash = items.map(i => i.fb_id + '|' + i.playTime + '|' + i.purchasePrice + '|' + i.sellPrice + '|' + i.rating + '|' + i.status + '|' + i.type + '|' + i.sort + '|' + i.fullyCompleted + '|' + i.purchaseDate + '|' + i.sellDate + '|' + i.passDate + '|' + i.name + '|' + i.from + '|' + i.episodeCount + '|' + i.episodeDuration).join(',');
     if (newHash !== lastItemsHash) {
         lastItemsHash = newHash;
         renderCharts();
@@ -111,8 +111,9 @@ const initApp = () => {
 
     if (steamSyncBtn) {
         steamSyncBtn.addEventListener('click', async () => {
+            const icon = steamSyncBtn.querySelector('i');
             steamSyncBtn.disabled = true;
-            steamSyncBtn.querySelector('i').classList.add('fa-spin');
+            if (icon) icon.classList.add('fa-spin');
             if (steamSyncStatus) {
                 steamSyncStatus.classList.remove('hidden');
                 steamSyncStatus.textContent = 'Steam同步中...';
@@ -122,7 +123,7 @@ const initApp = () => {
             const result = await triggerSteamSync();
 
             steamSyncBtn.disabled = false;
-            steamSyncBtn.querySelector('i').classList.remove('fa-spin');
+            if (icon) icon.classList.remove('fa-spin');
 
             if (result.error) {
                 if (steamSyncStatus) {
@@ -146,27 +147,30 @@ const initApp = () => {
         });
     }
 
-    // Steam sync metadata listener
+    // Steam sync metadata listener (event delegation avoids listener leak on re-render)
+    let steamSyncData = null;
     setupSteamSyncMetadataListener((data) => {
+        steamSyncData = data;
         if (!steamSyncStatus) return;
         if (data && data.lastSyncTime) {
             const formatted = formatDateTime(data.lastSyncTime);
             steamSyncStatus.classList.remove('hidden');
             const unmatched = data.unmatchedCount || 0;
             const matched = data.matchedCount || 0;
-            const unmatchedText = unmatched > 0 ? `, <span class="text-amber-600 cursor-pointer underline" id="show-unmatched-link">${unmatched} 款未同步</span>` : '';
+            const unmatchedText = unmatched > 0 ? `, <span class="text-amber-600 cursor-pointer underline show-unmatched">${unmatched} 款未同步</span>` : '';
             steamSyncStatus.innerHTML = `Steam: 上次同步 ${formatted}, 匹配 ${matched} 款${unmatchedText}`;
-
-            // Wire unmatched link
-            const unmatchedLink = document.getElementById('show-unmatched-link');
-            if (unmatchedLink && data.unmatchedGames && data.unmatchedGames.length > 0) {
-                unmatchedLink.addEventListener('click', () => {
-                    const list = data.unmatchedGames.map(g => `[${g.app_id}] ${String(g.name || '').replace(/[\r\n]/g, '')} (${g.playtime_hours}h)`).join('\n');
-                    alert(`未同步的Steam游戏 (${data.unmatchedGames.length}款):\n\n${list}`);
-                });
-            }
         }
     });
+
+    // Delegated click for unmatched games link (avoids listener leak on re-render)
+    if (steamSyncStatus) {
+        steamSyncStatus.addEventListener('click', (e) => {
+            const target = e.target.closest('.show-unmatched');
+            if (!target || !steamSyncData?.unmatchedGames?.length) return;
+            const list = steamSyncData.unmatchedGames.map(g => `[${g.app_id}] ${String(g.name || '').replace(/[\r\n]/g, '')} (${g.playtime_hours}h)`).join('\n');
+            alert(`未同步的Steam游戏 (${steamSyncData.unmatchedGames.length}款):\n\n${list}`);
+        });
+    }
 
     // Modal backdrop click-to-close (non-form modals)
     setupModalBackdrop('list-modal');

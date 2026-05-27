@@ -1,6 +1,6 @@
 import { items, charts } from '../core/state.js';
 import { PLATFORM_COLORS } from '../config/constants.js';
-import { escapeHTML, formatCurrency, netCost } from '../core/utils.js';
+import { escapeHTML, formatCurrency, netCost, renderStars } from '../core/utils.js';
 import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
 
 // Platform grouping: item.type → display label + color key
@@ -129,7 +129,7 @@ export const renderGameDistributionChart = () => {
                     title: { display: true, text: '实际花费 (¥)' },
                     beginAtZero: true,
                     grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { callback: (v) => '¥' + v },
+                    ticks: { callback: (v) => '¥' + Math.round(v) },
                 },
             },
             plugins: {
@@ -145,10 +145,7 @@ export const renderGameDistributionChart = () => {
                         const pt = tooltip.dataPoints?.[0]?.raw;
                         if (!pt) return null;
                         const icon = pt.type === 'drama' ? '📺' : '🎮';
-                        const fullStars = Math.floor(pt.rating / 2);
-                        const stars = pt.rating > 0
-                            ? ' ' + '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars)
-                            : '';
+                        const stars = renderStars(pt.rating, false);
                         let html = `<div class="font-bold text-base mb-1">${icon} ${escapeHTML(pt.name)}</div>` +
                             `<div class="text-sm">时长: <strong>${pt.x.toFixed(1)}h</strong></div>` +
                             `<div class="text-sm">实际花费: <strong>${formatCurrency(pt.y)}</strong></div>`;

@@ -5,24 +5,24 @@ import { formatCurrency, formatNumber, escapeHTML } from '../core/utils.js';
 const calcKPIs = () => {
     const games = items.filter(i => i.type !== 'hardware' && i.type !== 'drama');
     // Exclude items where user disabled Steam override (steam_override === false)
-    const gamesForPlaytime = games.filter(g => g.steam_override !== false);
+    const gamesForPlaytime = items.filter(i => i.type !== 'hardware' && i.type !== 'drama' && i.steam_override !== false);
     const hardware = items.filter(i => i.type === 'hardware');
     const dramas = items.filter(i => i.type === 'drama');
     const gamesForCostCalc = gamesForPlaytime.filter(g => g.from !== 'free');
 
-    const totalActual = items.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0);
-    const gameActual = games.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0);
-    const hardwareActual = hardware.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0);
-    const unfinishedCost = games.filter(g => g.status !== 'passed').reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0);
-    const totalPlaytime = gamesForPlaytime.reduce((s, i) => s + (i.playTime || 0), 0);
+    const totalActual = items.reduce((s, i) => s + (i.purchasePrice ?? 0) - (i.sellPrice ?? 0), 0);
+    const gameActual = games.reduce((s, i) => s + (i.purchasePrice ?? 0) - (i.sellPrice ?? 0), 0);
+    const hardwareActual = hardware.reduce((s, i) => s + (i.purchasePrice ?? 0) - (i.sellPrice ?? 0), 0);
+    const unfinishedCost = games.filter(g => g.status !== 'passed').reduce((s, i) => s + (i.purchasePrice ?? 0) - (i.sellPrice ?? 0), 0);
+    const totalPlaytime = gamesForPlaytime.reduce((s, i) => s + (i.playTime ?? 0), 0);
     const gameCount = games.length;
     const avgPlaytime = gamesForPlaytime.length > 0 ? totalPlaytime / gamesForPlaytime.length : 0;
-    const gameActualForCost = gamesForCostCalc.reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0);
-    const totalPlaytimeForCost = gamesForCostCalc.reduce((s, i) => s + (i.playTime || 0), 0);
+    const gameActualForCost = gamesForCostCalc.reduce((s, i) => s + (i.purchasePrice ?? 0) - (i.sellPrice ?? 0), 0);
+    const totalPlaytimeForCost = gamesForCostCalc.reduce((s, i) => s + (i.playTime ?? 0), 0);
     const costPerHour = totalPlaytimeForCost > 0 ? gameActualForCost / totalPlaytimeForCost : null;
 
     const dramaCount = dramas.length;
-    const totalDramaTime = dramas.reduce((s, i) => s + (i.playTime || 0), 0);
+    const totalDramaTime = dramas.reduce((s, i) => s + (i.playTime ?? 0), 0);
     const avgDramaTime = dramaCount > 0 ? totalDramaTime / dramaCount : 0;
     const passedCount = games.filter(g => g.status === 'passed').length;
     const fullyCompletedCount = games.filter(g => g.fullyCompleted === true).length;
@@ -77,7 +77,7 @@ export const updateKpiTooltips = () => {
     }
 
     // Playtime top 10 (games only)
-    const topPlay = [...games].filter(i => (i.playTime || 0) > 0).sort((a, b) => (b.playTime || 0) - (a.playTime || 0)).slice(0, 10);
+    const topPlay = [...games].filter(i => (i.playTime ?? 0) > 0).sort((a, b) => (b.playTime || 0) - (a.playTime || 0)).slice(0, 10);
     const playtimeTooltip = document.getElementById('playtime-tooltip');
     if (playtimeTooltip) {
         playtimeTooltip.innerHTML = '<h3 class="font-bold mb-1">游玩时长 Top 10</h3><ul>' +
@@ -101,8 +101,8 @@ export const updateKpiTooltips = () => {
 
     // Unfinished games value
     const unfinishedGames = games.filter(g => g.status !== 'passed');
-    const unfinishedPhysical = unfinishedGames.filter(g => g.type === 'physical').reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0);
-    const unfinishedDigital = unfinishedGames.filter(g => !['physical', 'hardware'].includes(g.type)).reduce((s, i) => s + (i.purchasePrice || 0) - (i.sellPrice || 0), 0);
+    const unfinishedPhysical = unfinishedGames.filter(g => g.type === 'physical').reduce((s, i) => s + (i.purchasePrice ?? 0) - (i.sellPrice ?? 0), 0);
+    const unfinishedDigital = unfinishedGames.filter(g => !['physical', 'hardware'].includes(g.type)).reduce((s, i) => s + (i.purchasePrice ?? 0) - (i.sellPrice ?? 0), 0);
     const topUnfinished = [...unfinishedGames].sort((a, b) => ((b.purchasePrice || 0) - (b.sellPrice || 0)) - ((a.purchasePrice || 0) - (a.sellPrice || 0))).slice(0, 5);
     const unfinishedTooltip = document.getElementById('unfinished-cost-tooltip');
     if (unfinishedTooltip) {
@@ -200,7 +200,7 @@ export const updateKpiTooltips = () => {
     }
 
     // Drama time top 10
-    const topDramaTime = [...dramas].filter(i => (i.playTime || 0) > 0).sort((a, b) => (b.playTime || 0) - (a.playTime || 0)).slice(0, 10);
+    const topDramaTime = [...dramas].filter(i => (i.playTime ?? 0) > 0).sort((a, b) => (b.playTime || 0) - (a.playTime || 0)).slice(0, 10);
     const dramaTimeTooltip = document.getElementById('drama-time-tooltip');
     if (dramaTimeTooltip) {
         dramaTimeTooltip.innerHTML = '<h3 class="font-bold mb-1">观剧时长 Top 10</h3><ul>' +

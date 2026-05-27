@@ -143,6 +143,15 @@ export const renderItemsList = () => {
         row.addEventListener('click', () => handleEditItem(item.fb_id));
         tbody.appendChild(row);
     });
+
+    // Re-apply any pending search filter so it survives data refreshes
+    const searchInput = document.getElementById('list-search-input');
+    if (searchInput && searchInput.value) {
+        const term = searchInput.value.toLowerCase();
+        tbody.querySelectorAll('tr').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+        });
+    }
 };
 
 /**
@@ -154,8 +163,10 @@ export const updateSortHeaders = () => {
         let text = header.textContent.replace(/[▾▴]/, '').trim();
         if (sortConfig.key !== '_default' && key === sortConfig.key) {
             header.textContent = `${text} ${sortConfig.direction === 'desc' ? '▾' : '▴'}`;
+            header.setAttribute('aria-sort', sortConfig.direction === 'asc' ? 'ascending' : 'descending');
         } else {
             header.textContent = text;
+            header.removeAttribute('aria-sort');
         }
     });
 };

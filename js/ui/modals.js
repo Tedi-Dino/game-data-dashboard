@@ -1,10 +1,18 @@
+let lastFocusedEl = null;
+
 /**
  * Open a modal by removing 'hidden' and adding 'flex' classes.
  */
 export const openModal = (modal) => {
     if (!modal) return;
+    lastFocusedEl = document.activeElement;
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    // Focus the first focusable element inside the modal
+    requestAnimationFrame(() => {
+        const focusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusable) focusable.focus();
+    });
 };
 
 /**
@@ -14,15 +22,39 @@ export const closeModal = (modal) => {
     if (!modal) return;
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    // Restore focus to element that was focused before the modal opened
+    if (lastFocusedEl && typeof lastFocusedEl.focus === 'function') {
+        lastFocusedEl.focus();
+        lastFocusedEl = null;
+    }
 };
 
 // Global Escape key handler — closes the topmost open modal
 document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    const openModals = document.querySelectorAll('[class*="modal-backdrop"]:not(.hidden)');
+    const openModals = Array.from(document.querySelectorAll('[aria-modal="true"]:not(.hidden)'));
     if (openModals.length === 0) return;
     const topModal = openModals[openModals.length - 1];
     closeModal(topModal);
+});
+
+// Focus trap: keep Tab/Shift+Tab within the topmost open modal
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const openModals = Array.from(document.querySelectorAll('[aria-modal="true"]:not(.hidden)'));
+    if (openModals.length === 0) return;
+    const modal = openModals[openModals.length - 1];
+    const focusable = Array.from(modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'));
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+    }
 });
 
 /**

@@ -73,12 +73,53 @@ const parseCSVLine = (line) => {
     return values;
 };
 
+// Split CSV text into rows respecting quoted-field newlines (RFC 4180).
+const splitCSVRows = (text) => {
+    const rows = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (inQuotes) {
+            current += ch;
+            if (ch === '"') {
+                if (text[i + 1] === '"') {
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = false;
+                }
+            }
+        } else {
+            if (ch === '"') {
+                current += ch;
+                inQuotes = true;
+            } else if (ch === '\r' && text[i + 1] === '\n') {
+                rows.push(current);
+                current = '';
+                i++;
+            } else if (ch === '\n') {
+                rows.push(current);
+                current = '';
+            } else {
+                current += ch;
+            }
+        }
+    }
+    if (current.length > 0 || rows.length > 0) rows.push(current);
+    return rows;
+};
+
 // Parse CSV text into items array
 export const importCSV = async (text) => {
     if (text.length > 5 * 1024 * 1024) {
         throw new Error('CSV文件过大（超过5MB），请检查文件。');
     }
-    const rows = text.split(/\r\n|\n/);
+    // Strip UTF-8 BOM if present
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    // Parse rows using the quote-aware parser so that quoted fields with
+    // embedded newlines (RFC 4180) are not split across multiple rows.
+    const rows = splitCSVRows(text);
     const headers = parseCSVLine(rows[0]).map(h => h.replace(/"/g, ''));
     const headerIndexMap = {};
     headers.forEach((h, i) => { headerIndexMap[h] = i; });
@@ -89,17 +130,24 @@ export const importCSV = async (text) => {
         throw new Error('CSV文件必须包含 id, name, 和 type 表头。');
     }
 
-    const newItems = rows.slice(1)
-        .filter(r => r.trim())
+    const rawRows = rows.slice(1).filter(r => r.trim());
+    let skippedCount = 0;
+    const newItems = rawRows
         .map(r => {
             const values = parseCSVLine(r);
-            return parseCSVRow(values, headerIndexMap);
+            const item = parseCSVRow(values, headerIndexMap);
+            if (!item) skippedCount++;
+            return item;
         })
         .filter(Boolean);
 
     // Check for duplicate IDs
     if (new Set(newItems.map(i => i.id)).size !== newItems.length) {
         throw new Error('导入失败：ID重复。');
+    }
+
+    if (skippedCount > 0) {
+        console.warn(`CSV import: ${skippedCount} row(s) skipped due to missing id/name/type.`);
     }
 
     await bulkReplaceItems(newItems);
