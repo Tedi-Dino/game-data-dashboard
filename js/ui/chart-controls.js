@@ -43,7 +43,7 @@ export const setupChartControls = () => {
                     fullscreenContainer.style.transform = 'rotate(90deg)';
                     fullscreenContainer.style.margin = '0';
                     fullscreenContainer.style.borderRadius = '0';
-                    fullscreenContainer.style.zIndex = '55';
+                    fullscreenContainer.style.zIndex = getComputedStyle(document.documentElement).getPropertyValue('--z-modal-fullscreen').trim();
                     fullscreenContainer.style.boxSizing = 'border-box';
                 } else {
                     fullscreenContainer.style = '';
