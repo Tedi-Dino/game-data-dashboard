@@ -77,19 +77,27 @@ ${customPrompt || "无特定需求，请综合推荐。"}
 };
 
 /**
- * Parse AI JSON response into recommendations array.
- * With response_format json_object, the API guarantees valid JSON.
+ * Parse AI response text into recommendations array.
  */
 const parseRecommendations = (text) => {
+    // Strip markdown code fences if present
+    let cleaned = text.trim();
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+
+    // Try to extract JSON array from the text
+    const match = cleaned.match(/\[[\s\S]*\]/);
+    if (match) {
+        cleaned = match[0];
+    }
+
     try {
-        const parsed = JSON.parse(text);
-        const arr = Array.isArray(parsed) ? parsed : parsed.recommendations || parsed.data || [];
-        if (Array.isArray(arr) && arr.every(r => r.name && r.reason)) {
-            return { recommendations: arr };
+        const recommendations = JSON.parse(cleaned);
+        if (Array.isArray(recommendations) && recommendations.every(r => r.name && r.reason)) {
+            return { recommendations };
         }
-        return { error: 'AI返回的JSON结构不符合预期。' };
+        throw new Error('Invalid structure');
     } catch (e) {
-        console.error('Failed to parse AI JSON response:', text, e);
+        console.error('Failed to parse AI response as JSON:', text, e);
         return { error: 'AI返回的格式不正确，无法解析推荐内容。' };
     }
 };
@@ -117,7 +125,6 @@ const callDeepSeekDirectly = async (customPrompt, promptData) => {
                 messages: [{ role: 'user', content: prompt }],
                 max_tokens: 2000,
                 temperature: 0.3,
-                response_format: { type: 'json_object' },
                 ...(isThinkingMode()
                     ? { thinking: { type: 'enabled', reasoning_effort: 'high' } }
                     : { thinking: { type: 'disabled' } }),
@@ -155,16 +162,16 @@ const callCloudFunction = async (customPrompt, promptData) => {
         const result = await fn({ passedGames, unpassedGames, passedDramas, unpassedDramas, customPrompt, thinking });
         const data = result.data;
 
+        // Error returned as normal response
         if (data && data.error) {
             return { error: data.error };
         }
 
-        // Cloud Function now parses JSON server-side and returns { recommendations: [...] }
-        if (data && data.recommendations) {
-            return { recommendations: data.recommendations };
+        if (!data || !data.output || !data.output.text) {
+            throw new Error('从云函数返回的响应结构无效。');
         }
 
-        return { error: '从云函数返回的响应结构无效。' };
+        return parseRecommendations(data.output.text);
     } catch (error) {
         console.error('Cloud Function call failed:', error);
         let msg = '调用AI服务时发生未知错误。';

@@ -1,3 +1,15 @@
+/* === Z-Index System === */
+:root {
+    --z-card-hover: 10;
+    --z-sticky: 20;
+    --z-tooltip: 30;
+    --z-fab: 40;
+    --z-modal: 100;
+    --z-modal-fullscreen: 110;
+    --z-modal-confirm: 120;
+    --z-chart-tooltip: 99999;
+}
+
 /* === Global Styles === */
 html, body {
     height: 100%;
@@ -81,7 +93,7 @@ body {
 }
 
 .card:hover {
-    z-index: 40;
+    z-index: var(--z-card-hover);
     box-shadow: 0 14px 36px rgba(0,0,0,0.06);
 }
 
@@ -148,7 +160,7 @@ body {
     position: fixed;
     bottom: 2rem;
     right: 2rem;
-    z-index: 60;
+    z-index: var(--z-fab);
 }
 .fab-main, .fab-secondary {
     width: 3.5rem;
@@ -206,7 +218,7 @@ body {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.15s ease;
-    z-index: 50;
+    z-index: var(--z-tooltip);
     max-width: calc(100vw - 2rem);
     background-color: #ffffff;
     color: #1c1917;
@@ -240,7 +252,7 @@ body {
 #full-chart-modal thead {
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: var(--z-sticky);
 }
 
 /* === Steam Source Indicator (inline after playtime) === */

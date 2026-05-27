@@ -52,7 +52,7 @@ export const createExternalTooltip = (formatter) => {
             tooltipEl.style.boxShadow = '0 10px 30px rgba(0,0,0,0.06)';
             tooltipEl.style.opacity = '0';
             tooltipEl.style.transition = 'opacity 100ms ease';
-            tooltipEl.style.zIndex = '99999';
+            tooltipEl.style.zIndex = getComputedStyle(document.documentElement).getPropertyValue('--z-chart-tooltip').trim();
             document.body.appendChild(tooltipEl);
         }
 

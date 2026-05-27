@@ -213,7 +213,7 @@
     </div>
 
     <!-- Item Add/Edit Modal -->
-    <div id="item-modal" class="fixed inset-0 z-50 items-center justify-center p-4 hidden modal-backdrop">
+    <div id="item-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal);">
         <div class="card w-full max-w-lg mx-auto rounded-lg shadow-xl p-6 relative">
             <h2 id="modal-title" class="text-xl font-bold text-stone-900 mb-4">添加记录</h2>
             <!-- Mode Toggle -->
@@ -388,7 +388,7 @@
     </div>
 
     <!-- Data List Modal -->
-    <div id="list-modal" class="fixed inset-0 z-50 p-4 hidden modal-backdrop overflow-y-auto">
+    <div id="list-modal" class="fixed inset-0 p-4 hidden modal-backdrop overflow-y-auto" style="z-index: var(--z-modal);">
         <div class="card w-full max-w-7xl mx-auto rounded-lg shadow-xl p-6 relative my-auto flex flex-col">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h2 id="list-modal-title" class="text-xl font-bold text-stone-900">数据详情</h2>
@@ -436,9 +436,9 @@
     </div>
 
     <!-- Monthly Chart Fullscreen Modal -->
-    <div id="monthly-chart-fullscreen-modal" class="fixed inset-0 z-[55] hidden modal-backdrop" style="overflow: hidden;">
+    <div id="monthly-chart-fullscreen-modal" class="fixed inset-0 hidden modal-backdrop" style="z-index: var(--z-modal-fullscreen); overflow: hidden;">
         <div id="fullscreen-chart-container" class="card relative bg-white border-none shadow-none">
-             <button id="close-monthly-chart-fullscreen-btn" class="absolute top-4 right-4 text-stone-600 hover:text-stone-900 z-[60]" title="退出全屏" style="background: rgba(0,0,0,0.08); padding: 8px; border-radius: 50%;">
+             <button id="close-monthly-chart-fullscreen-btn" class="absolute top-4 right-4 text-stone-600 hover:text-stone-900" title="退出全屏" style="z-index: var(--z-modal-confirm); background: rgba(0,0,0,0.08); padding: 8px; border-radius: 50%;">
                 <i class="fas fa-compress-alt fa-lg"></i>
             </button>
             <div class="w-full h-full relative">
@@ -448,7 +448,7 @@
     </div>
 
     <!-- On This Day Modal -->
-    <div id="on-this-day-modal" class="fixed inset-0 z-50 items-center justify-center p-4 hidden modal-backdrop">
+    <div id="on-this-day-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal);">
         <div class="card w-full max-w-md mx-auto rounded-lg shadow-xl p-6 relative">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-stone-900">💡 那年今日</h2>
@@ -459,7 +459,7 @@
     </div>
 
     <!-- Confirm Modal -->
-    <div id="confirm-modal" class="fixed inset-0 z-[60] items-center justify-center p-4 hidden modal-backdrop">
+    <div id="confirm-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal-confirm);">
         <div class="card w-full max-w-sm mx-auto rounded-lg shadow-xl p-6 relative">
             <h2 id="confirm-modal-title" class="text-lg font-bold text-stone-900 mb-4">请确认</h2>
             <p id="confirm-modal-message" class="text-stone-600 mb-6">您确定要执行此操作吗？</p>
@@ -471,7 +471,7 @@
     </div>
 
     <!-- Play Next Modal -->
-    <div id="play-next-modal" class="fixed inset-0 z-50 items-center justify-center p-4 hidden modal-backdrop">
+    <div id="play-next-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal);">
         <div class="card w-full max-w-4xl mx-auto rounded-lg shadow-xl p-6 relative flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h2 class="text-xl font-bold text-stone-900">💡 接下来</h2>
