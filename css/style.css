@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&display=swap');
 
 /* === Z-Index System === */
 :root {
@@ -20,7 +20,7 @@ body {
     overflow-x: clip;
 }
 body {
-    font-family: 'Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif';
+    font-family: 'Inter', 'Noto Sans SC', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
     background-color: #f5f0ed;
     color: #2d2927;
 }
@@ -395,7 +395,7 @@ html::-webkit-scrollbar-thumb:hover { background: #78716c; }
 
 /* === KPI Typography === */
 .kpi-number {
-    font-family: 'Georgia', 'Times New Roman', 'Source Han Serif SC', serif;
+    font-family: 'Georgia', 'Noto Serif SC', 'Times New Roman', serif;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
 }
