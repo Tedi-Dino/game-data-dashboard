@@ -20,7 +20,7 @@ body {
     overflow-x: clip;
 }
 body {
-    font-family: 'Inter', 'Noto Sans SC', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+    font-family: 'Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'Noto Sans SC', sans-serif;
     background-color: #f5f0ed;
     color: #2d2927;
 }
@@ -395,7 +395,7 @@ html::-webkit-scrollbar-thumb:hover { background: #78716c; }
 
 /* === KPI Typography === */
 .kpi-number {
-    font-family: 'Georgia', 'Noto Serif SC', 'Times New Roman', serif;
+    font-family: 'Georgia', 'Times New Roman', 'Noto Serif SC', serif;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
 }
