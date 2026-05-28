@@ -44,6 +44,7 @@ const renderCharts = () => {
 let lastItemsHash = '';
 
 const updateDashboard = () => {
+    document.body.classList.remove('skeleton-loading');
     updateDashboardKPIs();
     updateKpiTooltips();
 
