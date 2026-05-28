@@ -184,8 +184,12 @@ export const setupPlayNextModal = () => {
                 if (result.error) {
                     aiRecommendationsList.innerHTML = `<div class="p-4 bg-red-50 rounded-lg text-red-600 text-center border border-red-200" style="white-space: pre-line">${escapeHTML(result.error)}</div>`;
                 } else if (result.recommendations && result.recommendations.length > 0) {
+                    // Collapse backlog to make room for AI results; toggle still works via click
                     if (myPlayNextList) myPlayNextList.classList.add('hidden');
-                    if (myBacklogToggleIcon) myBacklogToggleIcon.classList.add('rotate-180');
+                    if (myBacklogToggleIcon) {
+                        myBacklogToggleIcon.classList.add('rotate-180');
+                        myBacklogToggleIcon.style.opacity = '1';
+                    }
 
                     aiRecommendationsList.innerHTML = result.recommendations
                         .map(rec => {

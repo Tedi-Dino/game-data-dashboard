@@ -54,6 +54,9 @@ export const setFormMode = (mode) => {
     if (isDrama) {
         if (itemFrom) itemFrom.value = 'free';
         if (purchasePrice) purchasePrice.value = '0';
+    } else {
+        const dramaTypeSelect = document.getElementById('drama-type');
+        if (dramaTypeSelect) dramaTypeSelect.value = '';
     }
 };
 
@@ -97,7 +100,7 @@ const readFormData = () => {
     const ratingId = isDrama ? 'item-rating-drama' : 'item-rating';
 
     const data = {
-        id: document.getElementById('item-custom-id').value,
+        id: document.getElementById('item-custom-id').value.trim(),
         name: document.getElementById('item-name').value,
         sort: document.getElementById('item-sort').value,
         type,
@@ -109,7 +112,7 @@ const readFormData = () => {
         passDate: status === 'passed' ? parseDateOrNull(document.getElementById(passDateId).value) : null,
         sellDate: isDrama ? null : parseDateOrNull(document.getElementById('sell-date').value),
         sellPrice: isDrama ? null : parseFloatOrNull(document.getElementById('sell-price').value),
-        rating: parseFloatOrNull(document.getElementById(ratingId).value),
+        rating: (() => { const r = parseFloatOrNull(document.getElementById(ratingId).value); return r != null ? Math.min(10, Math.max(1, r)) : null; })(),
         episodeCount,
         episodeDuration
     };
@@ -233,6 +236,15 @@ export const setupItemForm = () => {
 
     if (episodeCountInput) episodeCountInput.addEventListener('input', updateDramaPlayTime);
     if (episodeDurationInput) episodeDurationInput.addEventListener('input', updateDramaPlayTime);
+
+    // --- Drama type dropdown → sync to sort field ---
+    const dramaTypeSelect = document.getElementById('drama-type');
+    const itemSort = document.getElementById('item-sort');
+    if (dramaTypeSelect && itemSort) {
+        dramaTypeSelect.addEventListener('change', () => {
+            if (dramaTypeSelect.value) itemSort.value = dramaTypeSelect.value;
+        });
+    }
 
     // --- Platform type change: toggle Steam fields + auto-generate ID ---
     const itemType = document.getElementById('item-type');
