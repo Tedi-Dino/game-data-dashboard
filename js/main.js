@@ -19,7 +19,7 @@ import { renderMonthlyTrendsChart } from './charts/monthly-trends.js';
 
 // UI
 import { updateAuthUI } from './ui/auth.js';
-import { openModal, closeModal } from './ui/modals.js';
+import { openModal, closeModal, showAlert } from './ui/modals.js';
 import { setupFab } from './ui/fab.js';
 import { updateDashboardKPIs, updateKpiTooltips, setupKpiTooltips } from './ui/dashboard.js';
 import { renderItemsList, updateSortHeaders, setupSortHeaders, setupListSearch, setupDetailColsToggle } from './ui/data-table.js';
@@ -168,7 +168,7 @@ const initApp = () => {
             const target = e.target.closest('.show-unmatched');
             if (!target || !steamSyncData?.unmatchedGames?.length) return;
             const list = steamSyncData.unmatchedGames.map(g => `[${g.app_id}] ${String(g.name || '').replace(/[\r\n]/g, '')} (${g.playtime_hours}h)`).join('\n');
-            alert(`未同步的Steam游戏 (${steamSyncData.unmatchedGames.length}款):\n\n${list}`);
+            showAlert(`未同步的Steam游戏 (${steamSyncData.unmatchedGames.length}款):\n\n${list}`);
         });
     }
 
@@ -205,9 +205,9 @@ const initApp = () => {
     setupFirestoreListener();
     setupMetadataListener();
 
-    // Card entrance animations
+    // Card entrance animations (cap delay for snappy feel)
     document.querySelectorAll('.card-animation').forEach((card, index) => {
-        card.style.animationDelay = `${(index + 1) * 100}ms`;
+        card.style.animationDelay = `${Math.min((index + 1) * 60, 400)}ms`;
     });
 
     // Auth state observer -- registered after DOM is ready

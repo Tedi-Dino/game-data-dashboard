@@ -134,10 +134,7 @@ export const renderGameDistributionChart = () => {
             },
             plugins: {
                 legend: {
-                    display: false,
-                    labels: {
-                        filter: (item) => item.text !== ''
-                    }
+                    display: false
                 },
                 tooltip: {
                     enabled: false,

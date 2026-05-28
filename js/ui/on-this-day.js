@@ -29,9 +29,6 @@ export const setupOnThisDay = () => {
             targetDates.add(`${d.getMonth()}-${d.getDate()}`);
         }
 
-        const startMonth = startDate.getMonth();
-        const endMonth = endDate.getMonth();
-
         const gamesByYear = {};
 
         items.forEach(item => {
@@ -56,13 +53,24 @@ export const setupOnThisDay = () => {
         if (sortedYears.length === 0) {
             htmlContent = '<p class="text-center text-stone-500">在过去的这段时间里，似乎没有留下游戏足迹哦。</p>';
         } else {
-            const monthString = (startMonth === endMonth) ? `${startMonth + 1}月` : `${startMonth + 1}月 - ${endMonth + 1}月`;
-
             sortedYears.forEach(year => {
                 const topGames = gamesByYear[year]
                     .sort((a, b) => (b.playTime || 0) - (a.playTime || 0))
                     .slice(0, 5);
                 if (topGames.length > 0) {
+                    // Only show months that actually have items
+                    const itemMonths = new Set();
+                    gamesByYear[year].forEach(g => {
+                        if (g.purchaseDate) {
+                            const d = new Date(g.purchaseDate);
+                            if (!isNaN(d.getTime())) itemMonths.add(d.getMonth());
+                        }
+                    });
+                    const months = [...itemMonths].sort((a, b) => a - b);
+                    const monthString = months.length === 1
+                        ? `${months[0] + 1}月`
+                        : `${months[0] + 1}月 - ${months[months.length - 1] + 1}月`;
+
                     const gameListHtml = topGames.map(g => {
                         const icon = g.type === 'drama' ? '📺' : '🎮';
                         return `<p class="text-xl font-bold text-stone-900 truncate">${icon} ${escapeHTML(g.name)}</p>`;

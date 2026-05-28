@@ -15,7 +15,9 @@
 /* === Global Styles === */
 html, body {
     height: 100%;
-    overflow-x: hidden;
+}
+body {
+    overflow-x: clip;
 }
 body {
     font-family: 'Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif';
@@ -46,14 +48,11 @@ body {
 /* === Doughnut Layout === */
 .doughnut-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
 }
-.doughnut-item-1 { grid-column: 1; grid-row: 1; }
-.doughnut-item-2 { grid-column: 2; grid-row: 1; }
-.doughnut-item-3 { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
 .doughnut-grid .flex-grow.relative {
-    min-height: 180px;
+    min-height: 200px;
 }
 
 @media (min-width: 768px) {
@@ -139,14 +138,14 @@ body {
 }
 
 /* === Scrollbar === */
-* {
+html {
     scrollbar-color: #a8a29e #e5e0dc;
     scrollbar-width: thin;
 }
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #e5e0dc; }
-::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #78716c; }
+html::-webkit-scrollbar { width: 8px; height: 8px; }
+html::-webkit-scrollbar-track { background: #e5e0dc; }
+html::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 4px; }
+html::-webkit-scrollbar-thumb:hover { background: #78716c; }
 
 /* === Card Animation === */
 .card-animation {
@@ -186,7 +185,7 @@ body {
 }
 .fab-main:hover {
     background-color: #b45309;
-    transform: rotate(90deg) scale(1.1);
+    transform: rotate(45deg) scale(1.05);
 }
 .fab-secondary {
     position: absolute;
@@ -390,7 +389,7 @@ body {
         animation: none;
     }
     .fab-main:hover {
-        transform: scale(1.05);
+        transform: scale(1.03);
     }
 }
 

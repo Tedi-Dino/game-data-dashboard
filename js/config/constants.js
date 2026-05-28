@@ -34,7 +34,7 @@ export const FROM_MAP = {
 };
 
 export const STATUS_MAP = {
-    playing: '进行中', backlog: '待看', passed: '已完成',
+    playing: '进行中', backlog: '待玩', passed: '已完成',
     abandoned: '已放弃', empty: '空'
 };
 

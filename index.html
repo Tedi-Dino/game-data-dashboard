@@ -64,24 +64,24 @@
                 <div class="space-y-2 flex-grow">
                     <div>
                         <p class="text-sm text-stone-600">实际总支出</p>
-                        <p class="text-2xl font-bold kpi-primary"><span class="kpi-currency">¥</span><span class="kpi-number" id="total-actual-cost">0.00</span></p>
+                        <p class="text-2xl font-bold kpi-primary"><span class="kpi-currency">¥</span><span class="kpi-number" id="total-actual-cost">加载中...</span></p>
                     </div>
                     <div class="relative group">
                         <p class="text-sm text-stone-600">游戏总消费</p>
                         <div class="flex items-center">
-                            <p class="text-xl font-semibold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="game-actual-cost">0.00</span></p>
+                            <p class="text-xl font-semibold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="game-actual-cost">-</span></p>
                             <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
                         <div id="game-cost-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
                     </div>
                      <div>
                         <p class="text-sm text-stone-600">硬件总投入</p>
-                        <p class="text-xl font-semibold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="hardware-actual-cost">0.00</span></p>
+                        <p class="text-xl font-semibold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="hardware-actual-cost">-</span></p>
                     </div>
                     <div class="relative group">
                         <p class="text-sm text-stone-600">未通关游戏价值</p>
                         <div class="flex items-center">
-                            <p class="text-xl font-semibold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="unfinished-games-cost">0.00</span></p>
+                            <p class="text-xl font-semibold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="unfinished-games-cost">-</span></p>
                             <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
                         <div id="unfinished-cost-tooltip" class="kpi-tooltip kpi-tooltip-above w-80 text-sm rounded-lg p-3"></div>
@@ -96,7 +96,7 @@
                     <div class="relative group">
                         <p class="text-sm text-stone-600">全成就 / 通关 / 全部游戏</p>
                         <div class="flex items-center">
-                           <p class="text-2xl font-bold kpi-primary"><span class="kpi-number" id="total-games">0 / 0 / 0</span> <span class="kpi-unit">款</span></p>
+                           <p class="text-2xl font-bold kpi-primary"><span class="kpi-number" id="total-games">-</span> <span class="kpi-unit">款</span></p>
                            <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
                         <div id="total-games-tooltip" class="kpi-tooltip kpi-tooltip-above w-[34rem] text-sm rounded-lg p-3"></div>
@@ -104,19 +104,19 @@
                     <div class="relative group">
                         <p class="text-sm text-stone-600">总计游玩</p>
                         <div class="flex items-center">
-                           <p class="text-xl font-semibold kpi-secondary"><span class="kpi-number" id="total-playtime">0.00</span> <span class="kpi-unit">小时</span></p>
+                           <p class="text-xl font-semibold kpi-secondary"><span class="kpi-number" id="total-playtime">-</span> <span class="kpi-unit">小时</span></p>
                            <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
                         <div id="playtime-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
                     </div>
                     <div>
                         <p class="text-sm text-stone-600">平均游戏时长</p>
-                        <p class="text-xl font-semibold kpi-secondary"><span class="kpi-number" id="avg-playtime">0.00</span> <span class="kpi-unit">小时/款</span></p>
+                        <p class="text-xl font-semibold kpi-secondary"><span class="kpi-number" id="avg-playtime">-</span> <span class="kpi-unit">小时/款</span></p>
                     </div>
                     <div class="relative group">
                         <p class="text-sm text-stone-600">单位时间价格</p>
                         <div class="flex items-center">
-                            <p class="text-xl font-bold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="cost-per-hour">0.00</span> <span class="kpi-unit">/h</span></p>
+                            <p class="text-xl font-bold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="cost-per-hour">-</span> <span class="kpi-unit">/h</span></p>
                             <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
                         <div id="cph-tooltip" class="kpi-tooltip kpi-tooltip-above w-80 text-sm rounded-lg p-3"></div>
@@ -131,7 +131,7 @@
                     <div class="relative group">
                         <p class="text-sm text-stone-600">追剧数量</p>
                         <div class="flex items-center">
-                           <p class="text-2xl font-bold kpi-primary"><span class="kpi-number" id="total-dramas">0</span> <span class="kpi-unit">部</span></p>
+                           <p class="text-2xl font-bold kpi-primary"><span class="kpi-number" id="total-dramas">-</span> <span class="kpi-unit">部</span></p>
                            <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
                         <div id="total-dramas-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
@@ -139,14 +139,14 @@
                     <div class="relative group">
                         <p class="text-sm text-stone-600">总计观剧</p>
                         <div class="flex items-center">
-                           <p class="text-xl font-semibold kpi-secondary"><span class="kpi-number" id="total-drama-time">0.00</span> <span class="kpi-unit">小时</span></p>
+                           <p class="text-xl font-semibold kpi-secondary"><span class="kpi-number" id="total-drama-time">-</span> <span class="kpi-unit">小时</span></p>
                            <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
                         </div>
                         <div id="drama-time-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
                     </div>
                     <div>
                         <p class="text-sm text-stone-600">平均观剧时长</p>
-                        <p class="text-xl font-semibold kpi-secondary"><span class="kpi-number" id="avg-drama-time">0.00</span> <span class="kpi-unit">小时/部</span></p>
+                        <p class="text-xl font-semibold kpi-secondary"><span class="kpi-number" id="avg-drama-time">-</span> <span class="kpi-unit">小时/部</span></p>
                     </div>
                 </div>
             </div>
@@ -230,7 +230,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="item-custom-id" class="block text-sm font-medium text-stone-700">ID (自定义)</label>
-                        <input type="text" id="item-custom-id" class="form-input w-full mt-1" required>
+                        <input type="text" id="item-custom-id" class="form-input w-full mt-1" required maxlength="20">
                     </div>
                     <div>
                         <label for="item-name" class="block text-sm font-medium text-stone-700">名称</label>
@@ -339,7 +339,12 @@
                         <div>
                             <label for="drama-type" class="block text-sm font-medium text-stone-700">剧集类型</label>
                             <select id="drama-type" class="form-select w-full mt-1">
-                                <option value="drama">剧</option>
+                                <option value="">请选择</option>
+                                <option value="电视剧">电视剧</option>
+                                <option value="电影">电影</option>
+                                <option value="动画">动画</option>
+                                <option value="纪录片">纪录片</option>
+                                <option value="综艺">综艺</option>
                             </select>
                         </div>
                         <div>

@@ -36,6 +36,18 @@ export const setupDetailColsToggle = () => {
         } else {
             toggleBtn.innerHTML = '<i class="fas fa-caret-down"></i> 展开详情';
         }
+
+        // Re-apply search filter so hidden rows stay hidden
+        const searchInput = document.getElementById('list-search-input');
+        if (searchInput && searchInput.value) {
+            const term = searchInput.value.toLowerCase();
+            const tbody = document.getElementById('items-table-body');
+            if (tbody) {
+                tbody.querySelectorAll('tr').forEach(row => {
+                    row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+                });
+            }
+        }
     });
 };
 
@@ -250,6 +262,13 @@ const handleEditItem = (fbId) => {
         document.getElementById('item-rating-drama').value = item.rating ?? '';
         document.getElementById('pass-date-drama').value = formatDateForInput(item.passDate);
         document.getElementById('pass-date-container-drama').classList.toggle('hidden', item.status !== 'passed');
+        // Sync drama type dropdown from sort value
+        const dramaTypeSelect = document.getElementById('drama-type');
+        if (dramaTypeSelect) {
+            const sortVal = item.sort || '';
+            const match = Array.from(dramaTypeSelect.options).find(o => o.value === sortVal);
+            dramaTypeSelect.value = match ? sortVal : '';
+        }
     } else {
         document.getElementById('item-from').value = item.from || 'purchase';
         document.getElementById('purchase-price').value = item.purchasePrice ?? '';

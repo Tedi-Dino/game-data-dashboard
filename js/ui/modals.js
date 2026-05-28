@@ -77,7 +77,8 @@ export const showAlert = (message) => {
         if (titleEl) titleEl.textContent = '提示';
         okBtn.classList.remove('hidden');
         if (cancelBtn) cancelBtn.classList.add('hidden');
-        messageEl.textContent = message;
+        messageEl.textContent = '';
+        messageEl.innerHTML = message.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
 
         const newOkBtn = okBtn.cloneNode(true);
         okBtn.parentNode.replaceChild(newOkBtn, okBtn);

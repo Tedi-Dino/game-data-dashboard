@@ -223,12 +223,10 @@ export const setupKpiTooltips = () => {
         if (!trigger) return;
 
         trigger.addEventListener('mouseenter', () => {
-            const rect = tooltip.getBoundingClientRect();
-            // rect is stale (tooltip is opacity:0, so size is 0).
-            // Force a temporary display to measure.
-            const prevOpacity = tooltip.style.opacity;
+            // Measure while invisible — disable transition briefly to avoid flash
+            const prevTransition = tooltip.style.transition;
             const prevPointerEvents = tooltip.style.pointerEvents;
-            tooltip.style.opacity = '1';
+            tooltip.style.transition = 'none';
             tooltip.style.pointerEvents = 'none';
 
             // Measure at each possible position
@@ -273,8 +271,8 @@ export const setupKpiTooltips = () => {
             tooltip.classList.add(useBelow ? 'kpi-tooltip-below' : 'kpi-tooltip-above');
             if (useRight) tooltip.classList.add('kpi-tooltip-right');
 
-            // Restore
-            tooltip.style.opacity = prevOpacity;
+            // Restore transition (CSS :hover handles opacity)
+            tooltip.style.transition = prevTransition;
             tooltip.style.pointerEvents = prevPointerEvents;
         });
     });
