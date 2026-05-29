@@ -79,3 +79,7 @@ old/
 
 # Firebase default hosting page
 public/
+
+# Performance test tools
+tools/perf_test/node_modules/
+tools/perf_test/results.json

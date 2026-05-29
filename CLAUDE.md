@@ -59,7 +59,7 @@ js/
 └── main.js                 # Entry point: wires auth, Firestore listener, chart renders, all UI setup
 ```
 
-**Data flow**: `firestore.js` listens to Firestore `items` collection via `onSnapshot`, writes items into `state.js` (the single source of truth), then fires an `onDataChange` callback. `main.js` sets up this callback to re-render all KPIs and charts. Everything downstream reads from `state.items`.
+**Data flow**: `firestore.js` first loads cached items from IndexedDB (`js/core/cache.js`) for instant render, then listens to Firestore `items` collection via `onSnapshot` for real-time updates. On each Firestore update, items are written into `state.js` (the single source of truth) and cached to IndexedDB, then an `onDataChange` callback fires. `main.js` sets up this callback to re-render all KPIs and charts. Everything downstream reads from `state.items`.
 
 **Auth model**: Google Sign-In via Firebase Auth. Admin UIDs are hardcoded in `constants.js`. Non-admin users see read-only UI (FAB hidden, form buttons disabled). Admin users can add/edit/delete items, import/export CSV, and trigger Steam sync.
 
