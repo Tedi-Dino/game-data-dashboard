@@ -2,6 +2,7 @@ import { collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, query, writeBa
 import { db } from '../config/firebase.js';
 import { setItems } from '../core/state.js';
 import { formatDateTime } from '../core/utils.js';
+import { getCachedItems, setCachedItems } from '../core/cache.js';
 
 let itemsCollectionRef = null;
 let unsubscribe = null;
@@ -13,12 +14,23 @@ let onDataChange = null;
 export const setOnDataChange = (fn) => { onDataChange = fn; };
 
 // --- Firestore Items Listener ---
-export const setupFirestoreListener = () => {
+export const setupFirestoreListener = async () => {
     if (unsubscribe) unsubscribe();
     itemsCollectionRef = collection(db, 'items');
+
+    // Try to load from cache first for instant render
+    const cached = await getCachedItems();
+    if (cached && cached.length > 0) {
+        setItems(cached);
+        if (onDataChange) onDataChange();
+    }
+
+    // Then set up real-time Firestore listener
     unsubscribe = onSnapshot(itemsCollectionRef, (snapshot) => {
         if (importing) return; // skip partial renders during bulk import
-        setItems(snapshot.docs.map(doc => ({ fb_id: doc.id, ...doc.data() })));
+        const items = snapshot.docs.map(doc => ({ fb_id: doc.id, ...doc.data() }));
+        setItems(items);
+        setCachedItems(items); // update cache
         if (onDataChange) onDataChange();
     }, (error) => {
         console.error('Error fetching data from Firestore: ', error);
