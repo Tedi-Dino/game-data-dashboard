@@ -68,45 +68,43 @@ const buildTrends = (currentItems) => {
         }
 
         // --- Playtime processing ---
+        // Distribute playtime evenly across months from purchaseDate to endDate.
+        // Passed items use passDate; in-progress items use today.
         if (item.type !== 'hardware' && (item.playTime || 0) > 0 && item.purchaseDate) {
-            const purchaseMonth = normalizeMonth(item.purchaseDate);
             const isDrama = item.type === 'drama';
             const playtimeKey = isDrama ? 'dramaPlaytime' : 'playtime';
+            const startDate = new Date(item.purchaseDate);
+            const endDate = (item.status === 'passed' && item.passDate)
+                ? new Date(item.passDate)
+                : new Date();
 
-            if (item.status === 'passed' && item.passDate) {
-                const startDate = new Date(item.purchaseDate);
-                const endDate = new Date(item.passDate);
+            if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && startDate <= endDate) {
+                const totalDurationDays = Math.max(1, (endDate - startDate) / (1000 * 60 * 60 * 24) + 1);
+                const dailyPlaytime = item.playTime / totalDurationDays;
 
-                if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && startDate <= endDate) {
-                    const totalDurationDays = Math.max(1, (endDate - startDate) / (1000 * 60 * 60 * 24) + 1);
-                    const dailyPlaytime = item.playTime / totalDurationDays;
+                // Distribute to months using direct arithmetic (no day-by-day loop).
+                // All date arithmetic uses UTC to match normalizeMonth()'s UTC-based
+                // month extraction — mixing local and UTC causes each month's playtime
+                // to be double-counted into the previous month in UTC+ timezones.
+                let d = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()));
+                while (d <= endDate) {
+                    const monthStr = normalizeMonth(d);
+                    const year = d.getUTCFullYear();
+                    const month = d.getUTCMonth();
+                    const monthEnd = new Date(Date.UTC(year, month + 1, 0));
+                    const effEnd = new Date(Math.min(endDate.getTime(), monthEnd.getTime()));
+                    const daysInMonth = (effEnd - d) / (1000 * 60 * 60 * 24) + 1;
 
-                    // Distribute to months using direct arithmetic (no day-by-day loop)
-                    // Use new Date(year, month+1, 1) to avoid the setMonth skip-month bug
-                    // (e.g. Jan 31 + setMonth(1,1) → Mar 3, skipping Feb entirely)
-                    let d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-                    while (d <= endDate) {
-                        const monthStr = normalizeMonth(d);
-                        const year = d.getFullYear();
-                        const month = d.getMonth();
-                        const monthEnd = new Date(year, month + 1, 0);
-                        const effEnd = new Date(Math.min(endDate.getTime(), monthEnd.getTime()));
-                        const daysInMonth = (effEnd - d) / (1000 * 60 * 60 * 24) + 1;
-
-                        if (monthStr) {
-                            allMonths.add(monthStr);
-                            if (!trends[monthStr]) trends[monthStr] = { ...DEFAULT_TREND };
-                            trends[monthStr][playtimeKey] += dailyPlaytime * daysInMonth;
-                        }
-                        // Advance to the 1st of the next month — avoids day-overflow skip
-                        d = new Date(year, month + 1, 1);
+                    if (monthStr) {
+                        allMonths.add(monthStr);
+                        if (!trends[monthStr]) trends[monthStr] = { ...DEFAULT_TREND };
+                        trends[monthStr][playtimeKey] += dailyPlaytime * daysInMonth;
                     }
-                } else if (purchaseMonth) {
-                    allMonths.add(purchaseMonth);
-                    if (!trends[purchaseMonth]) trends[purchaseMonth] = { ...DEFAULT_TREND };
-                    trends[purchaseMonth][playtimeKey] += (item.playTime || 0);
+                    // Advance to the 1st of the next month (UTC)
+                    d = new Date(Date.UTC(year, month + 1, 1));
                 }
             } else {
+                const purchaseMonth = normalizeMonth(item.purchaseDate);
                 if (purchaseMonth) {
                     allMonths.add(purchaseMonth);
                     if (!trends[purchaseMonth]) trends[purchaseMonth] = { ...DEFAULT_TREND };
