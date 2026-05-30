@@ -12,7 +12,9 @@ export let sortConfig = { key: '_default', direction: 'desc' };
 export let isEditingFromList = false;
 
 // Active Chart.js instances (keyed by chart name)
-export const charts = {};
+// Use setChart/removeChart for lifecycle management
+const _charts = {};
+export { _charts as charts };
 
 // --- Setters (prefer these over direct mutation for traceability) ---
 
@@ -21,3 +23,9 @@ export const setItems = (newItems) => { items = newItems; };
 export const setSortConfig = (key, direction) => { sortConfig = { key, direction }; };
 
 export const setIsEditingFromList = (val) => { isEditingFromList = val; };
+
+export const setChart = (name, chartInstance) => { _charts[name] = chartInstance; };
+
+export const removeChart = (name) => { delete _charts[name]; };
+
+export const getChart = (name) => _charts[name] || null;

@@ -250,6 +250,33 @@ async function fetchGameAchievements(apiKey, appId) {
   return stats.achievements;
 }
 
+/**
+ * Run async tasks with a concurrency limit.
+ * @param {Array} items - Items to process
+ * @param {Function} fn - Async function(item) => result
+ * @param {number} concurrency - Max parallel tasks
+ * @returns {Promise<Array>} - Results in same order as items
+ */
+async function parallelLimit(items, fn, concurrency = 5) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const i = nextIndex++;
+      try {
+        results[i] = await fn(items[i]);
+      } catch (err) {
+        results[i] = {error: err};
+      }
+    }
+  }
+
+  const workers = Array.from({length: Math.min(concurrency, items.length)}, () => worker());
+  await Promise.all(workers);
+  return results;
+}
+
 async function performSteamSync(apiKey) {
   // 1. Fetch owned games from Steam
   const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${apiKey}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
@@ -277,12 +304,34 @@ async function performSteamSync(apiKey) {
   // 3. Fuzzy match
   const {matched, unmatched} = fuzzyMatch(steamGames, existingItems);
 
-  // 4. Batch update matched items
+  // 4. Fetch achievement data concurrently (with rate limit)
+  //    Steam Web API allows ~100 requests per minute; use concurrency=5 to stay safe
+  const entries = [...matched.entries()];
+  const achievementResults = await parallelLimit(
+    entries.map(([fbId, info]) => ({fbId, info})),
+    async ({fbId, info}) => {
+      try {
+        const achievements = await fetchGameAchievements(apiKey, info.app_id);
+        return {fbId, achievements};
+      } catch (err) {
+        logger.warn(`Achievement fetch failed for appid ${info.app_id}: ${err.message}`);
+        return {fbId, achievements: null, error: err.message};
+      }
+    },
+    5 // concurrency limit — 5 parallel requests to avoid Steam API rate limits
+  );
+
+  // Build a lookup map: fbId => achievement result
+  const achievementMap = new Map();
+  for (const r of achievementResults) {
+    achievementMap.set(r.fbId, r.achievements);
+  }
+
+  // 5. Batch update matched items (now with pre-fetched achievement data)
   let updated = 0;
   let achievementsChecked = 0;
   let fullyCompletedCount = 0;
   const BATCH_LIMIT = 400;
-  const entries = [...matched.entries()];
 
   for (let i = 0; i < entries.length; i += BATCH_LIMIT) {
     const batch = db.batch();
@@ -302,17 +351,13 @@ async function performSteamSync(apiKey) {
         updated++;
       }
 
-      // Fetch achievement data
-      try {
-        const achievements = await fetchGameAchievements(apiKey, info.app_id);
-        if (achievements !== null) {
-          achievementsChecked++;
-          const allAchieved = achievements.length > 0 && achievements.every(a => a.achieved === 1);
-          updateData.fullyCompleted = allAchieved;
-          if (allAchieved) fullyCompletedCount++;
-        }
-      } catch (err) {
-        logger.warn(`Achievement fetch failed for appid ${info.app_id}: ${err.message}`);
+      // Apply pre-fetched achievement data
+      const achievements = achievementMap.get(fbId);
+      if (achievements !== null && achievements !== undefined) {
+        achievementsChecked++;
+        const allAchieved = achievements.length > 0 && achievements.every(a => a.achieved === 1);
+        updateData.fullyCompleted = allAchieved;
+        if (allAchieved) fullyCompletedCount++;
       }
 
       batch.set(db.doc(`items/${fbId}`), updateData, {merge: true});
@@ -321,7 +366,7 @@ async function performSteamSync(apiKey) {
     await batch.commit();
   }
 
-  // 5. Write sync metadata
+  // 6. Write sync metadata
   const unmatchedTop = unmatched.slice(0, 50);
   await db.doc("metadata/steamSync").set({
     lastSyncTime: admin.firestore.FieldValue.serverTimestamp(),

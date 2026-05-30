@@ -13,6 +13,7 @@ export const PLATFORM_COLORS = {
     gog: '#d0a8c0',
     ps: '#8ca8c8',
     xbox: '#8cbc98',
+    ms: '#8cbc98',       // Same family as Xbox — MS Store shares the green
     appstore: '#a0a8b4',
     googleplay: '#90c0a8',
     emulator: '#d8c898',

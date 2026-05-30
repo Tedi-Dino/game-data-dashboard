@@ -44,7 +44,11 @@ export const setupDetailColsToggle = () => {
             const tbody = document.getElementById('items-table-body');
             if (tbody) {
                 tbody.querySelectorAll('tr').forEach(row => {
-                    row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+                    const visibleText = Array.from(row.querySelectorAll('td'))
+                        .filter(td => !td.classList.contains('collapsible-col') || td.classList.contains('expanded'))
+                        .map(td => td.textContent.toLowerCase())
+                        .join(' ');
+                    row.style.display = visibleText.includes(term) ? '' : 'none';
                 });
             }
         }
@@ -161,7 +165,12 @@ export const renderItemsList = () => {
     if (searchInput && searchInput.value) {
         const term = searchInput.value.toLowerCase();
         tbody.querySelectorAll('tr').forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+            // Only search visible columns (not collapsible-col without .expanded)
+            const visibleText = Array.from(row.querySelectorAll('td'))
+                .filter(td => !td.classList.contains('collapsible-col') || td.classList.contains('expanded'))
+                .map(td => td.textContent.toLowerCase())
+                .join(' ');
+            row.style.display = visibleText.includes(term) ? '' : 'none';
         });
     }
 };
@@ -216,7 +225,12 @@ export const setupListSearch = () => {
             const tbody = document.getElementById('items-table-body');
             if (!tbody) return;
             tbody.querySelectorAll('tr').forEach(row => {
-                row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+                // Only search visible columns (not hidden collapsible columns)
+                const visibleText = Array.from(row.querySelectorAll('td'))
+                    .filter(td => !td.classList.contains('collapsible-col') || td.classList.contains('expanded'))
+                    .map(td => td.textContent.toLowerCase())
+                    .join(' ');
+                row.style.display = visibleText.includes(term) ? '' : 'none';
             });
         }, 150);
     });

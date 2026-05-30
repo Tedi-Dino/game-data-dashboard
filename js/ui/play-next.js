@@ -3,7 +3,7 @@ import { escapeHTML } from '../core/utils.js';
 import { openModal, closeModal } from './modals.js';
 import { isAdmin } from './auth.js';
 import {
-    getAIRecommendations,
+    getAIRecommendations, cancelAIRequest,
     getLocalApiKey, setLocalApiKey, clearLocalApiKey,
     isLocalMode, setLocalMode,
     isThinkingMode, setThinkingMode
@@ -151,7 +151,10 @@ export const setupPlayNextModal = () => {
 
     // --- Close modal ---
     if (closeBtn) {
-        closeBtn.addEventListener('click', () => closeModal(playNextModal));
+        closeBtn.addEventListener('click', () => {
+            cancelAIRequest(); // Cancel any in-flight AI request
+            closeModal(playNextModal);
+        });
     }
 
     // --- Toggle backlog list ---

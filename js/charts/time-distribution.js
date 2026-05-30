@@ -1,4 +1,4 @@
-import { items, charts } from '../core/state.js';
+import { items, setChart, getChart } from '../core/state.js';
 import { PLATFORM_COLORS, TIME_TYPE_MAP, TIME_COLOR_MAP } from '../config/constants.js';
 import { escapeHTML } from '../core/utils.js';
 import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
@@ -21,9 +21,9 @@ export const renderTimeDistributionChart = () => {
     const el = document.getElementById('time-distribution-chart');
     if (!el) return;
 
-    if (charts.timeDistribution) destroyChartWithTooltip(charts.timeDistribution);
+    if (getChart('timeDistribution')) destroyChartWithTooltip(getChart('timeDistribution'));
 
-    charts.timeDistribution = new Chart(el, {
+    setChart('timeDistribution', new Chart(el, {
         type: 'doughnut',
         data: {
             labels: sortedEntries.map(([l]) => l),

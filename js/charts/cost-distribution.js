@@ -1,4 +1,4 @@
-import { items, charts } from '../core/state.js';
+import { items, setChart, getChart } from '../core/state.js';
 import { PLATFORM_COLORS, COST_TYPE_MAP, COST_COLOR_MAP } from '../config/constants.js';
 import { formatCurrency, escapeHTML, netCost } from '../core/utils.js';
 import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
@@ -31,9 +31,9 @@ export const renderCostDistributionChart = () => {
     const el = document.getElementById('cost-distribution-chart');
     if (!el) return;
 
-    if (charts.costDistribution) destroyChartWithTooltip(charts.costDistribution);
+    if (getChart('costDistribution')) destroyChartWithTooltip(getChart('costDistribution'));
 
-    charts.costDistribution = new Chart(el, {
+    setChart('costDistribution', new Chart(el, {
         type: 'doughnut',
         data: {
             labels: sortedEntries.map(([l]) => l),

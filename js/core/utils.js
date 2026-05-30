@@ -1,8 +1,8 @@
-// Currency formatter
-export const formatCurrency = (value) => `¥${(value ?? 0).toFixed(2)}`;
+// Currency formatter — guards against NaN
+export const formatCurrency = (value) => `¥${(Number.isFinite(value) ? value : 0).toFixed(2)}`;
 
 // Plain number formatter (no ¥ symbol — for use with separate currency spans)
-export const formatNumber = (value) => (value ?? 0).toFixed(2);
+export const formatNumber = (value) => (Number.isFinite(value) ? value : 0).toFixed(2);
 
 // Safe numeric parser: returns null for empty/invalid input
 export const parseFloatOrNull = (value) =>
@@ -21,8 +21,10 @@ export const formatDateForInput = (value) => {
     if (!value) return '';
     if (value.toDate) return value.toDate().toISOString().slice(0, 10);
     if (value instanceof Date) return value.toISOString().slice(0, 10);
-    const str = String(value).slice(0, 10);
-    return str.replace(/\//g, '-');
+    // Parse string properly to handle single-digit months/days (e.g. "2024/1/5")
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return String(value).slice(0, 10).replace(/\//g, '-');
+    return d.toISOString().slice(0, 10);
 };
 
 // Format a Date/Timestamp to "MM/DD HH:mm"
@@ -36,12 +38,13 @@ export const formatDateTime = (value) => {
     return `${('0' + (d.getMonth() + 1)).slice(-2)}/${('0' + d.getDate()).slice(-2)} ${('0' + d.getHours()).slice(-2)}:${('0' + d.getMinutes()).slice(-2)}`;
 };
 
-// Normalize a date string to "YYYY-MM" format
+// Normalize a date string to "YYYY-MM" format (UTC-consistent)
 export const normalizeMonth = (dateStr) => {
     if (!dateStr) return null;
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return null;
-    return date.getFullYear() + '-' + ('0' + (date.getMonth() + 1)).slice(-2);
+    // Use UTC to avoid timezone-dependent month grouping
+    return date.getUTCFullYear() + '-' + ('0' + (date.getUTCMonth() + 1)).slice(-2);
 };
 
 // Render star rating as HTML (10-point scale → 5 stars with half-star support)
@@ -64,9 +67,14 @@ export const renderStarsForTable = (rating) => {
     return renderStars(rating, false);
 };
 
-// Simple string hash for generating deterministic HSL colors
-export const hashCode = (str) =>
-    str.split('').reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) >>> 0, 0);
+// djb2 hash — better distribution than simple << 5 reduce
+export const hashCode = (str) => {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) + hash + str.charCodeAt(i)) >>> 0;
+    }
+    return hash;
+};
 
 // Net cost: purchase price minus sell price
 export const netCost = (item) => (item.purchasePrice || 0) - (item.sellPrice || 0);
