@@ -1,8 +1,7 @@
 const DB_NAME = 'game-dashboard-cache';
-const DB_VERSION = 2;
+const DB_VERSION = 1;
 const STORE_NAME = 'items';
 const CACHE_KEY = 'all-items';
-const CACHE_SCHEMA_VERSION = 2; // bump when Firestore item schema changes
 
 let dbPromise = null;
 
@@ -31,12 +30,10 @@ export async function getCachedItems() {
             const request = store.get(CACHE_KEY);
             request.onsuccess = () => {
                 const result = request.result;
-                // Validate schema version — discard stale cache
-                if (result && result._schemaVersion !== CACHE_SCHEMA_VERSION) {
-                    resolve(null);
-                    return;
-                }
-                resolve(result?.data || null);
+                // Handle both old format (raw array) and new format (wrapped object)
+                if (Array.isArray(result)) resolve(result);
+                else if (result && Array.isArray(result.data)) resolve(result.data);
+                else resolve(null);
             };
             request.onerror = () => resolve(null);
         });
@@ -51,7 +48,7 @@ export async function setCachedItems(items) {
         return new Promise((resolve) => {
             const tx = database.transaction(STORE_NAME, 'readwrite');
             const store = tx.objectStore(STORE_NAME);
-            store.put({ data: items, _schemaVersion: CACHE_SCHEMA_VERSION }, CACHE_KEY);
+            store.put(items, CACHE_KEY);
             tx.oncomplete = () => resolve();
             tx.onerror = () => resolve();
         });
