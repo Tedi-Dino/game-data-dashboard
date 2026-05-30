@@ -1,5 +1,8 @@
 let lastFocusedEl = null;
 
+// Import escapeHTML for safe HTML rendering
+import { escapeHTML } from '../core/utils.js';
+
 /**
  * Open a modal by removing 'hidden' and adding 'flex' classes.
  */
@@ -78,7 +81,7 @@ export const showAlert = (message) => {
         okBtn.classList.remove('hidden');
         if (cancelBtn) cancelBtn.classList.add('hidden');
         messageEl.textContent = '';
-        messageEl.innerHTML = message.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+        messageEl.innerHTML = escapeHTML(message).replace(/\n/g, '<br>');
 
         const newOkBtn = okBtn.cloneNode(true);
         okBtn.parentNode.replaceChild(newOkBtn, okBtn);

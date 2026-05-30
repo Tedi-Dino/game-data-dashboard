@@ -31,12 +31,13 @@ const parseCSVRow = (values, headerIndexMap) => {
     };
     // Steam fields: only include when present in CSV
     const rawAppId = getVal('steam_app_id');
-    const parsedAppId = parseFloatOrNull(rawAppId);
-    if (parsedAppId != null) item.steam_app_id = Math.round(parsedAppId);
-    const rawOverride = getVal('steam_override').toLowerCase();
-    if (rawOverride) item.steam_override = rawOverride === 'true';
-    const rawCompleted = getVal('fullyCompleted').toLowerCase();
-    if (rawCompleted) item.fullyCompleted = rawCompleted === 'true';
+    // Use parseInt for integer IDs — parseFloat loses precision for large values
+    const parsedAppId = parseInt(rawAppId, 10);
+    if (!isNaN(parsedAppId) && parsedAppId > 0) item.steam_app_id = parsedAppId;
+    const rawOverride = getVal('steam_override');
+    if (rawOverride) item.steam_override = rawOverride.toLowerCase() === 'true';
+    const rawCompleted = getVal('fullyCompleted');
+    if (rawCompleted) item.fullyCompleted = rawCompleted.toLowerCase() === 'true';
     return (!item.id || !item.name || !item.type) ? null : item;
 };
 
@@ -141,9 +142,13 @@ export const importCSV = async (text) => {
         })
         .filter(Boolean);
 
-    // Check for duplicate IDs
-    if (new Set(newItems.map(i => i.id)).size !== newItems.length) {
-        throw new Error('导入失败：ID重复。');
+    // Check for duplicate IDs — single-pass with early exit
+    const seenIds = new Set();
+    for (const item of newItems) {
+        if (seenIds.has(item.id)) {
+            throw new Error(`导入失败：ID "${item.id}" 重复。`);
+        }
+        seenIds.add(item.id);
     }
 
     if (skippedCount > 0) {
@@ -154,13 +159,22 @@ export const importCSV = async (text) => {
     await updateLastModifiedTimestamp();
 };
 
+// Convert a value for CSV export — handles Firestore Timestamps, Dates, booleans
+const toCSVValue = (val) => {
+    if (val == null) return '';
+    // Firestore Timestamp objects have a .toDate() method
+    if (typeof val.toDate === 'function') return val.toDate().toISOString();
+    if (val instanceof Date) return val.toISOString();
+    return String(val);
+};
+
 // Export items to CSV file
 export const exportCSV = () => {
     if (items.length === 0) return false;
 
     const csvContent = HEADERS.join(',') + '\r\n' +
         items.map(i => HEADERS.map(h => {
-            const val = String(i[h] ?? '');
+            const val = toCSVValue(i[h]);
             return `"${val.replace(/"/g, '""')}"`;
         }).join(',')).join('\r\n');
 
@@ -173,6 +187,7 @@ export const exportCSV = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Delay revoking to ensure the download has started
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
     return true;
 };

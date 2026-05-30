@@ -4,7 +4,7 @@ import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from
 
 // Core
 import { items, setSortConfig } from './core/state.js';
-import { formatDateTime } from './core/utils.js';
+import { formatDateTime, escapeHTML } from './core/utils.js';
 
 // Services
 import { setupFirestoreListener, setOnDataChange, setupMetadataListener } from './services/firestore.js';
@@ -30,14 +30,23 @@ import { setupCSVHandlers } from './ui/csv-handlers.js';
 import { setupChartControls } from './ui/chart-controls.js';
 import { triggerSteamSync, setupSteamSyncMetadataListener } from './services/steam.js';
 
-// --- Render all charts ---
+// --- Render all charts (with per-chart error isolation) ---
 const renderCharts = () => {
     destroyAllCharts();
-    renderCostDistributionChart();
-    renderTimeDistributionChart();
-    renderGameDistributionChart();
-    renderMonthlyTrendsChart();
-    renderGameSortChart();
+    const chartRenderers = [
+        ['cost', renderCostDistributionChart],
+        ['time', renderTimeDistributionChart],
+        ['scatter', renderGameDistributionChart],
+        ['monthly', renderMonthlyTrendsChart],
+        ['genre', renderGameSortChart],
+    ];
+    for (const [name, fn] of chartRenderers) {
+        try {
+            fn();
+        } catch (e) {
+            console.error(`Chart "${name}" render failed:`, e);
+        }
+    }
 };
 
 // --- Full dashboard update (called after Firestore data changes) ---
@@ -123,11 +132,12 @@ const initApp = () => {
 
             const result = await triggerSteamSync();
 
+            if (!steamSyncBtn.isConnected) return; // element removed from DOM
             steamSyncBtn.disabled = false;
             if (icon) icon.classList.remove('fa-spin');
 
             if (result.error) {
-                if (steamSyncStatus) {
+                if (steamSyncStatus && steamSyncStatus.isConnected) {
                     steamSyncStatus.textContent = result.error;
                     steamSyncStatus.classList.add('text-red-500');
                 }
@@ -138,7 +148,7 @@ const initApp = () => {
                 if (result.unmatched && result.unmatched.length > 0) parts.push(`${result.unmatched.length} 款未匹配`);
                 if (result.achievementsChecked > 0) parts.push(`检查 ${result.achievementsChecked} 个成就`);
                 if (result.fullyCompletedCount > 0) parts.push(`${result.fullyCompletedCount} 款全成就`);
-                if (steamSyncStatus) {
+                if (steamSyncStatus && steamSyncStatus.isConnected) {
                     steamSyncStatus.textContent = parts.length > 0
                         ? `Steam同步完成: ${parts.join(', ')}`
                         : 'Steam同步完成';
@@ -152,14 +162,24 @@ const initApp = () => {
     let steamSyncData = null;
     setupSteamSyncMetadataListener((data) => {
         steamSyncData = data;
-        if (!steamSyncStatus) return;
+        if (!steamSyncStatus || !steamSyncStatus.isConnected) return;
         if (data && data.lastSyncTime) {
             const formatted = formatDateTime(data.lastSyncTime);
             steamSyncStatus.classList.remove('hidden');
             const unmatched = data.unmatchedCount || 0;
             const matched = data.matchedCount || 0;
-            const unmatchedText = unmatched > 0 ? `, <span class="text-amber-600 cursor-pointer underline show-unmatched">${unmatched} 款未同步</span>` : '';
-            steamSyncStatus.innerHTML = `Steam: 上次同步 ${formatted}, 匹配 ${matched} 款${unmatchedText}`;
+            // Use textContent for safe content, with a separate clickable span
+            if (unmatched > 0) {
+                steamSyncStatus.textContent = '';
+                const textNode = document.createTextNode(`Steam: 上次同步 ${formatted}, 匹配 ${matched} 款, `);
+                const link = document.createElement('span');
+                link.className = 'text-amber-600 cursor-pointer underline show-unmatched';
+                link.textContent = `${unmatched} 款未同步`;
+                steamSyncStatus.appendChild(textNode);
+                steamSyncStatus.appendChild(link);
+            } else {
+                steamSyncStatus.textContent = `Steam: 上次同步 ${formatted}, 匹配 ${matched} 款`;
+            }
         }
     });
 

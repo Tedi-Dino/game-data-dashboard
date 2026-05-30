@@ -16,8 +16,6 @@ html, body {
 }
 body {
     overflow-x: clip;
-}
-body {
     font-family: 'Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'Noto Sans SC', sans-serif;
     background-color: #f5f0ed;
     color: #2d2927;

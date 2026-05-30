@@ -16,6 +16,19 @@ export const setLocalMode = (enabled) => localStorage.setItem(LOCAL_MODE_STORAGE
 export const isThinkingMode = () => localStorage.getItem(THINKING_MODE_STORAGE) === 'true';
 export const setThinkingMode = (enabled) => localStorage.setItem(THINKING_MODE_STORAGE, enabled ? 'true' : 'false');
 
+// Active AbortController for cancelling in-flight requests
+let activeAbortController = null;
+
+/**
+ * Cancel any in-flight AI request.
+ */
+export const cancelAIRequest = () => {
+    if (activeAbortController) {
+        activeAbortController.abort();
+        activeAbortController = null;
+    }
+};
+
 /**
  * Build the prompt string from current game and drama data.
  */
@@ -118,8 +131,14 @@ const parseRecommendations = (text) => {
 
     try {
         const recommendations = JSON.parse(cleaned);
-        if (Array.isArray(recommendations) && recommendations.every(r => r.name && r.reason)) {
+        // Validate: each item must have name, reason, and type
+        if (Array.isArray(recommendations) && recommendations.every(r => r.name && r.reason && r.type)) {
             return { recommendations };
+        }
+        // If type is missing, fill in a default
+        if (Array.isArray(recommendations) && recommendations.every(r => r.name && r.reason)) {
+            const fixed = recommendations.map(r => ({ type: '游戏', ...r }));
+            return { recommendations: fixed };
         }
         throw new Error('Invalid structure');
     } catch (e) {
@@ -131,7 +150,7 @@ const parseRecommendations = (text) => {
 /**
  * Call DeepSeek API directly (for local dev / bypass Cloud Function).
  */
-const callDeepSeekDirectly = async (customPrompt, promptData) => {
+const callDeepSeekDirectly = async (customPrompt, promptData, signal) => {
     const apiKey = getLocalApiKey();
     if (!apiKey) {
         return { error: '本地API密钥未配置，请在设置中填入DeepSeek API Key。' };
@@ -155,6 +174,7 @@ const callDeepSeekDirectly = async (customPrompt, promptData) => {
                     ? { thinking: { type: 'enabled', reasoning_effort: 'high' } }
                     : { thinking: { type: 'disabled' } }),
             }),
+            signal, // AbortController signal
         });
 
         if (!response.ok) {
@@ -171,6 +191,9 @@ const callDeepSeekDirectly = async (customPrompt, promptData) => {
 
         return parseRecommendations(textContent);
     } catch (error) {
+        if (error.name === 'AbortError') {
+            return { error: '请求已取消。' };
+        }
         console.error('Direct DeepSeek call failed:', error);
         return { error: `请求DeepSeek API失败: ${error.message}` };
     }
@@ -224,23 +247,34 @@ export const getAIRecommendations = async (customPrompt = '') => {
         return { recommendations: [{ name: '太棒了！', reason: '您的待玩/待看清单已经一干二净！', type: '消息' }] };
     }
 
-    // If user explicitly set local mode, use direct API call
-    if (isLocalMode()) {
-        return await callDeepSeekDirectly(customPrompt, promptData);
+    // Cancel any previous in-flight request
+    cancelAIRequest();
+    const controller = new AbortController();
+    activeAbortController = controller;
+
+    try {
+        // If user explicitly set local mode, use direct API call
+        if (isLocalMode()) {
+            return await callDeepSeekDirectly(customPrompt, promptData, controller.signal);
+        }
+
+        // Otherwise try Cloud Function first
+        const cfResult = await callCloudFunction(customPrompt, promptData);
+        if (!cfResult.error) return cfResult;
+
+        // Cloud Function failed — try local API key as fallback
+        if (getLocalApiKey()) {
+            console.log('Cloud Function unavailable, falling back to direct DeepSeek call...');
+            return await callDeepSeekDirectly(customPrompt, promptData, controller.signal);
+        }
+
+        // Neither works — give helpful error
+        return {
+            error: `${cfResult.error}\n\n💡 本地调试提示：如果你在本地运行此页面，请在设置中填入DeepSeek API Key以直接调用AI。`
+        };
+    } finally {
+        if (activeAbortController === controller) {
+            activeAbortController = null;
+        }
     }
-
-    // Otherwise try Cloud Function first
-    const cfResult = await callCloudFunction(customPrompt, promptData);
-    if (!cfResult.error) return cfResult;
-
-    // Cloud Function failed — try local API key as fallback
-    if (getLocalApiKey()) {
-        console.log('Cloud Function unavailable, falling back to direct DeepSeek call...');
-        return await callDeepSeekDirectly(customPrompt, promptData);
-    }
-
-    // Neither works — give helpful error
-    return {
-        error: `${cfResult.error}\n\n💡 本地调试提示：如果你在本地运行此页面，请在设置中填入DeepSeek API Key以直接调用AI。`
-    };
 };

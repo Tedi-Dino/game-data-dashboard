@@ -1,4 +1,4 @@
-import { items, charts } from '../core/state.js';
+import { items, setChart, getChart } from '../core/state.js';
 import { PLATFORM_COLORS } from '../config/constants.js';
 import { escapeHTML, formatCurrency, netCost, renderStars } from '../core/utils.js';
 import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
@@ -107,9 +107,9 @@ export const renderGameDistributionChart = () => {
 
     const el = document.getElementById('game-distribution-chart');
     if (!el) return;
-    if (charts.gameDistribution) destroyChartWithTooltip(charts.gameDistribution);
+    if (getChart('gameDistribution')) destroyChartWithTooltip(getChart('gameDistribution'));
 
-    charts.gameDistribution = new Chart(el, {
+    setChart('gameDistribution', new Chart(el, {
         type: 'scatter',
         data: { datasets: allDatasets },
         options: {

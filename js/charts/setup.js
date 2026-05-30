@@ -1,4 +1,4 @@
-import { charts } from '../core/state.js';
+import { charts, setChart, removeChart, getChart } from '../core/state.js';
 
 // Initialize Chart.js defaults
 export const setupChartDefaults = () => {
@@ -119,6 +119,6 @@ export const destroyAllCharts = () => {
         destroyChartWithTooltip(chart);
     });
     for (const key of Object.keys(charts)) {
-        charts[key] = undefined;
+        removeChart(key);
     }
 };

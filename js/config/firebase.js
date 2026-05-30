@@ -14,6 +14,7 @@ const firebaseConfig = {
 };
 
 let app, auth, db, functions;
+let initFailed = false;
 
 try {
     app = initializeApp(firebaseConfig);
@@ -22,8 +23,12 @@ try {
     functions = getFunctions(app);
 } catch (e) {
     console.error('Error initializing Firebase:', e);
-    document.body.innerHTML =
-        '<div class="text-stone-900 text-center p-8">Firebase initialization failed. Please check the configuration.</div>';
+    initFailed = true;
+    // Insert error overlay instead of destroying the entire body
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-stone-100';
+    overlay.innerHTML = '<div class="text-stone-900 text-center p-8 bg-white rounded-xl shadow-lg max-w-md"><h2 class="text-xl font-bold mb-2">初始化失败</h2><p class="text-stone-600">Firebase 初始化失败，请检查网络连接和配置后刷新页面。</p></div>';
+    document.body.appendChild(overlay);
 }
 
-export { app, auth, db, functions };
+export { app, auth, db, functions, initFailed };

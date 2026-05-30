@@ -1,4 +1,4 @@
-import { items, charts } from '../core/state.js';
+import { items, setChart, getChart } from '../core/state.js';
 import { hashCode, renderStars, escapeHTML } from '../core/utils.js';
 import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
 
@@ -18,9 +18,9 @@ export const renderGameSortChart = () => {
     const el = document.getElementById('game-sort-chart');
     if (!el) return;
 
-    if (charts.gameSort) destroyChartWithTooltip(charts.gameSort);
+    if (getChart('gameSort')) destroyChartWithTooltip(getChart('gameSort'));
 
-    charts.gameSort = new Chart(el, {
+    setChart('gameSort', new Chart(el, {
         type: 'doughnut',
         data: {
             labels,

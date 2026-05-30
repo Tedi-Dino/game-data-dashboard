@@ -1,4 +1,4 @@
-import { items, charts } from '../core/state.js';
+import { items, setChart, getChart } from '../core/state.js';
 import { PLATFORM_COLORS } from '../config/constants.js';
 import { formatCurrency, normalizeMonth, renderStars, escapeHTML } from '../core/utils.js';
 import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
@@ -82,7 +82,9 @@ const buildTrends = (currentItems) => {
                     const dailyPlaytime = item.playTime / totalDurationDays;
 
                     // Distribute to months using direct arithmetic (no day-by-day loop)
-                    const d = new Date(startDate);
+                    // Use new Date(year, month+1, 1) to avoid the setMonth skip-month bug
+                    // (e.g. Jan 31 + setMonth(1,1) → Mar 3, skipping Feb entirely)
+                    let d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
                     while (d <= endDate) {
                         const monthStr = normalizeMonth(d);
                         const year = d.getFullYear();
@@ -96,7 +98,8 @@ const buildTrends = (currentItems) => {
                             if (!trends[monthStr]) trends[monthStr] = { ...DEFAULT_TREND };
                             trends[monthStr][playtimeKey] += dailyPlaytime * daysInMonth;
                         }
-                        d.setMonth(month + 1, 1);
+                        // Advance to the 1st of the next month — avoids day-overflow skip
+                        d = new Date(year, month + 1, 1);
                     }
                 } else if (purchaseMonth) {
                     allMonths.add(purchaseMonth);
@@ -218,9 +221,9 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
     const el = document.getElementById(canvasId);
     if (!el) return;
 
-    if (charts[chartKey]) destroyChartWithTooltip(charts[chartKey]);
+    if (getChart(chartKey)) destroyChartWithTooltip(getChart(chartKey));
 
-    charts[chartKey] = new Chart(el, {
+    setChart(chartKey, new Chart(el, {
         type: 'bar',
         data: {
             labels: sortedMonths,
