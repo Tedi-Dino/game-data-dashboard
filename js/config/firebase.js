@@ -13,17 +13,15 @@ const firebaseConfig = {
     measurementId: 'G-P9L1V42JK6'
 };
 
-let app, auth, db, functions;
-let initFailed = false;
+let auth, db, functions;
 
 try {
-    app = initializeApp(firebaseConfig);
+    const app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
     functions = getFunctions(app);
 } catch (e) {
     console.error('Error initializing Firebase:', e);
-    initFailed = true;
     // Insert error overlay instead of destroying the entire body
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-stone-100';
@@ -31,4 +29,4 @@ try {
     document.body.appendChild(overlay);
 }
 
-export { app, auth, db, functions, initFailed };
+export { auth, db, functions };

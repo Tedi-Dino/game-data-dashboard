@@ -3,17 +3,16 @@ import { ADMIN_UIDS } from '../config/constants.js';
 
 let userId = null;
 
-export const getUserId = () => userId;
+const getUserId = () => userId;
 
-export const setUserId = (id) => { userId = id; };
+const setUserId = (id) => { userId = id; };
 
 export const isAdmin = () => userId && ADMIN_UIDS.includes(userId);
 
 /**
  * Update UI elements to reflect read-only vs write access.
- * @param {string|null} currentUserId
  */
-export const updateUIAccess = () => {
+const updateUIAccess = () => {
     const isReadOnly = !isAdmin();
     const fabContainer = document.querySelector('.fab-container');
     const tableBody = document.getElementById('items-table-body');
