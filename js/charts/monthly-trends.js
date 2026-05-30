@@ -319,5 +319,5 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
                 }
             }
         }
-    });
+    }));
 };
