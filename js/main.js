@@ -4,7 +4,7 @@ import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from
 
 // Core
 import { items, setSortConfig } from './core/state.js';
-import { formatDateTime, escapeHTML } from './core/utils.js';
+import { formatDateTime } from './core/utils.js';
 
 // Services
 import { setupFirestoreListener, setOnDataChange, setupMetadataListener } from './services/firestore.js';

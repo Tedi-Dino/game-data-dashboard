@@ -92,7 +92,6 @@ export const deleteItem = async (fbId) => {
 
 // --- CSV Import (bulk replace) ---
 let importing = false;
-export const isImporting = () => importing;
 
 export const bulkReplaceItems = async (newItems) => {
     if (importing) throw new Error('正在导入中，请勿重复操作');
