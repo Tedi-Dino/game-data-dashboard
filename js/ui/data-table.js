@@ -1,5 +1,5 @@
 import { items, sortConfig, setSortConfig, setIsEditingFromList } from '../core/state.js';
-import { formatCurrency, renderStarsForTable, formatDateForInput, escapeHTML } from '../core/utils.js';
+import { formatCurrency, renderStarsForTable, formatDateForInput, escapeHTML, getStartDate } from '../core/utils.js';
 import { TYPE_MAP, FROM_MAP, STATUS_MAP } from '../config/constants.js';
 import { openModal, closeModal } from './modals.js';
 import { isAdmin } from './auth.js';
@@ -86,8 +86,10 @@ export const renderItemsList = () => {
             if (aStatus !== bStatus) return aStatus - bStatus;
 
             if (a.status === 'playing') {
-                const aDate = getDateVal(a, 'purchaseDate');
-                const bDate = getDateVal(b, 'purchaseDate');
+                const aStart = getStartDate(a);
+                const bStart = getStartDate(b);
+                const aDate = aStart ? new Date(aStart).getTime() : -Infinity;
+                const bDate = bStart ? new Date(bStart).getTime() : -Infinity;
                 return aDate - bDate;
             }
             if (a.status === 'passed') {
@@ -111,6 +113,7 @@ export const renderItemsList = () => {
                 case 'from': return item.from || '';
                 case 'status': return item.status || '';
                 case 'purchaseDate': return getDateVal(item, 'purchaseDate');
+                case 'startDate': return getDateVal(item, 'startDate');
                 case 'passDate': return getDateVal(item, 'passDate');
                 case 'purchasePrice': return item.purchasePrice ?? -1;
                 case 'actualCost': return cost;
@@ -150,6 +153,7 @@ export const renderItemsList = () => {
             <td class="px-4 py-3 whitespace-nowrap">${item.playTime != null ? `${item.playTime}h` : '/'} ${renderSteamSource(item)}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.passDate) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(item.purchaseDate) || '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(item.startDate) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap collapsible-col">${item.purchasePrice != null ? formatCurrency(item.purchasePrice) : '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${formatCurrency(cost)}</td>
             <td class="px-4 py-3 whitespace-nowrap">${cph != null && isFinite(cph) ? formatCurrency(cph) : '/'}</td>
@@ -258,6 +262,7 @@ const handleEditItem = (fbId) => {
     document.getElementById('item-name').value = item.name;
     document.getElementById('item-sort').value = item.sort || '';
     document.getElementById('purchase-date').value = formatDateForInput(item.purchaseDate);
+    document.getElementById('start-date').value = formatDateForInput(item.startDate);
 
     const isDrama = item.type === 'drama';
     setFormMode(isDrama ? 'drama' : 'game');

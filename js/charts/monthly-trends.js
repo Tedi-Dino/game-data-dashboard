@@ -1,6 +1,6 @@
 import { items, setChart, getChart } from '../core/state.js';
 import { PLATFORM_COLORS } from '../config/constants.js';
-import { formatCurrency, normalizeMonth, renderStars, escapeHTML } from '../core/utils.js';
+import { formatCurrency, normalizeMonth, renderStars, escapeHTML, getStartDate } from '../core/utils.js';
 import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
 
 const DEFAULT_TREND = {
@@ -70,10 +70,10 @@ const buildTrends = (currentItems) => {
         // --- Playtime processing ---
         // Distribute playtime evenly across months from purchaseDate to endDate.
         // Passed items use passDate; in-progress items use today.
-        if (item.type !== 'hardware' && (item.playTime || 0) > 0 && item.purchaseDate) {
+        if (item.type !== 'hardware' && (item.playTime || 0) > 0 && getStartDate(item)) {
             const isDrama = item.type === 'drama';
             const playtimeKey = isDrama ? 'dramaPlaytime' : 'playtime';
-            const startDate = new Date(item.purchaseDate);
+            const startDate = new Date(getStartDate(item));
             const endDate = (item.status === 'passed' && item.passDate)
                 ? new Date(item.passDate)
                 : new Date();
@@ -104,11 +104,11 @@ const buildTrends = (currentItems) => {
                     d = new Date(Date.UTC(year, month + 1, 1));
                 }
             } else {
-                const purchaseMonth = normalizeMonth(item.purchaseDate);
-                if (purchaseMonth) {
-                    allMonths.add(purchaseMonth);
-                    if (!trends[purchaseMonth]) trends[purchaseMonth] = { ...DEFAULT_TREND };
-                    trends[purchaseMonth][playtimeKey] += (item.playTime || 0);
+                const startMonth = normalizeMonth(getStartDate(item));
+                if (startMonth) {
+                    allMonths.add(startMonth);
+                    if (!trends[startMonth]) trends[startMonth] = { ...DEFAULT_TREND };
+                    trends[startMonth][playtimeKey] += (item.playTime || 0);
                 }
             }
         }
@@ -124,11 +124,11 @@ const buildTrends = (currentItems) => {
  * Returns the portion (in hours) attributable to [monthStart, monthEnd].
  */
 const calcMonthlyPlaytime = (item, monthStart, monthEnd) => {
-    if (!item.playTime || item.playTime <= 0 || item.type === 'hardware' || !item.purchaseDate) {
+    if (!item.playTime || item.playTime <= 0 || item.type === 'hardware' || !getStartDate(item)) {
         return 0;
     }
 
-    const startDate = new Date(item.purchaseDate);
+    const startDate = new Date(getStartDate(item));
     const endDate = (item.status === 'passed' && item.passDate)
         ? new Date(item.passDate)
         : new Date();

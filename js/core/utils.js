@@ -76,6 +76,10 @@ export const hashCode = (str) => {
     return hash;
 };
 
+// Get the effective start date for playtime calculations.
+// Falls back to purchaseDate when startDate is not set.
+export const getStartDate = (item) => item.startDate || item.purchaseDate;
+
 // Net cost: purchase price minus sell price
 export const netCost = (item) => (item.purchasePrice || 0) - (item.sellPrice || 0);
 
