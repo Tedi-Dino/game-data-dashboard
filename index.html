@@ -266,9 +266,15 @@
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label for="purchase-date" class="block text-sm font-medium text-stone-700">购入/开始日期</label>
+                        <label for="purchase-date" class="block text-sm font-medium text-stone-700">购入日期</label>
                         <input type="date" id="purchase-date" class="form-input w-full mt-1">
                     </div>
+                    <div>
+                        <label for="start-date" class="block text-sm font-medium text-stone-700">开始游玩日期</label>
+                        <input type="date" id="start-date" class="form-input w-full mt-1">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="item-sort" class="block text-sm font-medium text-stone-700">类型/分类</label>
                         <input type="text" id="item-sort" class="form-input w-full mt-1" placeholder="游戏类型或剧集分类">
@@ -439,6 +445,7 @@
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="playTime">游玩时长</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="passDate">通关日期</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap collapsible-col" data-sort="purchaseDate">购入日期</th>
+                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap collapsible-col" data-sort="startDate">开始游玩</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap collapsible-col" data-sort="purchasePrice">购入价格</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="actualCost">实际支出</th>
                             <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="costPerHour">时间成本</th>

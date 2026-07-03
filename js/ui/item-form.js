@@ -106,6 +106,7 @@ const readFormData = () => {
         type,
         from: isDrama ? 'free' : document.getElementById('item-from').value,
         purchaseDate: parseDateOrNull(document.getElementById('purchase-date').value),
+        startDate: parseDateOrNull(document.getElementById('start-date').value),
         purchasePrice: isDrama ? 0 : parseFloatOrNull(document.getElementById('purchase-price').value),
         playTime,
         status,

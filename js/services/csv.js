@@ -3,7 +3,7 @@ import { parseFloatOrNull, parseDateOrNull } from '../core/utils.js';
 import { bulkReplaceItems, updateLastModifiedTimestamp } from './firestore.js';
 
 // CSV header columns
-const HEADERS = ['id', 'name', 'type', 'sort', 'status', 'purchaseDate', 'purchasePrice',
+const HEADERS = ['id', 'name', 'type', 'sort', 'status', 'purchaseDate', 'startDate', 'purchasePrice',
     'from', 'playTime', 'passDate', 'sellDate', 'sellPrice', 'rating',
     'episodeCount', 'episodeDuration', 'steam_app_id', 'steam_override', 'fullyCompleted'];
 
@@ -18,6 +18,7 @@ const parseCSVRow = (values, headerIndexMap) => {
         from: getVal('from'),
         status: getVal('status'),
         purchaseDate: parseDateOrNull(getVal('purchaseDate')),
+        startDate: parseDateOrNull(getVal('startDate')),
         purchasePrice: parseFloatOrNull(getVal('purchasePrice')),
         passDate: parseDateOrNull(getVal('passDate')),
         sellDate: parseDateOrNull(getVal('sellDate')),

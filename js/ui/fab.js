@@ -29,6 +29,7 @@ export const setupFab = () => {
             itemCustomId.value = '';
             deleteBtn.classList.add('hidden');
             purchaseDate.value = new Date().toISOString().split('T')[0];
+            document.getElementById('start-date').value = new Date().toISOString().split('T')[0];
             itemStatus.value = 'empty';
             passDateContainer.classList.add('hidden');
             setFormMode('game');
