@@ -187,8 +187,8 @@
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="text-lg font-normal text-stone-500">📈 价格-时间分布</h3>
                     <div class="flex items-center space-x-1">
-                        <input type="checkbox" id="exclude-unsold-physical-checkbox" class="form-checkbox">
-                        <label for="exclude-unsold-physical-checkbox" class="text-xs font-medium text-stone-600 whitespace-nowrap">不计未售实体</label>
+                        <input type="checkbox" id="exclude-unsold-physical-checkbox" class="form-checkbox" checked>
+                        <label for="exclude-unsold-physical-checkbox" class="text-xs font-medium text-stone-600 whitespace-nowrap">按卡带价格(30元)</label>
                     </div>
                 </div>
                 <div class="flex-grow relative">
@@ -344,6 +344,10 @@
                     <div class="flex items-center gap-2">
                         <input type="checkbox" id="fully-completed" class="form-checkbox">
                         <label for="fully-completed" class="text-sm font-medium text-stone-700">🏆 已全成就通关</label>
+                    </div>
+                    <div>
+                        <label for="item-remarks" class="block text-sm font-medium text-stone-700">备注</label>
+                        <input type="text" id="item-remarks" class="form-input w-full mt-1" placeholder="如：预估值" maxlength="200">
                     </div>
                     <div id="resell-fields" class="hidden grid grid-cols-2 gap-4">
                         <div><label for="sell-date" class="block text-sm font-medium text-stone-700">售出日期</label><input type="date" id="sell-date" class="form-input w-full mt-1"></div>

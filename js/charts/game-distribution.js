@@ -34,10 +34,11 @@ const radiusFromContext = (ctx) => {
 };
 
 export const renderGameDistributionChart = () => {
-    const excludeUnsoldPhysical = document.getElementById('exclude-unsold-physical-checkbox')?.checked ?? false;
+    const useCartridgePrice = document.getElementById('exclude-unsold-physical-checkbox')?.checked ?? true;
     const filtered = items.filter(i => {
         if (i.type === 'hardware') return false;
-        if (excludeUnsoldPhysical && i.type === 'physical' && !i.sellDate) return false;
+        // 未勾选时：排除未售实体（保持旧行为）
+        if (!useCartridgePrice && i.type === 'physical' && !i.sellDate) return false;
         return (i.playTime || 0) > 0 && (i.purchasePrice || 0) > 0;
     });
 
@@ -58,6 +59,7 @@ export const renderGameDistributionChart = () => {
             from: item.from,
             purchasePrice: item.purchasePrice || 0,
             sellPrice: item.sellPrice || 0,
+            remarks: item.remarks || '',
         });
     });
 
@@ -126,7 +128,7 @@ export const renderGameDistributionChart = () => {
                     grid: { color: 'rgba(0,0,0,0.05)' },
                 },
                 y: {
-                    title: { display: true, text: '实际花费 (¥)' },
+                    title: { display: true, text: '估算花费 (¥)' },
                     beginAtZero: true,
                     grid: { color: 'rgba(0,0,0,0.05)' },
                     ticks: { callback: (v) => '¥' + Math.round(v) },
@@ -148,6 +150,9 @@ export const renderGameDistributionChart = () => {
                             `<div class="text-sm">实际花费: <strong>${formatCurrency(pt.y)}</strong></div>`;
                         if (pt.sellPrice > 0) {
                             html += `<div class="text-xs text-stone-500">购入 ${formatCurrency(pt.purchasePrice)} - 回血 ${formatCurrency(pt.sellPrice)}</div>`;
+                        }
+                        if (pt.remarks) {
+                            html += `<div class="text-xs text-amber-600 mt-1">📝 ${escapeHTML(pt.remarks)}</div>`;
                         }
                         if (stars) html += `<div class="text-sm mt-1">${stars}</div>`;
                         return html;

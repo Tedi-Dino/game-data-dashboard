@@ -54,6 +54,8 @@ export const setFormMode = (mode) => {
     if (isDrama) {
         if (itemFrom) itemFrom.value = 'free';
         if (purchasePrice) purchasePrice.value = '0';
+        const itemRemarks = document.getElementById('item-remarks');
+        if (itemRemarks) itemRemarks.value = '';
     } else {
         const dramaTypeSelect = document.getElementById('drama-type');
         if (dramaTypeSelect) dramaTypeSelect.value = '';
@@ -115,7 +117,8 @@ const readFormData = () => {
         sellPrice: isDrama ? null : parseFloatOrNull(document.getElementById('sell-price').value),
         rating: (() => { const r = parseFloatOrNull(document.getElementById(ratingId).value); return r != null ? Math.min(10, Math.max(1, r)) : null; })(),
         episodeCount,
-        episodeDuration
+        episodeDuration,
+        remarks: document.getElementById('item-remarks').value.trim() || null
     };
 
     // Steam-specific fields

@@ -58,7 +58,7 @@ const updateDashboard = () => {
     updateKpiTooltips();
 
     // Only re-render charts if data actually changed
-    const newHash = items.map(i => i.fb_id + '|' + i.playTime + '|' + i.purchasePrice + '|' + i.sellPrice + '|' + i.rating + '|' + i.status + '|' + i.type + '|' + i.sort + '|' + i.fullyCompleted + '|' + i.purchaseDate + '|' + i.startDate + '|' + i.sellDate + '|' + i.passDate + '|' + i.name + '|' + i.from + '|' + i.episodeCount + '|' + i.episodeDuration).join(',');
+    const newHash = items.map(i => i.fb_id + '|' + i.playTime + '|' + i.purchasePrice + '|' + i.sellPrice + '|' + i.rating + '|' + i.status + '|' + i.type + '|' + i.sort + '|' + i.fullyCompleted + '|' + i.purchaseDate + '|' + i.startDate + '|' + i.sellDate + '|' + i.passDate + '|' + i.name + '|' + i.from + '|' + i.episodeCount + '|' + i.episodeDuration + '|' + (i.remarks || '')).join(',');
     if (newHash !== lastItemsHash) {
         lastItemsHash = newHash;
         renderCharts();

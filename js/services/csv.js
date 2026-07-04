@@ -5,7 +5,7 @@ import { bulkReplaceItems, updateLastModifiedTimestamp } from './firestore.js';
 // CSV header columns
 const HEADERS = ['id', 'name', 'type', 'sort', 'status', 'purchaseDate', 'startDate', 'purchasePrice',
     'from', 'playTime', 'passDate', 'sellDate', 'sellPrice', 'rating',
-    'episodeCount', 'episodeDuration', 'steam_app_id', 'steam_override', 'fullyCompleted'];
+    'episodeCount', 'episodeDuration', 'steam_app_id', 'steam_override', 'fullyCompleted', 'remarks'];
 
 // Parse a single CSV row into an item object
 const parseCSVRow = (values, headerIndexMap) => {
@@ -39,6 +39,8 @@ const parseCSVRow = (values, headerIndexMap) => {
     if (rawOverride) item.steam_override = rawOverride.toLowerCase() === 'true';
     const rawCompleted = getVal('fullyCompleted');
     if (rawCompleted) item.fullyCompleted = rawCompleted.toLowerCase() === 'true';
+    const rawRemarks = getVal('remarks');
+    if (rawRemarks) item.remarks = rawRemarks;
     return (!item.id || !item.name || !item.type) ? null : item;
 };
 

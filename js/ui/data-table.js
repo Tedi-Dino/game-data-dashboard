@@ -311,6 +311,9 @@ const handleEditItem = (fbId) => {
         // Achievement completion checkbox
         const fullyCompletedCheckbox = document.getElementById('fully-completed');
         if (fullyCompletedCheckbox) fullyCompletedCheckbox.checked = !!item.fullyCompleted;
+
+        // Remarks
+        document.getElementById('item-remarks').value = item.remarks || '';
     }
 
     document.getElementById('delete-btn').classList.remove('hidden');
