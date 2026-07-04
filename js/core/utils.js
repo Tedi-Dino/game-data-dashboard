@@ -80,8 +80,18 @@ export const hashCode = (str) => {
 // Falls back to purchaseDate when startDate is not set.
 export const getStartDate = (item) => item.startDate || item.purchaseDate;
 
-// Net cost: purchase price minus sell price
-export const netCost = (item) => (item.purchasePrice || 0) - (item.sellPrice || 0);
+export const UNSOLD_PHYSICAL_ESTIMATED_COST = 30;
+export const UNSOLD_PHYSICAL_ESTIMATE_REMARK = '预估值';
+
+export const isUnsoldPhysical = (item) => item?.type === 'physical' && !item.sellDate;
+
+// Net cost: unsold physical cartridges use a fixed resale estimate, others use purchase minus sale.
+export const netCost = (item) => {
+    if (isUnsoldPhysical(item)) return UNSOLD_PHYSICAL_ESTIMATED_COST;
+    return (item?.purchasePrice || 0) - (item?.sellPrice || 0);
+};
+
+export const effectiveRemarks = (item) => item?.remarks || (isUnsoldPhysical(item) ? UNSOLD_PHYSICAL_ESTIMATE_REMARK : '');
 
 // Escape HTML special characters to prevent XSS
 export const escapeHTML = (str) => {

@@ -1,5 +1,5 @@
 import { items } from '../core/state.js';
-import { formatCurrency, formatNumber, escapeHTML } from '../core/utils.js';
+import { formatCurrency, formatNumber, escapeHTML, netCost } from '../core/utils.js';
 
 // --- KPI Calculations ---
 const calcKPIs = () => {
@@ -10,14 +10,14 @@ const calcKPIs = () => {
     const dramas = items.filter(i => i.type === 'drama');
     const gamesForCostCalc = gamesForPlaytime.filter(g => g.from !== 'free');
 
-    const totalActual = items.reduce((s, i) => s + (i.purchasePrice ?? 0) - (i.sellPrice ?? 0), 0);
-    const gameActual = games.reduce((s, i) => s + (i.purchasePrice ?? 0) - (i.sellPrice ?? 0), 0);
-    const hardwareActual = hardware.reduce((s, i) => s + (i.purchasePrice ?? 0) - (i.sellPrice ?? 0), 0);
-    const unfinishedCost = games.filter(g => g.status !== 'passed').reduce((s, i) => s + (i.purchasePrice ?? 0) - (i.sellPrice ?? 0), 0);
+    const totalActual = items.reduce((s, i) => s + netCost(i), 0);
+    const gameActual = games.reduce((s, i) => s + netCost(i), 0);
+    const hardwareActual = hardware.reduce((s, i) => s + netCost(i), 0);
+    const unfinishedCost = games.filter(g => g.status !== 'passed').reduce((s, i) => s + netCost(i), 0);
     const totalPlaytime = gamesForPlaytime.reduce((s, i) => s + (i.playTime ?? 0), 0);
     const gameCount = games.length;
     const avgPlaytime = gamesForPlaytime.length > 0 ? totalPlaytime / gamesForPlaytime.length : 0;
-    const gameActualForCost = gamesForCostCalc.reduce((s, i) => s + (i.purchasePrice ?? 0) - (i.sellPrice ?? 0), 0);
+    const gameActualForCost = gamesForCostCalc.reduce((s, i) => s + netCost(i), 0);
     const totalPlaytimeForCost = gamesForCostCalc.reduce((s, i) => s + (i.playTime ?? 0), 0);
     const costPerHour = totalPlaytimeForCost > 0 ? gameActualForCost / totalPlaytimeForCost : null;
 
@@ -68,12 +68,12 @@ export const updateKpiTooltips = () => {
 
     // Game cost top 10
     const topCost = [...games]
-        .sort((a, b) => ((b.purchasePrice || 0) - (b.sellPrice || 0)) - ((a.purchasePrice || 0) - (a.sellPrice || 0)))
+        .sort((a, b) => netCost(b) - netCost(a))
         .slice(0, 10);
     const gameCostTooltip = document.getElementById('game-cost-tooltip');
     if (gameCostTooltip) {
         gameCostTooltip.innerHTML = '<h3 class="font-bold mb-1">游戏支出 Top 10</h3><ul>' +
-            topCost.map(g => `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 18))}</span><strong>${formatCurrency((g.purchasePrice || 0) - (g.sellPrice || 0))}</strong></li>`).join('') + '</ul>';
+            topCost.map(g => `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 18))}</span><strong>${formatCurrency(netCost(g))}</strong></li>`).join('') + '</ul>';
     }
 
     // Playtime top 10 (games only)
@@ -87,7 +87,7 @@ export const updateKpiTooltips = () => {
     // Cost per hour (most & least expensive)
     const gamesCph = games
         .filter(g => g.playTime > 0 && g.from !== 'free')
-        .map(g => ({ ...g, cph: ((g.purchasePrice || 0) - (g.sellPrice || 0)) / g.playTime }));
+        .map(g => ({ ...g, cph: netCost(g) / g.playTime }));
     const cheapest = [...gamesCph].sort((a, b) => a.cph - b.cph).slice(0, 5);
     const mostExpensive = [...gamesCph].sort((a, b) => b.cph - a.cph).slice(0, 5);
     const cphTooltip = document.getElementById('cph-tooltip');
@@ -101,14 +101,14 @@ export const updateKpiTooltips = () => {
 
     // Unfinished games value
     const unfinishedGames = games.filter(g => g.status !== 'passed');
-    const unfinishedPhysical = unfinishedGames.filter(g => g.type === 'physical').reduce((s, i) => s + (i.purchasePrice ?? 0) - (i.sellPrice ?? 0), 0);
-    const unfinishedDigital = unfinishedGames.filter(g => !['physical', 'hardware'].includes(g.type)).reduce((s, i) => s + (i.purchasePrice ?? 0) - (i.sellPrice ?? 0), 0);
-    const topUnfinished = [...unfinishedGames].sort((a, b) => ((b.purchasePrice || 0) - (b.sellPrice || 0)) - ((a.purchasePrice || 0) - (a.sellPrice || 0))).slice(0, 5);
+    const unfinishedPhysical = unfinishedGames.filter(g => g.type === 'physical').reduce((s, i) => s + netCost(i), 0);
+    const unfinishedDigital = unfinishedGames.filter(g => !['physical', 'hardware'].includes(g.type)).reduce((s, i) => s + netCost(i), 0);
+    const topUnfinished = [...unfinishedGames].sort((a, b) => netCost(b) - netCost(a)).slice(0, 5);
     const unfinishedTooltip = document.getElementById('unfinished-cost-tooltip');
     if (unfinishedTooltip) {
         let html = `<div class="grid grid-cols-2 gap-1 mb-2"><div>实体: <strong>${formatCurrency(unfinishedPhysical)}</strong></div><div>数字: <strong>${formatCurrency(unfinishedDigital)}</strong></div></div>`;
         html += '<h3 class="font-bold mt-2 mb-1 border-t border-stone-200 pt-1">最贵未完成 Top 5</h3><ul>';
-        html += topUnfinished.map(g => `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 20))}</span><strong>${formatCurrency((g.purchasePrice || 0) - (g.sellPrice || 0))}</strong></li>`).join('');
+        html += topUnfinished.map(g => `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 20))}</span><strong>${formatCurrency(netCost(g))}</strong></li>`).join('');
         if (topUnfinished.length === 0) html += '<li>无</li>';
         html += '</ul>';
         unfinishedTooltip.innerHTML = html;

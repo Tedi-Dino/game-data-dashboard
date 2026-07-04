@@ -1,6 +1,6 @@
 import { items, setChart, getChart } from '../core/state.js';
 import { PLATFORM_COLORS } from '../config/constants.js';
-import { escapeHTML, formatCurrency, netCost, renderStars } from '../core/utils.js';
+import { escapeHTML, formatCurrency, netCost, renderStars, effectiveRemarks, isUnsoldPhysical } from '../core/utils.js';
 import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
 
 // Platform grouping: item.type → display label + color key
@@ -39,7 +39,7 @@ export const renderGameDistributionChart = () => {
         if (i.type === 'hardware') return false;
         // 未勾选时：排除未售实体（保持旧行为）
         if (!useCartridgePrice && i.type === 'physical' && !i.sellDate) return false;
-        return (i.playTime || 0) > 0 && (i.purchasePrice || 0) > 0;
+        return (i.playTime || 0) > 0 && netCost(i) > 0;
     });
 
     // Group by platform
@@ -59,7 +59,8 @@ export const renderGameDistributionChart = () => {
             from: item.from,
             purchasePrice: item.purchasePrice || 0,
             sellPrice: item.sellPrice || 0,
-            remarks: item.remarks || '',
+            remarks: effectiveRemarks(item),
+            isEstimatedCost: isUnsoldPhysical(item),
         });
     });
 
@@ -147,7 +148,7 @@ export const renderGameDistributionChart = () => {
                         const stars = renderStars(pt.rating, false);
                         let html = `<div class="font-bold text-base mb-1">${icon} ${escapeHTML(pt.name)}</div>` +
                             `<div class="text-sm">时长: <strong>${pt.x.toFixed(1)}h</strong></div>` +
-                            `<div class="text-sm">实际花费: <strong>${formatCurrency(pt.y)}</strong></div>`;
+                            `<div class="text-sm">${pt.isEstimatedCost ? '估算花费' : '实际花费'}: <strong>${formatCurrency(pt.y)}</strong></div>`;
                         if (pt.sellPrice > 0) {
                             html += `<div class="text-xs text-stone-500">购入 ${formatCurrency(pt.purchasePrice)} - 回血 ${formatCurrency(pt.sellPrice)}</div>`;
                         }

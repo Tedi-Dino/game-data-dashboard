@@ -8,7 +8,7 @@ Rules:
 - Excludes hardware (type='hardware') and dramas (type='drama')
 - Free games are included (0 net cost, but their playtime counts)
 - Games with zero playtime are included (cost counts toward cumulative, playtime contribution is 0)
-- Net cost = purchasePrice - sellPrice (for unsold physical games, sellPrice defaults to 0)
+- Net cost = 30 for unsold physical games; otherwise purchasePrice - sellPrice
 - X axis: purchase date (chronological)
 - Y axis: cumulative cost per hour = cumulative net cost / cumulative playtime
 """
@@ -23,6 +23,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 OUTPUT_PATH = Path(__file__).resolve().parent / 'cost_per_hour_trend.png'
+UNSOLD_PHYSICAL_ESTIMATED_COST = 30
 
 
 def find_latest_csv():
@@ -46,7 +47,8 @@ def load_games(csv_path):
                 continue
             purchase_price = float(row['purchasePrice']) if row['purchasePrice'] else 0
             sell_price = float(row['sellPrice']) if row['sellPrice'] else 0
-            net_cost = purchase_price - sell_price
+            is_unsold_physical = row['type'] == 'physical' and not row['sellDate']
+            net_cost = UNSOLD_PHYSICAL_ESTIMATED_COST if is_unsold_physical else purchase_price - sell_price
             games.append({
                 'name': row['name'],
                 'date': datetime.strptime(purchase_date, '%Y-%m-%d'),
