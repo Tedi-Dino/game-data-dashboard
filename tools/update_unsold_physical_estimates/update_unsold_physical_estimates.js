@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 /**
- * Updates unsold Switch physical cartridge records in Firestore.
+ * Repairs the accidental migration that wrote the display-only 30 yuan estimate
+ * into Firestore purchasePrice for unsold physical cartridges.
  *
- * Match: type === 'physical' && !sellDate
- * Write: purchasePrice = 30, remarks = '预估值'
+ * Database rule:
+ * - purchasePrice stores the real purchase price.
+ * - Display-only effective spending for unsold physical cartridges is handled
+ *   in the frontend by netCost(item), not by changing Firestore data.
  *
  * Usage:
  *   node tools/update_unsold_physical_estimates/update_unsold_physical_estimates.js
@@ -17,8 +20,14 @@ const https = require('https');
 const PROJECT_ID = 'game-data-dashboard';
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 const APPLY = process.argv.includes('--apply');
-const ESTIMATED_COST = 30;
-const ESTIMATE_REMARK = '\u9884\u4f30\u503c';
+
+const RESTORE_PURCHASE_PRICES = new Map([
+  ['7DJ2ltL4Ej2MMKtHEx4O', 134.7],
+  ['9GYFd9Xb4RiLQEBe9Wej', 134.7],
+  ['FIIzXaw8OqATVXYZhxrP', 290],
+  ['bQhYclJW23Bby5PdNnZt', 188],
+  ['zA72veAK23RZKe6mG5Kr', 225],
+]);
 
 function loadAccessToken() {
   const configPath = path.join(
@@ -37,7 +46,7 @@ function httpsRequest(url, options, body) {
   return new Promise((resolve, reject) => {
     const req = https.request(url, options, (res) => {
       let data = '';
-      res.on('data', (chunk) => (data += chunk));
+      res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(data ? JSON.parse(data) : {});
@@ -63,45 +72,21 @@ function fieldValue(field) {
   return undefined;
 }
 
-function isMissingDate(value) {
-  return value === undefined || value === null || value === '';
+async function getItem(fbId, accessToken) {
+  return httpsRequest(`${FIRESTORE_BASE}/items/${fbId}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
 }
 
-function docId(docName) {
-  return docName.split('/').pop();
-}
-
-async function listAllItems(accessToken) {
-  const docs = [];
-  let pageToken = '';
-
-  do {
-    const url = new URL(`${FIRESTORE_BASE}/items`);
-    url.searchParams.set('pageSize', '300');
-    if (pageToken) url.searchParams.set('pageToken', pageToken);
-
-    const page = await httpsRequest(url, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-
-    docs.push(...(page.documents || []));
-    pageToken = page.nextPageToken || '';
-  } while (pageToken);
-
-  return docs;
-}
-
-async function patchEstimate(docName, accessToken) {
-  const url = `${FIRESTORE_BASE}/items/${docId(docName)}?updateMask.fieldPaths=purchasePrice&updateMask.fieldPaths=remarks`;
+async function patchPurchasePrice(fbId, purchasePrice, accessToken) {
   const body = JSON.stringify({
     fields: {
-      purchasePrice: { doubleValue: ESTIMATED_COST },
-      remarks: { stringValue: ESTIMATE_REMARK },
+      purchasePrice: { doubleValue: purchasePrice },
     },
   });
 
-  await httpsRequest(url, {
+  await httpsRequest(`${FIRESTORE_BASE}/items/${fbId}?updateMask.fieldPaths=purchasePrice`, {
     method: 'PATCH',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -111,42 +96,33 @@ async function patchEstimate(docName, accessToken) {
 }
 
 async function main() {
-  console.log(APPLY ? '[APPLY] Updating Firestore records.' : '[DRY RUN] No writes will be made.');
+  console.log(APPLY ? '[APPLY] Restoring real purchase prices.' : '[DRY RUN] No writes will be made.');
   const accessToken = loadAccessToken();
-  const docs = await listAllItems(accessToken);
-
-  const targets = docs.filter((doc) => {
-    const fields = doc.fields || {};
-    return fieldValue(fields.type) === 'physical' && isMissingDate(fieldValue(fields.sellDate));
-  });
-
-  console.log(`Scanned ${docs.length} item docs.`);
-  console.log(`Matched ${targets.length} unsold physical docs.`);
 
   let alreadyOk = 0;
-  let updated = 0;
+  let changed = 0;
 
-  for (const doc of targets) {
+  for (const [fbId, realPrice] of RESTORE_PURCHASE_PRICES.entries()) {
+    const doc = await getItem(fbId, accessToken);
     const fields = doc.fields || {};
     const currentPrice = fieldValue(fields.purchasePrice);
-    const currentRemarks = fieldValue(fields.remarks);
-    const needsUpdate = currentPrice !== ESTIMATED_COST || currentRemarks !== ESTIMATE_REMARK;
-    const label = `${docId(doc.name)} | ${fieldValue(fields.id) || ''} | ${fieldValue(fields.name) || ''}`;
+    const label = `${fbId} | ${fieldValue(fields.id) || ''} | ${fieldValue(fields.name) || ''}`;
 
-    if (!needsUpdate) {
+    if (currentPrice === realPrice) {
       alreadyOk += 1;
+      console.log(`OK: ${label} | purchasePrice ${currentPrice}`);
       continue;
     }
 
-    console.log(`${APPLY ? 'Updating' : 'Would update'}: ${label} | ${currentPrice} -> ${ESTIMATED_COST}`);
+    console.log(`${APPLY ? 'Restoring' : 'Would restore'}: ${label} | ${currentPrice} -> ${realPrice}`);
     if (APPLY) {
-      await patchEstimate(doc.name, accessToken);
-      updated += 1;
+      await patchPurchasePrice(fbId, realPrice, accessToken);
+      changed += 1;
     }
   }
 
   console.log(`Already correct: ${alreadyOk}`);
-  console.log(APPLY ? `Updated: ${updated}` : 'Run with --apply to write these changes.');
+  console.log(APPLY ? `Restored: ${changed}` : 'Run with --apply to write these changes.');
 }
 
 main().catch((error) => {
