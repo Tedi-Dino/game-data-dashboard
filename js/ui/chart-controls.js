@@ -5,11 +5,11 @@ import { renderMonthlyTrendsChart } from '../charts/monthly-trends.js';
 import { openModal, closeModal } from './modals.js';
 
 /**
- * Setup chart control UI: monthly fullscreen, hardware checkbox, unsold physical checkbox.
+ * Setup chart control UI: monthly fullscreen, hardware checkbox, physical cost mode selector.
  */
 export const setupChartControls = () => {
     const excludeHardwareCheckbox = document.getElementById('exclude-hardware-checkbox');
-    const excludeUnsoldPhysicalCheckbox = document.getElementById('exclude-unsold-physical-checkbox');
+    const physicalCostModeSelect = document.getElementById('physical-cost-mode-select');
     const fullscreenBtn = document.getElementById('monthly-chart-fullscreen-btn');
     const fullscreenModal = document.getElementById('monthly-chart-fullscreen-modal');
     const closeFullscreenBtn = document.getElementById('close-monthly-chart-fullscreen-btn');
@@ -20,9 +20,9 @@ export const setupChartControls = () => {
         excludeHardwareCheckbox.addEventListener('change', () => renderMonthlyTrendsChart());
     }
 
-    // Exclude unsold physical checkbox
-    if (excludeUnsoldPhysicalCheckbox) {
-        excludeUnsoldPhysicalCheckbox.addEventListener('change', () => renderGameDistributionChart());
+    // Physical cartridge cost mode for the price-time scatter chart
+    if (physicalCostModeSelect) {
+        physicalCostModeSelect.addEventListener('change', () => renderGameDistributionChart());
     }
 
     // Monthly chart fullscreen

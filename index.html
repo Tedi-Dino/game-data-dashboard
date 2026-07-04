@@ -187,8 +187,11 @@
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="text-lg font-normal text-stone-500">📈 价格-时间分布</h3>
                     <div class="flex items-center space-x-1">
-                        <input type="checkbox" id="exclude-unsold-physical-checkbox" class="form-checkbox" checked>
-                        <label for="exclude-unsold-physical-checkbox" class="text-xs font-medium text-stone-600 whitespace-nowrap">按卡带价格(30元)</label>
+                        <label for="physical-cost-mode-select" class="sr-only">实体卡带花费口径</label>
+                        <select id="physical-cost-mode-select" class="form-select text-xs py-1 pl-2 pr-7">
+                            <option value="estimated" selected>预估花费(30元)</option>
+                            <option value="actual">实际花费</option>
+                        </select>
                     </div>
                 </div>
                 <div class="flex-grow relative">

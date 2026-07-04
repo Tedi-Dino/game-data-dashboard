@@ -1,6 +1,6 @@
 import { items, setChart, getChart } from '../core/state.js';
 import { PLATFORM_COLORS } from '../config/constants.js';
-import { escapeHTML, formatCurrency, netCost, renderStars, effectiveRemarks, isUnsoldPhysical } from '../core/utils.js';
+import { escapeHTML, formatCurrency, netCost, renderStars, effectiveRemarks, isUnsoldPhysical, UNSOLD_PHYSICAL_ESTIMATE_REMARK } from '../core/utils.js';
 import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
 
 // Platform grouping: item.type → display label + color key
@@ -34,12 +34,18 @@ const radiusFromContext = (ctx) => {
 };
 
 export const renderGameDistributionChart = () => {
-    const useCartridgePrice = document.getElementById('exclude-unsold-physical-checkbox')?.checked ?? true;
+    const physicalCostMode = document.getElementById('physical-cost-mode-select')?.value || 'estimated';
+    const useEstimatedPhysicalCost = physicalCostMode !== 'actual';
+    const chartCost = (item) => {
+        if (isUnsoldPhysical(item) && !useEstimatedPhysicalCost) {
+            return item.purchasePrice || 0;
+        }
+        return netCost(item);
+    };
+
     const filtered = items.filter(i => {
         if (i.type === 'hardware') return false;
-        // 未勾选时：排除未售实体（保持旧行为）
-        if (!useCartridgePrice && i.type === 'physical' && !i.sellDate) return false;
-        return (i.playTime || 0) > 0 && netCost(i) > 0;
+        return (i.playTime || 0) > 0 && chartCost(i) > 0;
     });
 
     // Group by platform
@@ -52,15 +58,15 @@ export const renderGameDistributionChart = () => {
         }
         groups[map.label].points.push({
             x: item.playTime || 0,
-            y: netCost(item),
+            y: chartCost(item),
             name: item.name,
             type: item.type,
             rating: item.rating || 0,
             from: item.from,
             purchasePrice: item.purchasePrice || 0,
             sellPrice: item.sellPrice || 0,
-            remarks: effectiveRemarks(item),
-            isEstimatedCost: isUnsoldPhysical(item),
+            remarks: useEstimatedPhysicalCost ? effectiveRemarks(item) : (item.remarks === UNSOLD_PHYSICAL_ESTIMATE_REMARK ? '' : (item.remarks || '')),
+            isEstimatedCost: isUnsoldPhysical(item) && useEstimatedPhysicalCost,
         });
     });
 
@@ -129,7 +135,7 @@ export const renderGameDistributionChart = () => {
                     grid: { color: 'rgba(0,0,0,0.05)' },
                 },
                 y: {
-                    title: { display: true, text: '估算花费 (¥)' },
+                    title: { display: true, text: useEstimatedPhysicalCost ? '花费 (¥，未售实体按30元预估)' : '实际花费 (¥)' },
                     beginAtZero: true,
                     grid: { color: 'rgba(0,0,0,0.05)' },
                     ticks: { callback: (v) => '¥' + Math.round(v) },
