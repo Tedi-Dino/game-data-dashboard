@@ -1,5 +1,5 @@
 import { setIsEditingFromList, isEditingFromList } from '../core/state.js';
-import { parseFloatOrNull, parseDateOrNull } from '../core/utils.js';
+import { parseFloatOrNull, parseDateOrNull, UNSOLD_PHYSICAL_ESTIMATED_COST, UNSOLD_PHYSICAL_ESTIMATE_REMARK } from '../core/utils.js';
 import { saveItem, deleteItem as deleteFirestoreItem, updateLastModifiedTimestamp } from '../services/firestore.js';
 import { closeModal, openModal, showConfirmation, showAlert } from './modals.js';
 import { renderItemsList, updateSortHeaders } from './data-table.js';
@@ -120,6 +120,11 @@ const readFormData = () => {
         episodeDuration,
         remarks: document.getElementById('item-remarks').value.trim() || null
     };
+
+    if (data.type === 'physical' && !data.sellDate) {
+        data.purchasePrice = UNSOLD_PHYSICAL_ESTIMATED_COST;
+        data.remarks = data.remarks || UNSOLD_PHYSICAL_ESTIMATE_REMARK;
+    }
 
     // Steam-specific fields
     if (type === 'steam') {

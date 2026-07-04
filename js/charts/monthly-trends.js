@@ -1,6 +1,6 @@
 import { items, setChart, getChart } from '../core/state.js';
 import { PLATFORM_COLORS } from '../config/constants.js';
-import { formatCurrency, normalizeMonth, renderStars, escapeHTML, getStartDate } from '../core/utils.js';
+import { formatCurrency, normalizeMonth, renderStars, escapeHTML, getStartDate, netCost, isUnsoldPhysical } from '../core/utils.js';
 import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
 
 const DEFAULT_TREND = {
@@ -47,7 +47,7 @@ const buildTrends = (currentItems) => {
             if (purchaseMonth) {
                 allMonths.add(purchaseMonth);
                 if (!trends[purchaseMonth]) trends[purchaseMonth] = { ...DEFAULT_TREND };
-                const cost = item.purchasePrice || 0;
+                const cost = isUnsoldPhysical(item) ? netCost(item) : (item.purchasePrice || 0);
                 if (cost > 0 && trends[purchaseMonth][key] !== undefined) {
                     trends[purchaseMonth][key] += cost;
                 }
@@ -270,8 +270,8 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
 
                         // Items purchased this month
                         const purchaseItems = items
-                            .filter(i => normalizeMonth(i.purchaseDate) === month && (i.purchasePrice || 0) > 0)
-                            .map(i => ({ name: i.name, value: i.purchasePrice || 0, type: 'purchase' }));
+                            .filter(i => normalizeMonth(i.purchaseDate) === month && (isUnsoldPhysical(i) ? netCost(i) : (i.purchasePrice || 0)) > 0)
+                            .map(i => ({ name: i.name, value: isUnsoldPhysical(i) ? netCost(i) : (i.purchasePrice || 0), type: 'purchase' }));
 
                         // Items sold this month
                         const saleItems = items

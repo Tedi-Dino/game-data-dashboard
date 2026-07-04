@@ -1,5 +1,5 @@
 import { items, sortConfig, setSortConfig, setIsEditingFromList } from '../core/state.js';
-import { formatCurrency, renderStarsForTable, formatDateForInput, escapeHTML, getStartDate } from '../core/utils.js';
+import { formatCurrency, renderStarsForTable, formatDateForInput, escapeHTML, getStartDate, netCost, effectiveRemarks, isUnsoldPhysical } from '../core/utils.js';
 import { TYPE_MAP, FROM_MAP, STATUS_MAP } from '../config/constants.js';
 import { openModal, closeModal } from './modals.js';
 import { isAdmin } from './auth.js';
@@ -104,7 +104,7 @@ export const renderItemsList = () => {
 
         // Single-key sort
         const getVal = (item, key) => {
-            const cost = (item.purchasePrice || 0) - (item.sellPrice || 0);
+            const cost = netCost(item);
             switch (key) {
                 case 'id': return item.id || '';
                 case 'name': return item.name || '';
@@ -134,8 +134,9 @@ export const renderItemsList = () => {
     });
 
     sorted.forEach(item => {
-        const cost = (item.purchasePrice || 0) - (item.sellPrice || 0);
+        const cost = netCost(item);
         const cph = item.playTime > 0 ? cost / item.playTime : null;
+        const costNote = isUnsoldPhysical(item) ? `<span class="ml-1 text-xs text-amber-600">${escapeHTML(effectiveRemarks(item))}</span>` : '';
 
         const row = document.createElement('tr');
         const baseClass = 'border-b border-stone-200 hover:bg-stone-100 cursor-pointer';
@@ -155,7 +156,7 @@ export const renderItemsList = () => {
             <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(item.purchaseDate) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(item.startDate) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap collapsible-col">${item.purchasePrice != null ? formatCurrency(item.purchasePrice) : '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${formatCurrency(cost)}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${formatCurrency(cost)}${costNote}</td>
             <td class="px-4 py-3 whitespace-nowrap">${cph != null && isFinite(cph) ? formatCurrency(cph) : '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(FROM_MAP[item.from]) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(TYPE_MAP[item.type] || item.type) || '/'}</td>
@@ -290,7 +291,7 @@ const handleEditItem = (fbId) => {
         }
     } else {
         document.getElementById('item-from').value = item.from || 'purchase';
-        document.getElementById('purchase-price').value = item.purchasePrice ?? '';
+        document.getElementById('purchase-price').value = isUnsoldPhysical(item) ? netCost(item) : (item.purchasePrice ?? '');
         document.getElementById('item-type').value = item.type;
         document.getElementById('play-time').value = item.playTime ?? '';
         document.getElementById('item-status').value = item.status || 'empty';
@@ -313,7 +314,7 @@ const handleEditItem = (fbId) => {
         if (fullyCompletedCheckbox) fullyCompletedCheckbox.checked = !!item.fullyCompleted;
 
         // Remarks
-        document.getElementById('item-remarks').value = item.remarks || '';
+        document.getElementById('item-remarks').value = effectiveRemarks(item);
     }
 
     document.getElementById('delete-btn').classList.remove('hidden');
