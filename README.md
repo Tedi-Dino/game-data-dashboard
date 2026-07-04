@@ -12,6 +12,12 @@
 
 无论您是追求详尽数据分析的核心玩家，还是只想为自己的游戏收藏简单记个账，这个项目都能满足您的需求。
 
+## 🤖 使用 Codex 协作开发
+
+本项目已经从 Claude Code 迁移到 **Codex** 作为主要 AI 编程协作环境。面向 Codex 的项目约定、架构说明、数据口径和常用命令集中维护在 **[AGENTS.md](AGENTS.md)**。
+
+如果你准备用 Codex 继续修改这个仓库，请优先阅读 `AGENTS.md`；历史上的 `CLAUDE.md` 仅作为迁移前的旧上下文保留，不再作为主要说明文件。
+
 ## ✨ 核心功能
 
 - **🔐 Google账号一键登录** — 无需注册，安全便捷地访问您的数据。
@@ -150,9 +156,9 @@ js/
 
 本项目最初由 **Google Gemini 2.5 Pro** 的网页端 Canvas 功能生成，是一个约 1700 行的单页 HTML 文件——所有逻辑、样式、结构全塞在一个文件里。能跑，但维护起来是一场灾难。
 
-随后，**MIMO V2.5 Pro** 和 **DeepSeek V4 Pro** 接手，将单文件拆分为模块化架构（32 个文件，~3900 行），持续新增功能、修复 bug、优化体验。目前项目由这两个模型协作维护。
+随后，**MIMO V2.5 Pro** 和 **DeepSeek V4 Pro** 接手，将单文件拆分为模块化架构（32 个文件，~3900 行），持续新增功能、修复 bug、优化体验。现在，项目的日常开发协作已经迁移到 **Codex**，并通过 `AGENTS.md` 记录给 AI agent 的工作说明。
 
-> Co-Developed by Tedi-Dino, Gemini, MIMO & DeepSeek ❤️
+> Co-Developed by Tedi-Dino, Gemini, MIMO, DeepSeek & Codex ❤️
 
 我本人对编程一窍不通，纯粹是出于兴趣，提供了一个想法和不断调试的耐心。
 

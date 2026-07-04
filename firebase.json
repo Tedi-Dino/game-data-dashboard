@@ -6,6 +6,7 @@
       "**/.*",
       "**/node_modules/**",
       "firebase-debug.log",
+      "AGENTS.md",
       "CLAUDE.md",
       "**/functions/**",
       "README.md",

@@ -291,7 +291,7 @@ const handleEditItem = (fbId) => {
         }
     } else {
         document.getElementById('item-from').value = item.from || 'purchase';
-        document.getElementById('purchase-price').value = isUnsoldPhysical(item) ? netCost(item) : (item.purchasePrice ?? '');
+        document.getElementById('purchase-price').value = item.purchasePrice ?? '';
         document.getElementById('item-type').value = item.type;
         document.getElementById('play-time').value = item.playTime ?? '';
         document.getElementById('item-status').value = item.status || 'empty';
@@ -314,7 +314,7 @@ const handleEditItem = (fbId) => {
         if (fullyCompletedCheckbox) fullyCompletedCheckbox.checked = !!item.fullyCompleted;
 
         // Remarks
-        document.getElementById('item-remarks').value = effectiveRemarks(item);
+        document.getElementById('item-remarks').value = item.remarks || '';
     }
 
     document.getElementById('delete-btn').classList.remove('hidden');
