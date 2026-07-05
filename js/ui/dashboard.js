@@ -1,4 +1,4 @@
-﻿import { items } from '../core/state.js';
+import { items } from '../core/state.js';
 import { PLATFORM_META } from '../config/constants.js';
 import { formatCurrency, formatNumber, escapeHTML, netCost } from '../core/utils.js';
 

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 /**
  * update_unsold_cost.js — Set unsold Switch physical games to 30 yuan estimate.
  *

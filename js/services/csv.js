@@ -1,4 +1,4 @@
-﻿import { items } from '../core/state.js';
+import { items } from '../core/state.js';
 import { parseFloatOrNull, parseDateOrNull } from '../core/utils.js';
 import { bulkReplaceItems, updateLastModifiedTimestamp } from './firestore.js';
 

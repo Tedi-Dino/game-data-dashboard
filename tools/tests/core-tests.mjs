@@ -1,4 +1,4 @@
-﻿// Core utility tests for game data dashboard
+// Core utility tests for game data dashboard
 // Run with: node --test tools/tests/core-tests.mjs
 
 import { describe, it } from "node:test";

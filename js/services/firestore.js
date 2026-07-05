@@ -1,4 +1,4 @@
-﻿import { collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, query, writeBatch } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+import { collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, query, writeBatch } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { db } from '../config/firebase.js';
 import { setItems } from '../core/state.js';
 import { formatDateTime } from '../core/utils.js';
