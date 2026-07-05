@@ -10,7 +10,7 @@ import { formatDateTime } from './core/utils.js';
 import { setupFirestoreListener, setOnDataChange, setupMetadataListener } from './services/firestore.js';
 
 // Charts
-import { setupChartDefaults } from './charts/setup.js';  # keep
+import { setupChartDefaults } from './charts/setup.js';
 import { renderCostDistributionChart } from './charts/cost-distribution.js';
 import { renderTimeDistributionChart } from './charts/time-distribution.js';
 import { renderGameSortChart } from './charts/game-sort.js';
