@@ -1,4 +1,4 @@
-﻿import { items } from '../core/state.js';
+import { items } from '../core/state.js';
 import { showConfirmation, showAlert } from './modals.js';
 import { importCSV, exportCSV, parseCSVText } from '../services/csv.js';
 import { bulkReplaceItems, updateLastModifiedTimestamp } from '../services/firestore.js';

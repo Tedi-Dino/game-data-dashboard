@@ -1,4 +1,4 @@
-﻿// Currency formatter — guards against NaN
+// Currency formatter — guards against NaN
 export const formatCurrency = (value) => `¥${(Number.isFinite(value) ? value : 0).toFixed(2)}`;
 
 // Plain number formatter (no ¥ symbol — for use with separate currency spans)
