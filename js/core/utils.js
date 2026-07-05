@@ -29,7 +29,7 @@ export const formatDateForInput = (value) => {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
-    return \-\-\;
+    return `${y}-${m}-${day}`;
 };
 
 // Format a Date/Timestamp to "MM/DD HH:mm"
@@ -97,7 +97,11 @@ export const parseLocalDateOnly = (dateStr) => {
     if (parts.length !== 3) return null;
     const [y, m, d] = parts.map(Number);
     if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
-    return new Date(y, m - 1, d);
+    const parsed = new Date(y, m - 1, d);
+    if (parsed.getFullYear() !== y || parsed.getMonth() !== m - 1 || parsed.getDate() !== d) {
+        return null;
+    }
+    return parsed;
 };
 
 export const isUnsoldPhysical = (item) => item?.type === 'physical' && !item.sellDate;

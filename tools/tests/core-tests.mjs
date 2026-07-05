@@ -3,6 +3,50 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+
+const collectJsFiles = (entry) => {
+  const abs = path.join(repoRoot, entry);
+  if (!existsSync(abs)) return [];
+  if (statSync(abs).isFile()) return abs.endsWith(".js") ? [abs] : [];
+
+  return readdirSync(abs).flatMap((name) => {
+    if (name === "node_modules") return [];
+    return collectJsFiles(path.join(entry, name));
+  });
+};
+
+describe("source syntax", () => {
+  it("front-end and Cloud Function JavaScript parses as modules", () => {
+    const files = [
+      ...collectJsFiles("js"),
+      ...collectJsFiles(path.join("functions", "index.js")),
+    ];
+    const failures = [];
+
+    for (const file of files) {
+      const result = spawnSync(
+        process.execPath,
+        ["--input-type=module", "--check"],
+        {
+          input: readFileSync(file),
+          encoding: "utf8",
+        },
+      );
+
+      if (result.status !== 0) {
+        failures.push(`${path.relative(repoRoot, file)}\n${result.stderr || result.stdout}`);
+      }
+    }
+
+    assert.deepEqual(failures, []);
+  });
+});
 
 // --- netCost logic (standalone, matching js/core/utils.js) ---
 
