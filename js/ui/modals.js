@@ -108,8 +108,10 @@ export const showAlert = (message) => {
  * Show a confirmation dialog.
  * Returns a Promise that resolves with true (confirmed) or false (cancelled).
  * Supports nested calls — each call gets its own fresh listeners.
+ * If asHtml is true, the message is rendered via innerHTML with escapeHTML
+ * (safe) and newlines replaced with <br>.
  */
-export const showConfirmation = (message) => {
+ export const showConfirmation = (message, asHtml = false) => {
     return new Promise((resolve) => {
         const modal = document.getElementById('confirm-modal');
         const messageEl = document.getElementById('confirm-modal-message');
@@ -126,7 +128,11 @@ export const showConfirmation = (message) => {
         if (titleEl) titleEl.textContent = '请确认';
         // Ensure OK button is visible (previous calls may have hidden it)
         okBtn.classList.remove('hidden');
-        messageEl.textContent = message;
+        if (asHtml) {
+            messageEl.innerHTML = escapeHTML(message).replace(/\n/g, '<br>');
+        } else {
+            messageEl.textContent = message;
+        }
 
         // Clone and replace OK button to clear old listeners
         const newOkBtn = okBtn.cloneNode(true);

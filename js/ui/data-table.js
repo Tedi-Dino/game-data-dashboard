@@ -161,7 +161,6 @@ export const renderItemsList = () => {
             <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(FROM_MAP[item.from]) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(TYPE_MAP[item.type] || item.type) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(STATUS_MAP[item.status]) || '/'}</td>`;
-        row.addEventListener('click', () => handleEditItem(item.fb_id));
         tbody.appendChild(row);
     });
 
@@ -245,7 +244,25 @@ export const setupListSearch = () => {
  * Handle editing an item from the list.
  * Opens the item edit modal pre-filled with the item's data.
  */
-const handleEditItem = (fbId) => {
+/**
+ * Setup delegated row click handler for the items table.
+ * Uses event delegation on tbody instead of per-row listeners.
+ */
+export const setupItemsTableClick = () => {
+    const tbody = document.getElementById('items-table-body');
+    if (!tbody) return;
+    // Use a flag to ensure the handler is only registered once
+    if (tbody.dataset._delegated === 'true') return;
+    tbody.dataset._delegated = 'true';
+
+    tbody.addEventListener('click', (e) => {
+        const row = e.target.closest('tr[data-fb_id]');
+        if (!row) return;
+        handleEditItem(row.dataset.fb_id);
+    });
+};
+
+export const handleEditItem = (fbId) => {
     if (!isAdmin()) return;
 
     const item = items.find(i => i.fb_id === fbId);

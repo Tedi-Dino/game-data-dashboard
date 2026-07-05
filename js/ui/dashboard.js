@@ -1,4 +1,5 @@
-import { items } from '../core/state.js';
+﻿import { items } from '../core/state.js';
+import { PLATFORM_META } from '../config/constants.js';
 import { formatCurrency, formatNumber, escapeHTML, netCost } from '../core/utils.js';
 
 // --- KPI Calculations ---
@@ -115,12 +116,9 @@ export const updateKpiTooltips = () => {
     }
 
     // Game count by platform (games only, dramas have their own card)
-    const TYPE_TO_PLATFORM = {
-        physical: 'Switch', digital: 'Switch',
-        steam: 'Steam', epic: 'Epic', ubi: 'Uplay', gog: 'GOG',
-        ps: 'PlayStation', xbox: 'Xbox/MS', ms: 'Xbox/MS', appstore: 'App Store',
-        googleplay: 'Google Play', emulator: '模拟器', other: 'Other'
-    };
+    const TYPE_TO_PLATFORM = Object.fromEntries(
+        PLATFORM_META.filter(p => p.timeLabel).map(p => [p.type, p.timeLabel])
+    );
     const gameCountByType = {};
     games.forEach(i => {
         const platform = TYPE_TO_PLATFORM[i.type];

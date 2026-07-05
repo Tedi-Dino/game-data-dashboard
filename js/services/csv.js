@@ -1,4 +1,4 @@
-import { items } from '../core/state.js';
+﻿import { items } from '../core/state.js';
 import { parseFloatOrNull, parseDateOrNull } from '../core/utils.js';
 import { bulkReplaceItems, updateLastModifiedTimestamp } from './firestore.js';
 
@@ -115,7 +115,7 @@ const splitCSVRows = (text) => {
 };
 
 // Parse CSV text into items array
-export const importCSV = async (text) => {
+export const parseCSVText = (text) => {
     if (text.length > 5 * 1024 * 1024) {
         throw new Error('CSV文件过大（超过5MB），请检查文件。');
     }
@@ -157,10 +157,16 @@ export const importCSV = async (text) => {
     if (skippedCount > 0) {
         console.warn(`CSV import: ${skippedCount} row(s) skipped due to missing id/name/type.`);
     }
+    return { items: newItems, skipped: skippedCount };
+};
 
+// Full import: parse CSV text, then bulk-replace all items in Firestore.
+export const importCSV = async (text) => {
+    const { items: newItems } = parseCSVText(text);
     await bulkReplaceItems(newItems);
     await updateLastModifiedTimestamp();
 };
+;
 
 // Convert a value for CSV export — handles Firestore Timestamps, Dates, booleans
 const toCSVValue = (val) => {

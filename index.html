@@ -16,9 +16,28 @@
     <!-- Google Fonts: load via link instead of CSS @import for earlier discovery -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js" integrity="sha384-e6cc9LaIG7xZ3XD5B+jtr1NhTWPQGQdRCh6xiZ+ZFUtWCpg4ycv3Sh+SkZoopvUY" crossorigin="anonymous"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" integrity="sha384-t1nt8BQoYMLFN5p42tRAtuAAFQaCQODekUVeKKZrEnEyp4H2R0RHFz0KWpmj7i8g" crossorigin="anonymous">
+    <script>
+// CDN resource failure handler — shows visible warning
+window._cdnFailed = {};
+window.cdnLoadError = function(name) {
+  window._cdnFailed[name] = true;
+  document.addEventListener("DOMContentLoaded", function() {
+    var bar = document.getElementById("cdn-error-bar") || (function() {
+      var el = document.createElement("div");
+      el.id = "cdn-error-bar";
+      el.style.cssText = "position:fixed;top:0;left:0;right:0;background:#fef2f2;color:#dc2626;text-align:center;padding:6px;z-index:9999;font-size:13px;border-bottom:2px solid #fca5a5;display:none;";
+      document.body.prepend(el);
+      return el;
+    })();
+    var names = Object.keys(window._cdnFailed);
+    bar.textContent = "⚠️ 外部资源加载失败：" + names.join(", ") + "，页面显示可能异常。";
+    bar.style.display = "block";
+  });
+};
+</script>
+<script src="https://cdn.tailwindcss.com" onerror="cdnLoadError('Tailwind CSS')"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js" onerror="cdnLoadError('Chart.js')" integrity="sha384-e6cc9LaIG7xZ3XD5B+jtr1NhTWPQGQdRCh6xiZ+ZFUtWCpg4ycv3Sh+SkZoopvUY" crossorigin="anonymous"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" onerror="cdnLoadError('Font Awesome')" rel="stylesheet" integrity="sha384-t1nt8BQoYMLFN5p42tRAtuAAFQaCQODekUVeKKZrEnEyp4H2R0RHFz0KWpmj7i8g" crossorigin="anonymous">
     <link href="css/style.css" rel="stylesheet">
 </head>
 <body class="h-full flex flex-col p-4 skeleton-loading">

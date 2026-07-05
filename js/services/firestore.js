@@ -1,4 +1,4 @@
-import { collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, query, writeBatch } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+﻿import { collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, query, writeBatch } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { db } from '../config/firebase.js';
 import { setItems } from '../core/state.js';
 import { formatDateTime } from '../core/utils.js';
@@ -129,7 +129,9 @@ export const bulkReplaceItems = async (newItems) => {
                 const batch = writeBatch(db);
                 backup.slice(i, i + BATCH_LIMIT).forEach(item => {
                     const ref = doc(itemsCollectionRef, item.fb_id);
-                    batch.set(ref, item);
+                    // Strip client-side fb_id to keep document data model clean
+                    const { fb_id, ...cleanItem } = item;
+                    batch.set(ref, cleanItem);
                 });
                 await batch.commit();
             }

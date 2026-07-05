@@ -1,47 +1,16 @@
-# Batch Update: Unsold Physical Games → 30 yuan
+# WARNING - DEPRECATED Update Unsold Physical Games Cost
 
-## Option 1: Browser Console (Recommended — Easiest)
+This script is DEPRECATED and violates the current database rules.
 
-Open `https://game-data-dashboard.web.app` in your browser, log in, then paste this into the browser console (F12):
+Current rule: Firestore purchasePrice must store the real purchase price.
+The frontend netCost(item) handles the 30-yuan estimate display.
 
-```js
-// Batch update unsold physical games: purchasePrice → 30, remarks → "预估值"
-(async () => {
-  const db = firebase.firestore();
-  const snapshot = await db.collection('items').get();
-  let count = 0;
-  let batch = db.batch();
-  let batchCount = 0;
-  
-  for (const doc of snapshot.docs) {
-    const data = doc.data();
-    if (data.type === 'physical' && !data.sellDate) {
-      batch.update(doc.ref, { purchasePrice: 30, remarks: '预估值' });
-      count++;
-      batchCount++;
-      if (batchCount >= 400) { 
-        await batch.commit(); 
-        batch = db.batch(); 
-        batchCount = 0; 
-        console.log(`Committed batch, ${count} total so far...`);
-      }
-    }
-  }
-  if (batchCount > 0) await batch.commit();
-  console.log(`✅ Done! Updated ${count} unsold physical items.`);
-})();
-```
+## Alternatives
 
-The page will auto-refresh with the new values.
+- Fix migrated data: tools/update_unsold_physical_estimates/
+- Daily use: No action needed. Frontend auto-calculates estimates.
 
-## Option 2: Node.js Script
+## Usage
 
-```bash
-# Preview first
-node tools/update_unsold_cost/update_unsold_cost.js --dry-run
-
-# Execute
-node tools/update_unsold_cost/update_unsold_cost.js
-```
-
-Requires firebase-tools to be authenticated (`firebase login`).
+Default dry-run: node tools/update_unsold_cost/update_unsold_cost.js
+Force write: node tools/update_unsold_cost/update_unsold_cost.js --apply

@@ -28,6 +28,10 @@ directly from `https://www.gstatic.com/firebasejs/11.6.1/`; there is no
 Firebase Cloud Functions live in `functions/index.js`. The root `index.js` is
 only a reference copy; treat `functions/index.js` as authoritative.
 
+Note for Windows PowerShell:
+  Use `-Encoding utf8` when reading Chinese files (e.g., `Get-Content -Encoding utf8`).
+  Without this flag, Chinese characters may display as garbled text.
+
 Common deploy commands:
 
 ```bash
@@ -159,6 +163,11 @@ The `接下来` modal calls `getAiRecommendations`. The primary path is the
 Firebase Cloud Function. The browser fallback calls DeepSeek directly with a
 user-provided API key and includes both games and dramas.
 
+> **Security note**: The DeepSeek API key stored in `localStorage` is intended
+> for local development only. On the production site, the Cloud Function should
+> always be the primary path. The local-mode API key entry in the UI is hidden
+> for non-admin visitors to prevent accidental exposure.
+
 ## Standalone Tools
 
 ```text
@@ -168,10 +177,16 @@ tools/
 ├── cost_per_hour/
 │   ├── cost_per_hour_trend.py
 │   └── cost_per_hour_trend.png
+├── perf_test/
+│   └── (Puppeteer performance test scripts)
 ├── steam_info/
 │   ├── steam_info.py
 │   ├── run.bat
 │   └── .env
+├── tests/
+│   └── (unit tests for core logic using node:test)
+├── update_unsold_cost/
+│   └── update_unsold_cost.js  (DEPRECATED - see README)
 └── update_unsold_physical_estimates/
     └── update_unsold_physical_estimates.js
 ```
@@ -184,6 +199,10 @@ Tool notes:
   Firebase REST API.
 - `tools/steam_info/steam_info.py` fetches Steam profile/library data into CSV
   files under `tools/steam_info/output/`.
+- `tools/tests/` contains unit tests for core logic (`netCost`, CSV parsing,
+  date parsing, AI JSON parsing) using Node's built-in `node:test`.
+- `tools/update_unsold_cost/update_unsold_cost.js` is **DEPRECATED**. It violates
+  the current database rule (see its README for details).
 - `tools/update_unsold_physical_estimates/update_unsold_physical_estimates.js`
   dry-runs by default and repairs the accidental migration that wrote the
   display-only 30 yuan estimate into Firestore `purchasePrice`. The intended
