@@ -1,4 +1,4 @@
-// Currency formatter — guards against NaN
+﻿// Currency formatter — guards against NaN
 export const formatCurrency = (value) => `¥${(Number.isFinite(value) ? value : 0).toFixed(2)}`;
 
 // Plain number formatter (no ¥ symbol — for use with separate currency spans)
@@ -21,10 +21,15 @@ export const formatDateForInput = (value) => {
     if (!value) return '';
     if (value.toDate) return value.toDate().toISOString().slice(0, 10);
     if (value instanceof Date) return value.toISOString().slice(0, 10);
-    // Parse string properly to handle single-digit months/days (e.g. "2024/1/5")
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return String(value).slice(0, 10).replace(/\//g, '-');
-    return d.toISOString().slice(0, 10);
+    // Parse string — handle both YYYY-MM-DD and YYYY/M/D formats
+    const normalized = String(value).replace(/\//g, '-');
+    const d = parseLocalDateOnly(normalized);
+    if (!d) return normalized.slice(0, 10);
+    // Format as local YYYY-MM-DD for <input type="date">
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return \-\-\;
 };
 
 // Format a Date/Timestamp to "MM/DD HH:mm"
@@ -82,6 +87,18 @@ export const getStartDate = (item) => item.startDate || item.purchaseDate;
 
 export const UNSOLD_PHYSICAL_ESTIMATED_COST = 30;
 export const UNSOLD_PHYSICAL_ESTIMATE_REMARK = '预估值';
+
+// Parse a YYYY-MM-DD date string as a local date (not UTC).
+// Avoids timezone pitfalls where '2026-07-01' could be interpreted as June 30
+// in UTC+ timezones. Returns null for invalid/falsy input.
+export const parseLocalDateOnly = (dateStr) => {
+    if (!dateStr) return null;
+    const parts = String(dateStr).split('-');
+    if (parts.length !== 3) return null;
+    const [y, m, d] = parts.map(Number);
+    if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+    return new Date(y, m - 1, d);
+};
 
 export const isUnsoldPhysical = (item) => item?.type === 'physical' && !item.sellDate;
 

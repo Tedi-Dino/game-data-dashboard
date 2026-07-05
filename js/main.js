@@ -10,7 +10,7 @@ import { formatDateTime } from './core/utils.js';
 import { setupFirestoreListener, setOnDataChange, setupMetadataListener } from './services/firestore.js';
 
 // Charts
-import { setupChartDefaults, destroyAllCharts } from './charts/setup.js';
+import { setupChartDefaults } from './charts/setup.js';  # keep
 import { renderCostDistributionChart } from './charts/cost-distribution.js';
 import { renderTimeDistributionChart } from './charts/time-distribution.js';
 import { renderGameSortChart } from './charts/game-sort.js';
@@ -22,7 +22,7 @@ import { updateAuthUI } from './ui/auth.js';
 import { openModal, closeModal, showAlert } from './ui/modals.js';
 import { setupFab } from './ui/fab.js';
 import { updateDashboardKPIs, updateKpiTooltips, setupKpiTooltips } from './ui/dashboard.js';
-import { renderItemsList, updateSortHeaders, setupSortHeaders, setupListSearch, setupDetailColsToggle } from './ui/data-table.js';
+import { renderItemsList, updateSortHeaders, setupSortHeaders, setupListSearch, setupDetailColsToggle, setupItemsTableClick } from './ui/data-table.js';
 import { setupItemForm } from './ui/item-form.js';
 import { setupPlayNextModal } from './ui/play-next.js';
 import { setupOnThisDay } from './ui/on-this-day.js';
@@ -32,15 +32,21 @@ import { triggerSteamSync, setupSteamSyncMetadataListener } from './services/ste
 
 // --- Render all charts (with per-chart error isolation) ---
 const renderCharts = () => {
-    destroyAllCharts();
-    const chartRenderers = [
-        ['cost', renderCostDistributionChart],
-        ['time', renderTimeDistributionChart],
-        ['scatter', renderGameDistributionChart],
-        ['monthly', renderMonthlyTrendsChart],
-        ['genre', renderGameSortChart],
+    // Per-chart data signatures — only rebuild charts whose data changed.
+    const chartConfigs = [
+        { name: 'cost', fn: renderCostDistributionChart, fields: ['purchasePrice','sellPrice','type','sellDate','from','remarks'] },
+        { name: 'time', fn: renderTimeDistributionChart, fields: ['playTime','type','status'] },
+        { name: 'scatter', fn: renderGameDistributionChart, fields: ['playTime','purchasePrice','sellPrice','rating','type','name','from','remarks'] },
+        { name: 'monthly', fn: renderMonthlyTrendsChart, fields: ['playTime','purchasePrice','sellPrice','type','status','purchaseDate','startDate','sellDate','passDate','name','episodeCount','episodeDuration'] },
+        { name: 'genre', fn: renderGameSortChart, fields: ['sort','type'] },
     ];
-    for (const [name, fn] of chartRenderers) {
+
+    if (!window._chartHashes) window._chartHashes = {};
+
+    for (const { name, fn, fields } of chartConfigs) {
+        const sig = items.map(i => fields.map(f => i[f] ?? '').join('|')).join(',');
+        if (window._chartHashes[name] === sig) continue;
+        window._chartHashes[name] = sig;
         try {
             fn();
         } catch (e) {
@@ -111,6 +117,7 @@ const initApp = () => {
     setupSortHeaders();
     setupListSearch();
     setupDetailColsToggle();
+    setupItemsTableClick();
     setupPlayNextModal();
     setupOnThisDay();
     setupChartControls();

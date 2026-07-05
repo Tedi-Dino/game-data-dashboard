@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /**
  * update_unsold_cost.js — Set unsold Switch physical games to 30 yuan estimate.
  *
@@ -23,7 +23,18 @@ const https = require('https');
 const PROJECT_ID = 'game-data-dashboard';
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
-const DRY_RUN = process.argv.includes('--dry-run');
+const APPLY = process.argv.includes('--apply');
+const DRY_RUN = !APPLY;
+
+if (!APPLY) {
+  console.log('╔══════════════════════════════════════════════════════╗');
+  console.log('║  ⚠️  DEPRECATED — 此脚本违反当前数据库规则           ║');
+  console.log('║  默认 dry-run 模式，不执行任何写入。                 ║');
+  console.log('║  如需强制写入，请使用 --apply 参数。                 ║');
+  console.log('║  推荐使用 tools/update_unsold_physical_estimates/   ║');
+  console.log('╚══════════════════════════════════════════════════════╝');
+  console.log('');
+}
 
 // ── Token ───────────────────────────────────────────────────────────────────
 
@@ -101,7 +112,7 @@ async function patchItem(fbId, accessToken) {
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('=== Unsold Physical Games Cost Update ===\n');
+  console.log('=== ⚠️ DEPRECATED: Unsold Physical Games Cost Update ===\n');
 
   if (DRY_RUN) {
     console.log('[DRY RUN] No Firestore writes will be made.\n');
