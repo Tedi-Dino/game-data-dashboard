@@ -5,6 +5,11 @@
 // All game/hardware items from Firestore
 export let items = [];
 
+// Steam cumulative-playtime snapshots keyed by YYYY-MM and tracking metadata.
+export let steamPlaytimeMonths = new Map();
+export let steamPlaytimeStates = new Map();
+export let steamPlaytimeTracking = null;
+
 // Current table sort configuration
 export let sortConfig = { key: '_default', direction: 'desc' };
 
@@ -19,6 +24,16 @@ export { _charts as charts };
 // --- Setters (prefer these over direct mutation for traceability) ---
 
 export const setItems = (newItems) => { items = newItems; };
+
+export const setSteamPlaytimeMonths = (value) => {
+    steamPlaytimeMonths = value instanceof Map ? value : new Map(Object.entries(value || {}));
+};
+
+export const setSteamPlaytimeStates = (value) => {
+    steamPlaytimeStates = value instanceof Map ? value : new Map(Object.entries(value || {}));
+};
+
+export const setSteamPlaytimeTracking = (value) => { steamPlaytimeTracking = value || null; };
 
 export const setSortConfig = (key, direction) => { sortConfig = { key, direction }; };
 

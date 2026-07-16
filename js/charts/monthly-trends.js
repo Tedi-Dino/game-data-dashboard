@@ -1,4 +1,4 @@
-import { items, setChart, getChart } from '../core/state.js';
+import { items, steamPlaytimeMonths, steamPlaytimeStates, steamPlaytimeTracking, setChart, getChart } from '../core/state.js';
 import { PLATFORM_COLORS } from '../config/constants.js';
 import { formatCurrency, normalizeMonth, renderStars, escapeHTML, getStartDate, netCost, isUnsoldPhysical } from '../core/utils.js';
 import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
@@ -26,6 +26,56 @@ const PLATFORM_DATA_KEYS = [
     { label: '剧', key: 'drama', color: PLATFORM_COLORS.drama }
 ];
 
+const asDate = (value) => {
+    if (!value) return null;
+    if (typeof value.toDate === 'function') return value.toDate();
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+};
+
+export const calcAmortizedPlaytime = (totalHours, startDate, endDate, monthStart, monthEnd) => {
+    const start = asDate(startDate);
+    const end = asDate(endDate);
+    if (!Number.isFinite(totalHours) || totalHours <= 0 || !start || !end || start > end) return 0;
+    if (!(start <= monthEnd && end >= monthStart)) return 0;
+    const totalDays = Math.max(1, (end - start) / (1000 * 60 * 60 * 24) + 1);
+    const effectiveStart = new Date(Math.max(start.getTime(), monthStart.getTime()));
+    const effectiveEnd = new Date(Math.min(end.getTime(), monthEnd.getTime()));
+    const days = (effectiveEnd - effectiveStart) / (1000 * 60 * 60 * 24) + 1;
+    return (totalHours / totalDays) * days;
+};
+
+const getTrackedState = (item) => {
+    if (item.type === 'hardware' || item.type === 'drama' || item.steam_override === false || item.steam_app_id == null) return null;
+    return item.steam_app_id != null ? item.steam_app_id : null;
+};
+
+const getHistoryEndDate = (item, state) => {
+    const initialDate = asDate(state?.initialObservedAt);
+    const passDate = item.passDate ? asDate(item.passDate) : null;
+    if (initialDate && passDate && passDate < initialDate) return passDate;
+    return initialDate;
+};
+
+const getItemMonthlyPlaytime = (item, monthStart, monthEnd, monthKey) => {
+    if (item.type === 'hardware') return {total: 0, tracked: 0, estimated: 0, source: 'local'};
+    const appId = getTrackedState(item);
+    const state = appId == null ? null : (steamPlaytimeStates.get(String(appId)) || null);
+    if (appId != null && state) {
+        const historyEnd = getHistoryEndDate(item, state);
+        const historical = historyEnd
+            ? calcAmortizedPlaytime((state.initialTotalMinutes || 0) / 60, getStartDate(item), historyEnd, monthStart, monthEnd)
+            : 0;
+        const monthData = steamPlaytimeMonths.get(monthKey);
+        const tracked = Number(monthData?.minutesByApp?.[String(appId)] || monthData?.minutesByApp?.[appId] || 0) / 60;
+        return {total: historical + tracked, tracked, estimated: historical, source: 'steam'};
+    }
+    if (!item.playTime || item.playTime <= 0 || !getStartDate(item)) return {total: 0, tracked: 0, estimated: 0, source: 'local'};
+    const endDate = (item.status === 'passed' && item.passDate) ? item.passDate : new Date();
+    const local = calcAmortizedPlaytime(item.playTime, getStartDate(item), endDate, monthStart, monthEnd);
+    return {total: local, tracked: 0, estimated: local, source: 'local'};
+};
+
 const buildTrends = (currentItems) => {
     const trends = {};
     const allMonths = new Set();
@@ -36,6 +86,16 @@ const buildTrends = (currentItems) => {
         digital: 'switch_digital',
         ms: 'xbox'
     };
+
+    const stateByAppId = steamPlaytimeStates;
+
+    // Include all tracked Steam minutes in the main line, including apps not yet bound to an item.
+    steamPlaytimeMonths.forEach((monthData, month) => {
+        allMonths.add(month);
+        if (!trends[month]) trends[month] = { ...DEFAULT_TREND };
+        const minutes = monthData?.minutesByApp || {};
+        trends[month].playtime += Object.values(minutes).reduce((sum, value) => sum + Number(value || 0), 0) / 60;
+    });
 
     currentItems.forEach(item => {
         const key = typeToKey[item.type] || item.type;
@@ -68,47 +128,28 @@ const buildTrends = (currentItems) => {
         }
 
         // --- Playtime processing ---
-        // Distribute playtime evenly across months from purchaseDate to endDate.
-        // Passed items use passDate; in-progress items use today.
-        if (item.type !== 'hardware' && (item.playTime || 0) > 0 && getStartDate(item)) {
+        if (item.type !== 'hardware' && (((item.playTime || 0) > 0 && getStartDate(item)) || getTrackedState(item))) {
             const isDrama = item.type === 'drama';
             const playtimeKey = isDrama ? 'dramaPlaytime' : 'playtime';
-            const startDate = new Date(getStartDate(item));
-            const endDate = (item.status === 'passed' && item.passDate)
-                ? new Date(item.passDate)
-                : new Date();
-
-            if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && startDate <= endDate) {
-                const totalDurationDays = Math.max(1, (endDate - startDate) / (1000 * 60 * 60 * 24) + 1);
-                const dailyPlaytime = item.playTime / totalDurationDays;
-
-                // Distribute to months using direct arithmetic (no day-by-day loop).
-                // All date arithmetic uses UTC to match normalizeMonth()'s UTC-based
-                // month extraction — mixing local and UTC causes each month's playtime
-                // to be double-counted into the previous month in UTC+ timezones.
-                let d = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()));
-                while (d <= endDate) {
-                    const monthStr = normalizeMonth(d);
-                    const year = d.getUTCFullYear();
-                    const month = d.getUTCMonth();
-                    const monthEnd = new Date(Date.UTC(year, month + 1, 0));
-                    const effEnd = new Date(Math.min(endDate.getTime(), monthEnd.getTime()));
-                    const daysInMonth = (effEnd - d) / (1000 * 60 * 60 * 24) + 1;
-
-                    if (monthStr) {
+            const appId = getTrackedState(item);
+            const state = appId == null ? null : stateByAppId.get(String(appId));
+            const effectiveItem = item;
+            const startDate = asDate(getStartDate(effectiveItem));
+            const endDate = state ? getHistoryEndDate(effectiveItem, state) : ((item.status === 'passed' && item.passDate) ? asDate(item.passDate) : new Date());
+            const totalHours = state ? (state.initialTotalMinutes || 0) / 60 : item.playTime;
+            if (startDate && endDate && startDate <= endDate && totalHours > 0) {
+                let cursor = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), 1));
+                while (cursor <= endDate) {
+                    const monthStr = normalizeMonth(cursor);
+                    const monthEnd = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 0));
+                    const amount = calcAmortizedPlaytime(totalHours, startDate, endDate, cursor, monthEnd);
+                    if (monthStr && amount > 0) {
                         allMonths.add(monthStr);
                         if (!trends[monthStr]) trends[monthStr] = { ...DEFAULT_TREND };
-                        trends[monthStr][playtimeKey] += dailyPlaytime * daysInMonth;
+                        // Steam monthly increments are added from the aggregate collection above.
+                        trends[monthStr][playtimeKey] += amount;
                     }
-                    // Advance to the 1st of the next month (UTC)
-                    d = new Date(Date.UTC(year, month + 1, 1));
-                }
-            } else {
-                const startMonth = normalizeMonth(getStartDate(item));
-                if (startMonth) {
-                    allMonths.add(startMonth);
-                    if (!trends[startMonth]) trends[startMonth] = { ...DEFAULT_TREND };
-                    trends[startMonth][playtimeKey] += (item.playTime || 0);
+                    cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1));
                 }
             }
         }
@@ -123,31 +164,8 @@ const buildTrends = (currentItems) => {
  * For in-progress items: distributes from purchaseDate to today.
  * Returns the portion (in hours) attributable to [monthStart, monthEnd].
  */
-const calcMonthlyPlaytime = (item, monthStart, monthEnd) => {
-    if (!item.playTime || item.playTime <= 0 || item.type === 'hardware' || !getStartDate(item)) {
-        return 0;
-    }
-
-    const startDate = new Date(getStartDate(item));
-    const endDate = (item.status === 'passed' && item.passDate)
-        ? new Date(item.passDate)
-        : new Date();
-
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate > endDate) {
-        return 0;
-    }
-
-    if (!(startDate <= monthEnd && endDate >= monthStart)) {
-        return 0;
-    }
-
-    const totalDays = Math.max(1, (endDate - startDate) / (1000 * 60 * 60 * 24) + 1);
-    const daily = item.playTime / totalDays;
-    const effStart = new Date(Math.max(startDate, monthStart));
-    const effEnd = new Date(Math.min(endDate, monthEnd));
-    const daysInMonth = (effEnd - effStart) / (1000 * 60 * 60 * 24) + 1;
-    return daily * daysInMonth;
-};
+const calcMonthlyPlaytime = (item, monthStart, monthEnd, monthKey) =>
+    getItemMonthlyPlaytime(item, monthStart, monthEnd, monthKey);
 
 export const renderMonthlyTrendsChart = (isFullscreen = false) => {
     const canvasId = isFullscreen ? 'monthly-trends-chart-fullscreen' : 'monthly-trends-chart';
@@ -290,12 +308,22 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
 
                         const topPlaytimeItems = items
                             .filter(i => i.type !== 'hardware')
-                            .map(item => ({ ...item, monthlyPlaytime: calcMonthlyPlaytime(item, currentMonthStart, currentMonthEnd) }))
-                            .filter(item => item.monthlyPlaytime > 0.01)
-                            .sort((a, b) => b.monthlyPlaytime - a.monthlyPlaytime)
+                            .map(item => ({ ...item, monthlyBreakdown: calcMonthlyPlaytime(item, currentMonthStart, currentMonthEnd, month) }))
+                            .filter(item => item.monthlyBreakdown.total > 0.01)
+                            .sort((a, b) => b.monthlyBreakdown.total - a.monthlyBreakdown.total)
                             .slice(0, 5);
 
+                        const trackedHours = Object.values(steamPlaytimeMonths.get(month)?.minutesByApp || {})
+                            .reduce((sum, value) => sum + Number(value || 0), 0) / 60;
+                        const estimatedHours = items
+                            .filter(i => i.type !== 'hardware')
+                            .reduce((sum, item) => sum + calcMonthlyPlaytime(item, currentMonthStart, currentMonthEnd, month).estimated, 0);
+
                         let html = `<div class="font-bold text-base mb-2 border-b border-stone-200 pb-1">${month} 月报</div>`;
+                        const initializedAt = asDate(steamPlaytimeTracking?.initializedAt);
+                        if (initializedAt && normalizeMonth(initializedAt) === month) {
+                            html += `<div class="text-xs text-amber-600">追踪于 ${String(initializedAt.getUTCMonth() + 1).padStart(2, '0')}/${String(initializedAt.getUTCDate()).padStart(2, '0')} 开始；本月包含切换前估算</div>`;
+                        }
                         html += '<h4 class="font-semibold mt-2 mb-1">当月收支 Top 5</h4><ul class="text-sm">';
                         allCostItems.forEach(item => {
                             const icon = item.type === 'sale' ? '💰' : '';
@@ -305,10 +333,14 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
                         if (allCostItems.length === 0) html += '<li>无收支记录</li>';
                         html += '</ul>';
 
-                        html += '<h4 class="font-semibold mt-2 mb-1">🎮📺 当月游戏/剧集 Top 5 (折算)</h4><ul class="text-sm">';
+                        html += `<div class="text-xs text-stone-500 mt-2">Steam 实测：${Math.max(0, trackedHours).toFixed(1)}h；估算：${estimatedHours.toFixed(1)}h</div>`;
+                        html += '<h4 class="font-semibold mt-2 mb-1">🎮📺 当月游戏/剧集 Top 5</h4><ul class="text-sm">';
                         topPlaytimeItems.forEach(item => {
                             const prefix = item.type === 'drama' ? '📺 ' : '';
-                            html += `<li class="flex justify-between my-1"><span>${prefix}${escapeHTML((item.name || '').substring(0, 15))}</span><span class="flex items-center"><strong>${item.monthlyPlaytime.toFixed(1)}h</strong>${renderStars(item.rating)}</span></li>`;
+                            const source = item.monthlyBreakdown.source === 'steam'
+                                ? `${item.monthlyBreakdown.tracked > 0 ? `Steam 追踪 ${item.monthlyBreakdown.tracked.toFixed(1)}h` : ''}${item.monthlyBreakdown.estimated > 0 ? `${item.monthlyBreakdown.tracked > 0 ? ' + ' : ''}Steam 历史估算 ${item.monthlyBreakdown.estimated.toFixed(1)}h` : ''}`
+                                : '本地估算';
+                            html += `<li class="flex justify-between my-1"><span>${prefix}${escapeHTML((item.name || '').substring(0, 15))}<small class="ml-1 text-stone-400">${source}</small></span><span class="flex items-center"><strong>${item.monthlyBreakdown.total.toFixed(1)}h</strong>${renderStars(item.rating)}</span></li>`;
                         });
                         if (topPlaytimeItems.length === 0) html += '<li>无游玩记录</li>';
                         html += '</ul>';
