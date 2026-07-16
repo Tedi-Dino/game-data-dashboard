@@ -3,9 +3,15 @@
     "public": ".",
     "ignore": [
       "firebase.json",
+      "firestore.rules",
       "**/.*",
+      ".git/**",
+      ".firebase/**",
+      ".agents/**",
+      ".claude/**",
       "**/node_modules/**",
       "firebase-debug.log",
+      ".server-*.log",
       "AGENTS.md",
       "CLAUDE.md",
       "**/functions/**",
@@ -13,7 +19,12 @@
       "README_EN.md",
       "LICENSE",
       "index.js",
-      "tools/**"
+      "tools/**",
+      "old/**",
+      "screenshots/**",
+      "docs/**",
+      "design.md",
+      "*.csv"
     ],
     "headers": [
       {
@@ -35,5 +46,8 @@
   },
   "functions": {
     "source": "functions"
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   }
 }

@@ -2,9 +2,10 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
 import { getFirestore } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { getFunctions } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app-check.js';
 
 const firebaseConfig = {
-    apiKey: 'AIzaSyAE7weH2hOhhswg8x51Uz0TMxn-jO_Ap0k',
+    apiKey: 'AIzaSyC57KPIwin06LKK3YMYQFtPhLp_mHkynvg',
     authDomain: 'game-data-dashboard.firebaseapp.com',
     projectId: 'game-data-dashboard',
     storageBucket: 'game-data-dashboard.firebasestorage.app',
@@ -17,6 +18,10 @@ let auth, db, functions;
 
 try {
     const app = initializeApp(firebaseConfig);
+    initializeAppCheck(app, {
+        provider: new ReCaptchaEnterpriseProvider('6LfMY1YtAAAAABgEaJfHAA5dnQAX-5lThSZT-Bf3'),
+        isTokenAutoRefreshEnabled: true
+    });
     auth = getAuth(app);
     db = getFirestore(app);
     functions = getFunctions(app);
