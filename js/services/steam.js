@@ -11,7 +11,7 @@ let steamMetadataUnsubscribe = null;
  */
 export const triggerSteamSync = async () => {
     try {
-        const fn = httpsCallable(functions, 'syncSteamData');
+        const fn = httpsCallable(functions, 'syncSteamData', { limitedUseAppCheckTokens: true });
         const result = await fn();
         const data = result?.data;
         if (!data) return { error: 'Steam同步返回了空响应。' };

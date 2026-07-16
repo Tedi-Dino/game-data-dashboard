@@ -207,7 +207,7 @@ const callCloudFunction = async (customPrompt, promptData) => {
     const thinking = isThinkingMode();
 
     try {
-        const fn = httpsCallable(functions, 'getAiRecommendations');
+        const fn = httpsCallable(functions, 'getAiRecommendations', { limitedUseAppCheckTokens: true });
         const result = await fn({ passedGames, unpassedGames, passedDramas, unpassedDramas, customPrompt, thinking });
         const data = result.data;
 

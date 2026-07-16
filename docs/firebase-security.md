@@ -14,30 +14,26 @@ The app uses Firebase for authentication, Firestore for data storage, and Cloud 
 
 ### 2. Firestore Rules (Server)
 
-Firestore rules should be configured in the Firebase Console or `firestore.rules` if committed to the repo. The expected rule strategy:
+Firestore rules are committed in `firestore.rules` and deployed through `firebase.json`.
 
 - **Read**: Anyone (authenticated or not) can read the `items` collection
 - **Write**: Only authenticated users with admin UID can write
-- **Metadata**: `metadata/*` collections follow the same pattern
+- **Metadata**: only dashboard-facing metadata documents are publicly readable
+- **Steam playtime**: dashboard collections are readable; writes are Cloud Functions only
+- **Default**: all other collections are denied
 
-The rules template (in Firebase Console or `firestore.rules`):
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null
-        && request.auth.uid in ["ZPyHfPGUI4elNvRN2Q30ZqfzT6X2"];
-    }
-  }
-}
-```
+App Check enforcement is enabled for Firestore. Public reads must carry a valid
+App Check token issued through the production reCAPTCHA Enterprise provider.
+The provider and browser API key accept only the two Firebase Hosting domains.
+Local development must use an App Check debug token instead of adding localhost
+to the production key allowlist.
 
 ### 3. Cloud Functions (Server)
 
 - Admin UID check at the start of each callable function
+- App Check enforcement with replay-protected limited-use tokens
+- Per-admin cooldown and daily quotas before external API calls
+- Explicit instance and concurrency caps
 - Secrets managed via Firebase Secret Manager (not in source code)
 - Functions validate input length/types before processing
 

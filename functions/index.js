@@ -23,7 +23,59 @@ const STEAM_ID = "76561199530798696";
 // Admin UIDs — must match js/config/constants.js
 const ADMIN_UIDS = ["ZPyHfPGUI4elNvRN2Q30ZqfzT6X2"];
 
-exports.getAiRecommendations = onCall({secrets: [deepseekApiKey], timeoutSeconds: 300}, async (request) => {
+const FUNCTION_LIMITS = {
+  aiRecommendations: {cooldownMs: 60 * 1000, maxPerDay: 30},
+  steamSync: {cooldownMs: 10 * 60 * 1000, maxPerDay: 12},
+};
+
+async function claimFunctionQuota(name, uid) {
+  const limit = FUNCTION_LIMITS[name];
+  const nowMillis = Date.now();
+  const dayKey = new Date(nowMillis).toISOString().slice(0, 10);
+  const ref = admin.firestore().doc(`functionRateLimits/${name}_${uid}_${dayKey}`);
+
+  const result = await admin.firestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    const data = snapshot.exists ? snapshot.data() : {};
+    const lastAllowedMillis = typeof data.lastAllowedAt?.toMillis === "function"
+      ? data.lastAllowedAt.toMillis()
+      : 0;
+    const count = Number(data.count || 0);
+    const retryAfterMs = Math.max(0, limit.cooldownMs - (nowMillis - lastAllowedMillis));
+
+    if (retryAfterMs > 0) return {allowed: false, retryAfterMs, reason: "cooldown"};
+    if (count >= limit.maxPerDay) return {allowed: false, retryAfterMs: 0, reason: "daily-limit"};
+
+    transaction.set(ref, {
+      functionName: name,
+      uid,
+      dayKey,
+      count: count + 1,
+      lastAllowedAt: admin.firestore.Timestamp.fromMillis(nowMillis),
+      expiresAt: admin.firestore.Timestamp.fromMillis(nowMillis + 3 * 24 * 60 * 60 * 1000),
+    }, {merge: true});
+    return {allowed: true};
+  });
+
+  if (!result.allowed) {
+    const message = result.reason === "daily-limit"
+      ? "今日调用次数已达上限，请明天再试。"
+      : `请求过于频繁，请在${Math.ceil(result.retryAfterMs / 1000)}秒后重试。`;
+    throw new HttpsError("resource-exhausted", message, {
+      reason: result.reason,
+      retryAfterSeconds: Math.ceil(result.retryAfterMs / 1000),
+    });
+  }
+}
+
+exports.getAiRecommendations = onCall({
+  secrets: [deepseekApiKey],
+  timeoutSeconds: 90,
+  maxInstances: 2,
+  concurrency: 2,
+  enforceAppCheck: true,
+  consumeAppCheckToken: true,
+}, async (request) => {
   // Admin-only access
   if (!request.auth || !ADMIN_UIDS.includes(request.auth.uid)) {
     throw new HttpsError("permission-denied", "只有管理员才能使用AI推荐功能。");
@@ -55,6 +107,10 @@ exports.getAiRecommendations = onCall({secrets: [deepseekApiKey], timeoutSeconds
   if (customPrompt && customPrompt.length > MAX_PROMPT_LENGTH) {
     throw new HttpsError("invalid-argument", `自定义需求不能超过${MAX_PROMPT_LENGTH}个字符。`);
   }
+  if (thinking !== undefined && typeof thinking !== "boolean") {
+    throw new HttpsError("invalid-argument", "thinking 必须是布尔值。");
+  }
+  await claimFunctionQuota("aiRecommendations", request.auth.uid);
 
   const prompt = `你是一个资深的影音娱乐推荐助手。请分析一个用户的游戏和剧集数据。
 
@@ -534,11 +590,19 @@ async function performSteamSync(apiKey, trigger = "manual") {
   return {...items, playtime};
 }
 
-exports.syncSteamData = onCall({secrets: [STEAM_API_KEY], timeoutSeconds: 300}, async (request) => {
+exports.syncSteamData = onCall({
+  secrets: [STEAM_API_KEY],
+  timeoutSeconds: 300,
+  maxInstances: 1,
+  concurrency: 1,
+  enforceAppCheck: true,
+  consumeAppCheckToken: true,
+}, async (request) => {
   // Admin-only access
   if (!request.auth || !ADMIN_UIDS.includes(request.auth.uid)) {
     throw new HttpsError("permission-denied", "只有管理员才能同步Steam数据。");
   }
+  await claimFunctionQuota("steamSync", request.auth.uid);
 
   const apiKey = STEAM_API_KEY.value();
   if (!apiKey) {
@@ -556,7 +620,14 @@ exports.syncSteamData = onCall({secrets: [STEAM_API_KEY], timeoutSeconds: 300}, 
 });
 
 exports.scheduledSteamSync = onSchedule(
-    {schedule: "0 4 * * *", timeZone: "Asia/Shanghai", secrets: [STEAM_API_KEY], timeoutSeconds: 300},
+    {
+      schedule: "0 4 * * *",
+      timeZone: "Asia/Shanghai",
+      secrets: [STEAM_API_KEY],
+      timeoutSeconds: 300,
+      maxInstances: 1,
+      concurrency: 1,
+    },
     async () => {
       const apiKey = STEAM_API_KEY.value();
       if (!apiKey) {
