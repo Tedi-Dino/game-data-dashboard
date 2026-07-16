@@ -45,7 +45,7 @@ export const renderGameDistributionChart = () => {
 
     const filtered = items.filter(i => {
         if (i.type === 'hardware') return false;
-        return (i.playTime || 0) > 0 && chartCost(i) > 0;
+        return (i.playTime || 0) > 0 && chartCost(i) !== 0;
     });
 
     // Group by platform
@@ -135,7 +135,7 @@ export const renderGameDistributionChart = () => {
                     grid: { color: 'rgba(0,0,0,0.05)' },
                 },
                 y: {
-                    title: { display: true, text: useEstimatedPhysicalCost ? '花费 (¥，未售实体按30元预估)' : '实际花费 (¥)' },
+                    title: { display: true, text: useEstimatedPhysicalCost ? '净花费 (¥，未售实体按30元预估)' : '实际净花费 (¥)' },
                     beginAtZero: true,
                     grid: { color: 'rgba(0,0,0,0.05)' },
                     ticks: { callback: (v) => '¥' + Math.round(v) },
@@ -154,7 +154,7 @@ export const renderGameDistributionChart = () => {
                         const stars = renderStars(pt.rating, false);
                         let html = `<div class="font-bold text-base mb-1">${icon} ${escapeHTML(pt.name)}</div>` +
                             `<div class="text-sm">时长: <strong>${pt.x.toFixed(1)}h</strong></div>` +
-                            `<div class="text-sm">${pt.isEstimatedCost ? '估算花费' : '实际花费'}: <strong>${formatCurrency(pt.y)}</strong></div>`;
+                            `<div class="text-sm">${pt.isEstimatedCost ? '估算净花费' : '实际净花费'}: <strong>${formatCurrency(pt.y)}</strong></div>`;
                         if (pt.sellPrice > 0) {
                             html += `<div class="text-xs text-stone-500">购入 ${formatCurrency(pt.purchasePrice)} - 回血 ${formatCurrency(pt.sellPrice)}</div>`;
                         }
