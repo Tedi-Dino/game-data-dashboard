@@ -3,7 +3,7 @@ import { auth } from './config/firebase.js';
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
 
 // Core
-import { items, setSortConfig } from './core/state.js';
+import { items, steamPlaytimeMonths, steamPlaytimeStates, steamPlaytimeTracking, setSortConfig } from './core/state.js';
 import { formatDateTime } from './core/utils.js';
 
 // Services
@@ -29,8 +29,15 @@ import { setupOnThisDay } from './ui/on-this-day.js';
 import { setupCSVHandlers } from './ui/csv-handlers.js';
 import { setupChartControls } from './ui/chart-controls.js';
 import { triggerSteamSync, setupSteamSyncMetadataListener } from './services/steam.js';
+import { setupSteamPlaytimeListener } from './services/steam-playtime.js';
 
 // --- Render all charts (with per-chart error isolation) ---
+const getSteamPlaytimeHash = () => JSON.stringify({
+    tracking: steamPlaytimeTracking?.lastCompletedAt?.seconds || steamPlaytimeTracking?.lastCompletedAt || null,
+    months: Array.from(steamPlaytimeMonths.entries()).map(([month, data]) => [month, data?.updatedAt?.seconds || data?.updatedAt || null, data?.trackedTotalMinutes || 0, data?.minutesByApp || {}]),
+    states: Array.from(steamPlaytimeStates.entries()).map(([appId, state]) => [appId, state?.lastObservedAt?.seconds || state?.lastObservedAt || null, state?.initialTotalMinutes || 0]),
+});
+
 const renderCharts = () => {
     // Per-chart data signatures — only rebuild charts whose data changed.
     const chartConfigs = [
@@ -44,7 +51,8 @@ const renderCharts = () => {
     if (!window._chartHashes) window._chartHashes = {};
 
     for (const { name, fn, fields } of chartConfigs) {
-        const sig = items.map(i => fields.map(f => i[f] ?? '').join('|')).join(',');
+        const sig = items.map(i => fields.map(f => i[f] ?? '').join('|')).join(',')
+            + (name === 'monthly' ? `|steam:${getSteamPlaytimeHash()}` : '');
         if (window._chartHashes[name] === sig) continue;
         window._chartHashes[name] = sig;
         try {
@@ -64,7 +72,8 @@ const updateDashboard = () => {
     updateKpiTooltips();
 
     // Only re-render charts if data actually changed
-    const newHash = items.map(i => i.fb_id + '|' + i.playTime + '|' + i.purchasePrice + '|' + i.sellPrice + '|' + i.rating + '|' + i.status + '|' + i.type + '|' + i.sort + '|' + i.fullyCompleted + '|' + i.purchaseDate + '|' + i.startDate + '|' + i.sellDate + '|' + i.passDate + '|' + i.name + '|' + i.from + '|' + i.episodeCount + '|' + i.episodeDuration + '|' + (i.remarks || '')).join(',');
+    const steamHash = getSteamPlaytimeHash();
+    const newHash = items.map(i => i.fb_id + '|' + i.playTime + '|' + i.purchasePrice + '|' + i.sellPrice + '|' + i.rating + '|' + i.status + '|' + i.type + '|' + i.sort + '|' + i.fullyCompleted + '|' + i.purchaseDate + '|' + i.startDate + '|' + i.sellDate + '|' + i.passDate + '|' + i.name + '|' + i.from + '|' + i.episodeCount + '|' + i.episodeDuration + '|' + (i.remarks || '')).join(',') + '|' + steamHash;
     if (newHash !== lastItemsHash) {
         lastItemsHash = newHash;
         renderCharts();
@@ -147,6 +156,11 @@ const initApp = () => {
                 if (steamSyncStatus && steamSyncStatus.isConnected) {
                     steamSyncStatus.textContent = result.error;
                     steamSyncStatus.classList.add('text-red-500');
+                }
+            } else if (result.skipped === 'already-running') {
+                if (steamSyncStatus && steamSyncStatus.isConnected) {
+                    steamSyncStatus.textContent = 'Steam同步已在运行，本次请求已跳过';
+                    steamSyncStatus.classList.remove('text-red-500');
                 }
             } else {
                 const parts = [];
@@ -232,6 +246,7 @@ const initApp = () => {
     // Start listeners
     setupFirestoreListener();
     setupMetadataListener();
+    setupSteamPlaytimeListener(updateDashboard);
 
     // Card entrance animations (cap delay for snappy feel)
     document.querySelectorAll('.card-animation').forEach((card, index) => {

@@ -7,6 +7,10 @@ const {logger} = require("firebase-functions");
 const {defineSecret} = require("firebase-functions/params");
 const fetch = require("node-fetch");
 const admin = require("firebase-admin");
+const {
+  getMonthKey,
+  buildSnapshotChanges,
+} = require("./steam-playtime.js");
 
 admin.initializeApp();
 
@@ -277,8 +281,7 @@ async function parallelLimit(items, fn, concurrency = 5) {
   return results;
 }
 
-async function performSteamSync(apiKey) {
-  // 1. Fetch owned games from Steam
+async function fetchOwnedSteamGames(apiKey) {
   const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${apiKey}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
   const response = await fetch(url);
 
@@ -293,11 +296,152 @@ async function performSteamSync(apiKey) {
   if (!steamGames || steamGames.length === 0) {
     throw new Error("Steam个人资料为私密状态或无游戏数据。请在Steam设置中将游戏详情设为公开。");
   }
+  return steamGames.map((game) => ({
+    appid: Number(game.appid),
+    name: game.name || String(game.appid),
+    playtime_forever: Math.max(0, Math.floor(Number(game.playtime_forever) || 0)),
+  }));
+}
+
+const makeRunId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+async function claimSteamPlaytimeLock(db, runId) {
+  const lockRef = db.doc("metadata/steamPlaytimeLock");
+  const now = admin.firestore.Timestamp.now();
+  const expiresAt = admin.firestore.Timestamp.fromMillis(Date.now() + 10 * 60 * 1000);
+  return db.runTransaction(async (transaction) => {
+    const lockSnap = await transaction.get(lockRef);
+    const lock = lockSnap.exists ? lockSnap.data() : null;
+    const expiresMillis = typeof lock?.expiresAt?.toMillis === "function"
+      ? lock.expiresAt.toMillis()
+      : Number(lock?.expiresAt || 0);
+    if (expiresMillis > now.toMillis()) return false;
+    transaction.set(lockRef, {runId, startedAt: now, expiresAt});
+    return true;
+  });
+}
+
+async function releaseSteamPlaytimeLock(db, runId) {
+  const lockRef = db.doc("metadata/steamPlaytimeLock");
+  await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(lockRef);
+    if (snap.exists && snap.data()?.runId === runId) transaction.delete(lockRef);
+  });
+}
+
+async function commitBatchOperations(db, operations) {
+  const BATCH_LIMIT = 400;
+  for (let i = 0; i < operations.length; i += BATCH_LIMIT) {
+    const batch = db.batch();
+    operations.slice(i, i + BATCH_LIMIT).forEach((operation) => operation(batch));
+    await batch.commit();
+  }
+}
+
+async function collectSteamPlaytimeSnapshot(apiKey, trigger = "manual", steamGames = null) {
+  const db = admin.firestore();
+  const runId = makeRunId();
+  const acquired = await claimSteamPlaytimeLock(db, runId);
+  if (!acquired) return {skipped: "already-running"};
+
+  const trackingRef = db.doc("metadata/steamPlaytimeTracking");
+  const observedAt = admin.firestore.Timestamp.now();
+  try {
+    const games = steamGames || await fetchOwnedSteamGames(apiKey);
+    const trackingSnap = await trackingRef.get();
+    const tracking = trackingSnap.exists ? trackingSnap.data() : {};
+    const trackingInitialized = Boolean(tracking.initializedAt);
+    const stateRefs = new Map();
+    const stateDocs = await Promise.all(games.map((game) => db.doc(`steamPlaytimeState/${game.appid}`).get()));
+    stateDocs.forEach((snap) => { if (snap.exists) stateRefs.set(snap.id, snap.data()); });
+    const changes = buildSnapshotChanges({games, states: stateRefs, trackingInitialized, observedAt});
+    const operations = [];
+
+    changes.stateChanges.forEach((state) => {
+      operations.push((batch) => batch.set(db.doc(`steamPlaytimeState/${state.appId}`), state));
+    });
+
+    if (trackingInitialized && changes.month && Object.keys(changes.monthDeltas).length > 0) {
+      const monthRef = db.doc(`steamPlaytimeMonths/${changes.month}`);
+      const monthSnap = await monthRef.get();
+      const existingMonth = monthSnap.exists ? monthSnap.data() : {};
+      const minutesByApp = {...(existingMonth.minutesByApp || {})};
+      if (!existingMonth.minutesByApp && monthSnap.exists) {
+        const appSnapshot = await monthRef.collection("apps").get();
+        appSnapshot.docs.forEach((appDoc) => {
+          minutesByApp[appDoc.id] = Number(appDoc.data()?.minutes || 0);
+        });
+      }
+      Object.entries(changes.monthDeltas).forEach(([appId, minutes]) => {
+        minutesByApp[appId] = (minutesByApp[appId] || 0) + minutes;
+      });
+      const serializedSize = Buffer.byteLength(JSON.stringify(minutesByApp), "utf8");
+      if (serializedSize < 750 * 1024) {
+        const trackedTotalMinutes = Object.values(minutesByApp).reduce((sum, value) => sum + Number(value || 0), 0);
+        operations.push((batch) => batch.set(monthRef, {
+          month: changes.month,
+          minutesByApp,
+          trackedTotalMinutes,
+          firstObservedAt: existingMonth.firstObservedAt || observedAt,
+          lastObservedAt: observedAt,
+          updatedAt: observedAt,
+        }, {merge: true}));
+      } else {
+        logger.warn(`Steam month ${changes.month} is near Firestore size limit; using app subcollection`);
+        const existingAppIds = Object.keys(minutesByApp);
+        const trackedTotalMinutes = existingAppIds.reduce((sum, appId) => sum + Number(minutesByApp[appId] || 0), 0);
+        operations.push((batch) => batch.set(monthRef, {
+          month: changes.month,
+          minutesByApp: admin.firestore.FieldValue.delete(),
+          trackedTotalMinutes,
+          firstObservedAt: existingMonth.firstObservedAt || observedAt,
+          lastObservedAt: observedAt,
+          updatedAt: observedAt,
+        }, {merge: true}));
+        existingAppIds.forEach((appId) => {
+          operations.push((batch) => batch.set(db.doc(`steamPlaytimeMonths/${changes.month}/apps/${appId}`), {
+            appId: Number(appId),
+            minutes: minutesByApp[appId],
+            updatedAt: observedAt,
+          }, {merge: true}));
+        });
+      }
+    }
+
+    const metadata = {
+      schemaVersion: 1,
+      lastCompletedAt: observedAt,
+      lastRunId: runId,
+      coverage: trackingInitialized ? "active" : "partial-first-month",
+      lastError: changes.anomalies.length ? `${changes.anomalies.length} Steam累计时长下降异常` : null,
+      lastTrigger: trigger,
+    };
+    if (!trackingInitialized) metadata.initializedAt = observedAt;
+    operations.push((batch) => batch.set(trackingRef, metadata, {merge: true}));
+    await commitBatchOperations(db, operations);
+    changes.anomalies.forEach((anomaly) => logger.warn("Steam playtime counter decreased", anomaly));
+    return {
+      runId,
+      baseline: !trackingInitialized,
+      sampledGames: games.length,
+      month: changes.month,
+      trackedMinutes: Object.values(changes.monthDeltas).reduce((sum, value) => sum + value, 0),
+      anomalies: changes.anomalies.length,
+    };
+  } catch (error) {
+    await trackingRef.set({schemaVersion: 1, lastError: error.message, lastRunId: runId}, {merge: true}).catch(() => {});
+    throw error;
+  } finally {
+    await releaseSteamPlaytimeLock(db, runId).catch((error) => logger.warn("Failed to release Steam playtime lock", error));
+  }
+}
+
+async function syncSteamItemsAndAchievements(apiKey, steamGames) {
+  const db = admin.firestore();
 
   logger.info(`Steam API returned ${steamGames.length} games`);
 
   // 2. Read all items from Firestore
-  const db = admin.firestore();
   const snapshot = await db.collection("items").get();
   const existingItems = snapshot.docs.map(doc => ({fb_id: doc.id, ...doc.data()}));
 
@@ -382,6 +526,14 @@ async function performSteamSync(apiKey) {
   return {matched: matched.size, updated, unmatched: unmatchedTop, achievementsChecked, fullyCompletedCount};
 }
 
+async function performSteamSync(apiKey, trigger = "manual") {
+  const steamGames = await fetchOwnedSteamGames(apiKey);
+  const playtime = await collectSteamPlaytimeSnapshot(apiKey, trigger, steamGames);
+  if (playtime.skipped) return playtime;
+  const items = await syncSteamItemsAndAchievements(apiKey, steamGames);
+  return {...items, playtime};
+}
+
 exports.syncSteamData = onCall({secrets: [STEAM_API_KEY], timeoutSeconds: 300}, async (request) => {
   // Admin-only access
   if (!request.auth || !ADMIN_UIDS.includes(request.auth.uid)) {
@@ -395,7 +547,7 @@ exports.syncSteamData = onCall({secrets: [STEAM_API_KEY], timeoutSeconds: 300}, 
   }
 
   try {
-    const result = await performSteamSync(apiKey);
+    const result = await performSteamSync(apiKey, "manual");
     return result;
   } catch (error) {
     logger.error("Error calling syncSteamData:", error.message, error.stack);
@@ -412,7 +564,7 @@ exports.scheduledSteamSync = onSchedule(
         return;
       }
       try {
-        await performSteamSync(apiKey);
+        await performSteamSync(apiKey, "scheduled");
       } catch (error) {
         logger.error("Scheduled Steam sync failed:", error.message);
       }
