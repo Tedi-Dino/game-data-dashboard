@@ -32,10 +32,21 @@ to the production key allowlist.
 
 - Admin UID check at the start of each callable function
 - App Check enforcement with replay-protected limited-use tokens
+- The Cloud Functions runtime service account must have the
+  `roles/firebaseappcheck.tokenVerifier` role. Without it, valid App Check
+  requests fail as `functions/unauthenticated` before the callable handler runs.
 - Per-admin cooldown and daily quotas before external API calls
 - Explicit instance and concurrency caps
 - Secrets managed via Firebase Secret Manager (not in source code)
 - Functions validate input length/types before processing
+
+For this project, grant the role with:
+
+```bash
+gcloud projects add-iam-policy-binding game-data-dashboard \
+  --member="serviceAccount:84289557335-compute@developer.gserviceaccount.com" \
+  --role="roles/firebaseappcheck.tokenVerifier"
+```
 
 ### 4. Client-Side UI (Defense in Depth)
 

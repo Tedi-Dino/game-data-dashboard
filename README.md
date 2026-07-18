@@ -4,7 +4,7 @@
 
 在这里**视奸**我的游戏记录吧：
 
-**最新云同步版**: [game-data-dashboard.web.app](https://game-data-dashboard.web.app) 或 [netizen-dino.fun](https://netizen-dino.fun)
+**最新云同步版**: [game-data-dashboard.web.app](https://game-data-dashboard.web.app)
 
 -----
 
