@@ -4,7 +4,7 @@
 
 Come **stalk** my gaming records here:
 
-**Latest Cloud Version**: [game-data-dashboard.web.app](https://game-data-dashboard.web.app) or [netizen-dino.fun](https://netizen-dino.fun)
+**Latest Cloud Version**: [game-data-dashboard.web.app](https://game-data-dashboard.web.app)
 
 -----
 
