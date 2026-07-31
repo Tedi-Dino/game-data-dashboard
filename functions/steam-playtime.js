@@ -66,7 +66,9 @@ const buildSnapshotChanges = ({games, states, trackingInitialized, observedAt}) 
       stateChanges.push({
         appId,
         name: game.name || String(appId),
-        initialTotalMinutes: currentMinutes,
+        // The full counter is recorded as this month's delta, so it is not
+        // also treated as a historical baseline.
+        initialTotalMinutes: 0,
         initialObservedAt: observedAt,
         lastTotalMinutes: currentMinutes,
         lastObservedAt: observedAt,
