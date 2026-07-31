@@ -51,6 +51,7 @@ const getTrackedState = (item) => {
 };
 
 const getHistoryEndDate = (item, state) => {
+    if (state?.firstSeenMode === 'new-after-tracking') return null;
     const initialDate = asDate(state?.initialObservedAt);
     const passDate = item.passDate ? asDate(item.passDate) : null;
     if (initialDate && passDate && passDate < initialDate) return passDate;

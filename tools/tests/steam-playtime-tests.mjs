@@ -50,6 +50,7 @@ describe("Steam playtime pure calculations", () => {
     });
     assert.equal(result.monthDeltas[42], 75);
     assert.equal(result.stateChanges[0].firstSeenMode, "new-after-tracking");
+    assert.equal(result.stateChanges[0].initialTotalMinutes, 0);
   });
 
   it("does not overlap fixed history with tracked increments", () => {
