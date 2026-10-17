@@ -1,5 +1,5 @@
 import { auth } from '../config/firebase.js';
-import { ADMIN_UIDS, PLATFORM_COLORS } from '../config/constants.js';
+import { ADMIN_UIDS, PLATFORM_COLORS, FEATURES } from '../config/constants.js';
 
 // Build the avatar locally instead of calling ui-avatars.com: that third-party
 // request leaked the display name in its query string, added a first-paint
@@ -80,7 +80,8 @@ const updateUIAccess = () => {
         if (fabContainer) fabContainer.classList.remove('hidden');
         writeButtons.forEach(btn => setReadOnlyState(btn, false));
         if (tableBody) tableBody.classList.remove('readonly-table');
-        if (steamSyncBtn) {
+        // Only surface the sync button when the Cloud Function path exists.
+        if (steamSyncBtn && FEATURES.STEAM_SYNC) {
             steamSyncBtn.classList.remove('hidden');
             steamSyncBtn.classList.add('flex');
         }

@@ -2,6 +2,7 @@ import { items } from '../core/state.js';
 import { escapeHTML } from '../core/utils.js';
 import { openModal, closeModal } from './modals.js';
 import { isAdmin } from './auth.js';
+import { FEATURES } from '../config/constants.js';
 import {
     getAIRecommendations, cancelAIRequest,
     getLocalApiKey, setLocalApiKey, clearLocalApiKey,
@@ -30,10 +31,16 @@ export const setupPlayNextModal = () => {
     const apiKeySaveBtn = document.getElementById('ai-api-key-save-btn');
     const apiKeyClearBtn = document.getElementById('ai-api-key-clear-btn');
     const localModeCheckbox = document.getElementById('ai-local-mode-checkbox');
+    const localModeRow = document.getElementById('ai-local-mode-row');
     const thinkingModeCheckbox = document.getElementById('ai-thinking-mode-checkbox');
     const settingsStatus = document.getElementById('ai-settings-status');
 
     if (!playNextBtn || !playNextModal) return;
+
+    // Free tier is always direct: the Cloud Function does not exist, so the
+    // "bypass Cloud Function" toggle would be a no-op switch. Hide it instead of
+    // letting it imply a choice that has no effect.
+    if (localModeRow && FEATURES.AI_LOCAL_ONLY) localModeRow.classList.add('hidden');
 
     // --- Init settings panel state ---
     const refreshSettingsUI = () => {
@@ -43,6 +50,12 @@ export const setupPlayNextModal = () => {
         apiKeyInput.placeholder = hasKey ? '已保存 (重新输入以覆盖)' : '粘贴你的 DeepSeek API Key';
         localModeCheckbox.checked = isLocalMode();
         if (thinkingModeCheckbox) thinkingModeCheckbox.checked = isThinkingMode();
+        if (FEATURES.AI_LOCAL_ONLY) {
+            settingsStatus.textContent = hasKey
+                ? '✅ 已配置：直接调用 DeepSeek API（免费套餐不使用 Cloud Function）'
+                : '⚠️ 未配置 DeepSeek API Key';
+            return;
+        }
         settingsStatus.textContent = hasKey
             ? (isLocalMode() ? '✅ 本地模式：直接调用 DeepSeek API' : '🔗 云端模式：通过 Cloud Function 调用（备用Key已配置）')
             : '⚠️ 未配置本地API Key';

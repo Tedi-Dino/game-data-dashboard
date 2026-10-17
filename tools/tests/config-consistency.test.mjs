@@ -87,16 +87,19 @@ describe("AI prompt copy consistency (A3)", () => {
 });
 
 describe("Steam ID consistency", () => {
-  it("STEAM_ID matches across functions/index.js, index.html and the Python tool", () => {
+  it("STEAM_ID matches across functions/index.js, index.html, the Python tool and the local sync runner", () => {
     const fn = read("functions/index.js").match(/const STEAM_ID = "(\d{17})"/);
     const html = read("index.html").match(/(7656\d{13})/);
     const py = read("tools/steam_info/steam_info.py").match(/DEFAULT_STEAM_ID = '(\d{17})'/);
+    const sync = read("tools/steam_sync/sync.mjs").match(/const STEAM_ID = '(\d{17})'/);
 
     assert.ok(fn, "STEAM_ID not found in functions/index.js");
     assert.ok(html, "Steam ID not found in index.html");
     assert.ok(py, "DEFAULT_STEAM_ID not found in tools/steam_info/steam_info.py");
+    assert.ok(sync, "STEAM_ID not found in tools/steam_sync/sync.mjs");
 
     assert.equal(html[1], fn[1], "Steam ID drifted between function and page");
     assert.equal(py[1], fn[1], "Steam ID drifted between function and Python tool");
+    assert.equal(sync[1], fn[1], "Steam ID drifted between function and the local sync runner");
   });
 });

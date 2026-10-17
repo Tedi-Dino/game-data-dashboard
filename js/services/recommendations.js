@@ -1,7 +1,7 @@
 import { httpsCallable } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js';
 import { functions } from '../config/firebase.js';
 import { items } from '../core/state.js';
-import { STATUS_MAP } from '../config/constants.js';
+import { STATUS_MAP, FEATURES } from '../config/constants.js';
 import { parseRecommendations } from './recommendation-parse.js';
 
 // --- Local API Key Management ---
@@ -96,7 +96,7 @@ ${customPrompt || "无特定需求，请综合推荐。"}
 const callDeepSeekDirectly = async (customPrompt, promptData, signal) => {
     const apiKey = getLocalApiKey();
     if (!apiKey) {
-        return { error: '本地API密钥未配置，请在设置中填入DeepSeek API Key。' };
+        return { error: '未配置 DeepSeek API Key。请点击「接下来」窗口右上角的齿轮图标填入 Key 后重试。' };
     }
 
     const { prompt } = promptData;
@@ -179,6 +179,9 @@ const callCloudFunction = async (customPrompt, promptData) => {
 /**
  * Get AI game recommendations.
  * Tries Cloud Function first; falls back to direct DeepSeek API for local dev.
+ * When FEATURES.AI_LOCAL_ONLY is set (Spark plan, no deployable functions) the
+ * callable is skipped entirely — it can only fail, and the failure would add a
+ * pointless round-trip before the same fallback.
  * @param {string} customPrompt
  * @returns {{ recommendations?: Array, error?: string }}
  */
@@ -196,6 +199,12 @@ export const getAIRecommendations = async (customPrompt = '') => {
     activeAbortController = controller;
 
     try {
+        // Free tier: the Cloud Function is not deployed, so go straight to the
+        // browser-side call instead of burning a request on a guaranteed 404.
+        if (FEATURES.AI_LOCAL_ONLY) {
+            return await callDeepSeekDirectly(customPrompt, promptData, controller.signal);
+        }
+
         // If user explicitly set local mode, use direct API call
         if (isLocalMode()) {
             return await callDeepSeekDirectly(customPrompt, promptData, controller.signal);

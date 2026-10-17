@@ -105,7 +105,7 @@ js/
 
 - **AI 推荐**
   - **工作流程**: 点击"接下来玩"时，应用整理您最近3个月内通关的游戏（名称、时长、评分）和所有状态为"待玩"的游戏列表。
-  - **后端处理**: 信息发送到 Firebase Cloud Function，调用大语言模型（DeepSeek），基于您的近期偏好从待玩列表中推荐游戏并说明理由。
+  - **后端处理**: 免费套餐下由浏览器直接调用大语言模型（DeepSeek），使用你自己填写的 API Key；升级到 Blaze 后可改走 Firebase Cloud Function，Key 不再暴露在浏览器里。
 
 -----
 
@@ -134,7 +134,7 @@ js/
 
 2. **创建Web应用**: 在项目设置中，点击 `</>` 图标创建一个Web应用，并复制生成的 `firebaseConfig` 对象。
 
-3. **启用服务**: 在控制台启用 **Firestore Database** 和 **Authentication**。在 Authentication 的 "Sign-in method" 标签页中，启用 **Google** 作为登录提供商。如果您想使用AI推荐功能，还需启用 **Functions**。
+3. **启用服务**: 在控制台启用 **Firestore Database** 和 **Authentication**。在 Authentication 的 "Sign-in method" 标签页中，启用 **Google** 作为登录提供商。AI 推荐在免费套餐下由浏览器直连 DeepSeek，**不需要**启用 Functions。
 
 4. **配置代码**: 打开 `js/config/firebase.js` 文件，将第2步中复制的 `firebaseConfig` 粘贴到对应的位置。
 
@@ -143,11 +143,10 @@ js/
    2. 回到 Firebase 控制台的 `Authentication -> Users` 页面，找到您的账号并复制其 `UID`。
    3. 将复制的 `UID` 粘贴到 `js/config/constants.js` 的 `ADMIN_UIDS` 数组里。
 
-6. **部署**: 使用 Firebase CLI 部署：
+6. **部署**: 使用 Firebase CLI 部署（免费套餐版本已移除 functions 段）：
    ```bash
-   firebase deploy                  # 会同时发布 hosting + functions + Firestore 规则
-   firebase deploy --only hosting   # 日常发布建议用这个
-   firebase deploy --only functions
+   firebase deploy --only hosting,firestore:rules
+   firebase deploy --only hosting
    ```
 
    > ⚠️ `firebase.json` 把 `firestore.rules` 也纳入了部署，裸跑 `firebase deploy`
@@ -157,6 +156,18 @@ js/
    > ℹ️ 管理员 UID 在三处必须保持一致：`firestore.rules`、
    > `functions/index.js`、`js/config/constants.js`。
    > 运行 `node --test tools/tests/*.test.mjs` 可自动校验。
+
+7. **Steam 自动同步（免费套餐）**: Cloud Scheduler 不可用，改为在本机执行：
+   ```bash
+   node tools/steam_sync/sync.mjs           # 预演，不写库
+   node tools/steam_sync/sync.mjs --apply   # 实际写入
+   ```
+   需要在 `tools/steam_sync/.env` 里配置 `STEAM_API_KEY`（[申请地址](https://steamcommunity.com/dev/apikey)），
+   再用 Windows 任务计划程序设为每天 04:00 运行。详见 `docs/free-tier-plan.md`。
+
+> 💡 **升级回 Blaze（付费）时**：在 `firebase.json` 补回
+> `"functions": { "source": "functions" }`，把 `js/config/constants.js` 的
+> `FEATURES` 三个开关翻转，重新配置两个函数密钥，并停用本机的同步任务。
 
 -----
 

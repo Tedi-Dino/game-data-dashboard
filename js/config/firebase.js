@@ -16,22 +16,44 @@ const firebaseConfig = {
 
 let auth, db, functions;
 
-try {
-    const app = initializeApp(firebaseConfig);
-    initializeAppCheck(app, {
-        provider: new ReCaptchaEnterpriseProvider('6LfMY1YtAAAAABgEaJfHAA5dnQAX-5lThSZT-Bf3'),
-        isTokenAutoRefreshEnabled: true
-    });
-    auth = getAuth(app);
-    db = getFirestore(app);
-    functions = getFunctions(app);
-} catch (e) {
-    console.error('Error initializing Firebase:', e);
+const showInitFailure = () => {
     // Insert error overlay instead of destroying the entire body
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-stone-100';
     overlay.innerHTML = '<div class="text-stone-900 text-center p-8 bg-white rounded-xl shadow-lg max-w-md"><h2 class="text-xl font-bold mb-2">初始化失败</h2><p class="text-stone-600">Firebase 初始化失败，请检查网络连接和配置后刷新页面。</p></div>';
     document.body.appendChild(overlay);
+};
+
+let app = null;
+try {
+    app = initializeApp(firebaseConfig);
+} catch (e) {
+    console.error('Error initializing Firebase app:', e);
+    showInitFailure();
+}
+
+if (app) {
+    // App Check is an optional hardening layer, not a prerequisite. On the Spark
+    // plan the reCAPTCHA Enterprise API can be unavailable; keeping this in the
+    // same try-block as getAuth/getFirestore used to leave `db` undefined and
+    // blank the whole dashboard behind the "初始化失败" overlay.
+    try {
+        initializeAppCheck(app, {
+            provider: new ReCaptchaEnterpriseProvider('6LfMY1YtAAAAABgEaJfHAA5dnQAX-5lThSZT-Bf3'),
+            isTokenAutoRefreshEnabled: true
+        });
+    } catch (e) {
+        console.warn('App Check unavailable — continuing without it:', e);
+    }
+
+    try {
+        auth = getAuth(app);
+        db = getFirestore(app);
+        functions = getFunctions(app);
+    } catch (e) {
+        console.error('Error initializing Firebase services:', e);
+        showInitFailure();
+    }
 }
 
 export { auth, db, functions };
