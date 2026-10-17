@@ -66,6 +66,7 @@ export const FEATURES = {
     STEAM_SYNC: false,       // manual Steam sync via Cloud Function
     SCHEDULED_SYNC: false,   // daily 04:00 Cloud Scheduler run
     AI_LOCAL_ONLY: true,     // AI recommendations call DeepSeek from the browser
+    APP_CHECK: false,        // reCAPTCHA Enterprise App Check init
 };
 ```
 
@@ -73,9 +74,16 @@ export const FEATURES = {
   nothing to run would fail silently.
 - `tools/tests/free-tier.test.mjs` asserts that a `firebase.json` without a
   `functions` block can never ship with these switches on.
+- **App Check is off deliberately.** Firestore's App Check enforcement is
+  `UNENFORCED` for this project: the reCAPTCHA Enterprise token request pulls
+  `www.google.com`, which never completes on a mainland network, and Firestore
+  then waits forever for a token. With enforcement left on, every read returns
+  `permission-denied` and the dashboard shows nothing. See
+  `docs/free-tier-plan.md` §2.1 before turning either back on.
 - Going back to Blaze: restore `"functions": { "source": "functions" }`, flip the
   switches to `{STEAM_SYNC: true, SCHEDULED_SYNC: true, AI_LOCAL_ONLY: false}`,
-  re-set both secrets, and disable the local scheduled task.
+  re-set both secrets, disable the local scheduled task, and only then verify
+  App Check tokens work before setting `APP_CHECK: true` + `ENFORCED`.
 
 **Do not delete `functions/`.** The code is frozen but still authoritative for
 the Blaze path, and `tools/tests/config-consistency.test.mjs` reads it for the

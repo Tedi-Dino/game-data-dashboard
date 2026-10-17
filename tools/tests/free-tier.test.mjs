@@ -29,9 +29,10 @@ const constants = await import(
 const core = require(path.join(repoRoot, "functions/steam-sync-core.js"));
 
 describe("FEATURES switches", () => {
-    it("exposes the three documented flags as booleans", () => {
+    it("exposes the documented flags as booleans", () => {
         const { FEATURES } = constants;
-        assert.deepEqual(Object.keys(FEATURES).sort(), ["AI_LOCAL_ONLY", "SCHEDULED_SYNC", "STEAM_SYNC"]);
+        assert.deepEqual(Object.keys(FEATURES).sort(),
+            ["AI_LOCAL_ONLY", "APP_CHECK", "SCHEDULED_SYNC", "STEAM_SYNC"]);
         for (const [key, value] of Object.entries(FEATURES)) {
             assert.equal(typeof value, "boolean", `${key} must be boolean`);
         }
@@ -90,14 +91,17 @@ describe("browser never reaches a non-existent callable", () => {
         assert.ok(flagIndex < callIndex, "AI_LOCAL_ONLY branch must precede the cloud call");
     });
 
-    it("App Check init cannot take Firestore down with it", () => {
+    it("App Check is opt-in and cannot take Firestore down with it", () => {
         const src = read("js/config/firebase.js");
+        const gate = src.indexOf("if (FEATURES.APP_CHECK) {");
         const appCheck = src.indexOf("initializeAppCheck(app");
-        // Each call must sit in its own try: the old shared try left `db` undefined.
-        const before = src.slice(0, appCheck);
-        const appCheckTry = before.lastIndexOf("try {");
-        const serviceTry = src.indexOf("try {\n        auth = getAuth(app)");
-        assert.ok(appCheckTry > 0 && serviceTry > appCheck, "App Check and getAuth/getFirestore need separate try blocks");
+        const services = src.indexOf("auth = getAuth(app)");
+        assert.ok(gate > 0, "App Check must be gated by FEATURES.APP_CHECK");
+        assert.ok(gate < appCheck, "the gate must precede initializeAppCheck");
+        assert.ok(appCheck < services, "getAuth/getFirestore must not be nested inside the App Check block");
+        // Each call needs its own try: the old shared try left `db` undefined.
+        assert.match(src.slice(gate, appCheck), /try \{/);
+        assert.match(src.slice(appCheck, services), /try \{/);
     });
 });
 
