@@ -15,6 +15,11 @@ export const FEATURES = {
     // AI recommendations skip the Cloud Function and call DeepSeek directly
     // from the browser with the user's own API key.
     AI_LOCAL_ONLY: true,
+    // App Check (reCAPTCHA Enterprise). Off on Spark: the token request pulls
+    // www.google.com/recaptcha, which never completes on a mainland network, and
+    // Firestore then waits on a token it will never get. Firestore enforcement
+    // is also UNENFORCED for this project — see docs/free-tier-plan.md §2.
+    APP_CHECK: false,
 };
 
 // Guard against a half-flipped config (e.g. enabling the schedule while the

@@ -3,6 +3,7 @@ import { getAuth } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth
 import { getFirestore } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { getFunctions } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app-check.js';
+import { FEATURES } from './constants.js';
 
 const firebaseConfig = {
     apiKey: 'AIzaSyC57KPIwin06LKK3YMYQFtPhLp_mHkynvg',
@@ -33,17 +34,22 @@ try {
 }
 
 if (app) {
-    // App Check is an optional hardening layer, not a prerequisite. On the Spark
-    // plan the reCAPTCHA Enterprise API can be unavailable; keeping this in the
-    // same try-block as getAuth/getFirestore used to leave `db` undefined and
-    // blank the whole dashboard behind the "初始化失败" overlay.
-    try {
-        initializeAppCheck(app, {
-            provider: new ReCaptchaEnterpriseProvider('6LfMY1YtAAAAABgEaJfHAA5dnQAX-5lThSZT-Bf3'),
-            isTokenAutoRefreshEnabled: true
-        });
-    } catch (e) {
-        console.warn('App Check unavailable — continuing without it:', e);
+    // App Check is an optional hardening layer, not a prerequisite. Two reasons
+    // it stays behind a switch:
+    //   1. On Spark the token request pulls www.google.com/recaptcha, which never
+    //      completes on a mainland network; Firestore then waits for a token that
+    //      will not arrive and the dashboard renders empty.
+    //   2. Keeping it in the same try-block as getAuth/getFirestore used to leave
+    //      `db` undefined and blank the page behind the overlay.
+    if (FEATURES.APP_CHECK) {
+        try {
+            initializeAppCheck(app, {
+                provider: new ReCaptchaEnterpriseProvider('6LfMY1YtAAAAABgEaJfHAA5dnQAX-5lThSZT-Bf3'),
+                isTokenAutoRefreshEnabled: true
+            });
+        } catch (e) {
+            console.warn('App Check unavailable — continuing without it:', e);
+        }
     }
 
     try {

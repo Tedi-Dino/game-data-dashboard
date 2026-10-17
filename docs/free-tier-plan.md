@@ -13,12 +13,12 @@
 | Hosting（含自定义域名 / SSL） | ✅ | 部署不受影响 |
 | Authentication（Google 登录） | ✅ | 免费额度足够 |
 | Cloud Firestore（Native） | ✅ | 1 GiB 存储 / 50k 读 / 20k 写 每天 |
-| App Check 本体 | ✅ | reCAPTCHA Enterprise 每月 1 万次免费评估 |
+| App Check 本体 | ⚠️ | 产品免费，但 reCAPTCHA Enterprise 需要 `www.google.com`，国内网络取不到令牌 |
 | **Cloud Functions** | ❌ | 需要结算，`firebase deploy --only functions` 必然 403 |
 | **Cloud Scheduler** | ❌ | 随 Functions 一起失效 |
 | **Secret Manager** | ❌ | 读取 `DEEPSEEK_API_KEY` / `STEAM_API_KEY` 需结算 |
 
-**结论：断的只有 Cloud Functions 这一条链**，Firestore / Auth / Hosting 都不需要改造。
+**结论：断的不只是 Cloud Functions** —— 见 §2.1，App Check 强制模式才是让整站空白的真凶。
 
 ## 2. 失效面
 
@@ -28,6 +28,37 @@
 | 每日 04:00 自动同步 | `scheduledSteamSync` | 不再运行，`steamPlaytime*` 停写 |
 | AI 推荐（云端通道） | `getAiRecommendations` callable | 调用必然失败 |
 | 密钥读取 | Secret Manager | 不可访问 |
+
+### 2.1 App Check 强制 = 整站空白（本次实测发现）
+
+降级前项目对 `firestore.googleapis.com` 开启了 App Check **强制（ENFORCED）**。
+降级后这条链路直接死掉：
+
+1. 浏览器端 `initializeAppCheck` 仍会去拉 `https://www.google.com/recaptcha/enterprise.js`；
+2. 国内网络下该脚本取不到（即使挂代理，令牌请求也一直 pending）；
+3. Firestore SDK 拿不到 App Check 令牌 → 所有读写被拒，`getDocs` 要么抛
+   `permission-denied`，要么一直挂着；
+4. 页面骨架照常渲染，但 KPI 全是 `0.00`、图表全是空轴 —— 看起来"能打开"，实际没有数据。
+
+实测证据（2026-10-18）：
+
+| 状态 | 结果 |
+| --- | --- |
+| App Check ENFORCED + 浏览器 SDK | `permission-denied`，或 `getDocs` 永不返回 |
+| App Check ENFORCED + REST（带 API key） | `403 Missing or insufficient permissions` |
+| App Check UNENFORCED + REST | `200`，返回真实文档 |
+| App Check UNENFORCED + 线上页面 | KPI `¥7490.39`，无控制台报错 |
+
+**处理**：把 Firestore 的 `enforcementMode` 改为 `UNENFORCED`，并在 Spark 版关闭
+浏览器端 App Check 初始化（`FEATURES.APP_CHECK = false`）—— 否则即使不强制，
+SDK 仍会等一个永远拿不到的令牌。
+
+安全影响可接受：`items` / `steamPlaytime*` 本来就是公开只读，写操作仍由
+`firestore.rules` 的 `isAdmin()` 把关；Spark 下没有可被刷爆的计费资源。
+
+> 回 Blaze 时若想恢复 App Check，必须先确认 reCAPTCHA Enterprise 能签发令牌
+> （打开控制台 → App Check → 应用 → 查看"最近的有效请求"），再把 enforcement
+> 调回 `ENFORCED`、`FEATURES.APP_CHECK` 置 `true`。顺序反了会再次白屏。
 
 ## 3. 设计原则
 
@@ -49,6 +80,7 @@ export const FEATURES = {
     STEAM_SYNC: false,       // Steam 手动同步（Cloud Function）
     SCHEDULED_SYNC: false,   // 每日 04:00 自动同步（Cloud Scheduler）
     AI_LOCAL_ONLY: true,     // AI 推荐只用浏览器直连 DeepSeek
+    APP_CHECK: false,        // App Check（reCAPTCHA Enterprise）初始化
 };
 ```
 
@@ -57,12 +89,13 @@ export const FEATURES = {
 - `SCHEDULED_SYNC` 蕴含 `STEAM_SYNC` —— 没有 Cloud Functions 就不可能有 Cloud Scheduler。
 - `AI_LOCAL_ONLY` 为真时，`getAIRecommendations` 不得调用 `callCloudFunction`。
 - `STEAM_SYNC` 为假时，同步按钮不得出现在 DOM 里（管理员也一样）。
+- `firebase.json` 没有 `functions` 段时，`STEAM_SYNC` / `SCHEDULED_SYNC` 不得为真。
 
 ## 5. 前端改动
 
 | 文件 | 改动 |
 | --- | --- |
-| `js/config/firebase.js` | App Check 单独 `try`；失败仅告警，`auth/db/functions` 照常初始化 |
+| `js/config/firebase.js` | App Check 由 `FEATURES.APP_CHECK` 控制且单独 `try`；失败仅告警，`auth/db/functions` 照常初始化 |
 | `js/services/steam.js` | `triggerSteamSync` 前置守卫，关闭时直接返回提示，不发请求 |
 | `js/main.js` | 仅在 `STEAM_SYNC` 为真时绑定按钮；同步状态展示保留（读 `metadata/steamSync`，本地脚本也会写） |
 | `js/ui/auth.js` | 管理员态只在 `STEAM_SYNC` 为真时显示按钮 |
@@ -112,10 +145,12 @@ firebase deploy --only hosting,firestore:rules
 回到 Blaze：
 
 1. `firebase.json` 补回 `"functions": { "source": "functions" }`
-2. `js/config/constants.js` 里把 `FEATURES` 三个开关翻回 `true/false`（云端）
+2. `js/config/constants.js` 里把 `FEATURES` 翻回 `{STEAM_SYNC: true, SCHEDULED_SYNC: true, AI_LOCAL_ONLY: false}`
 3. `firebase deploy`（含 functions）
 4. `firebase functions:secrets:set DEEPSEEK_API_KEY` / `STEAM_API_KEY` 重新配置
 5. 停用本机任务计划程序里的 Steam 同步任务，避免两条路径同时写入
+6. 确认 reCAPTCHA Enterprise 能签发令牌后，再把 `FEATURES.APP_CHECK` 置 `true`，
+   并把 Firestore 的 App Check `enforcementMode` 调回 `ENFORCED`（先确认再强制）
 
 ## 9. 验收清单
 
