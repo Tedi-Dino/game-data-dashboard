@@ -5,6 +5,7 @@ import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from
 // Core
 import { items, steamPlaytimeMonths, steamPlaytimeStates, steamPlaytimeTracking, setSortConfig } from './core/state.js';
 import { formatDateTime, toLocalISODate } from './core/utils.js';
+import { FEATURES } from './config/constants.js';
 
 // Services
 import { setupFirestoreListener, setOnDataChange, setupMetadataListener } from './services/firestore.js';
@@ -173,11 +174,18 @@ const initApp = () => {
     setupOnThisDay();
     setupChartControls();
 
-    // Steam sync button
+    // Steam sync button. On Spark the callable cannot be deployed, so the
+    // button is never wired — the metadata below still shows the last run from
+    // tools/steam_sync/sync.mjs.
     const steamSyncBtn = document.getElementById('steam-sync-btn');
     const steamSyncStatus = document.getElementById('steam-sync-status');
 
-    if (steamSyncBtn) {
+    if (steamSyncBtn && !FEATURES.STEAM_SYNC) {
+        steamSyncBtn.classList.add('hidden');
+        steamSyncBtn.classList.remove('flex');
+    }
+
+    if (steamSyncBtn && FEATURES.STEAM_SYNC) {
         steamSyncBtn.addEventListener('click', async () => {
             const icon = steamSyncBtn.querySelector('i');
             steamSyncBtn.disabled = true;

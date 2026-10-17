@@ -35,21 +35,51 @@ Note for Windows PowerShell:
 Common deploy commands:
 
 ```bash
-firebase deploy                  # hosting + functions + Firestore RULES
+firebase deploy --only hosting,firestore:rules   # the Spark (free) release
 firebase deploy --only hosting
-firebase deploy --only functions
+firebase deploy --only firestore:rules
 ```
 
 > **Caution:** `firebase.json` wires `firestore.rules` into the deploy, so a bare
 > `firebase deploy` silently republishes your security rules from this repo. If
 > the committed rules are stale or edited, that changes the live permission
-> boundary. Prefer `--only hosting` / `--only functions` for routine releases and
-> deploy rules deliberately with `firebase deploy --only firestore:rules`.
+> boundary. Prefer `--only hosting` for routine releases and deploy rules
+> deliberately with `firebase deploy --only firestore:rules`.
+
+> **Spark plan:** `firebase.json` intentionally has **no `functions` block** —
+> Cloud Functions need a billing account and would fail the whole deploy. See
+> "Firebase Plan" below and `docs/free-tier-plan.md` before adding it back.
 
 > **Admin UIDs** live in three places that must stay identical: `firestore.rules`,
 > `functions/index.js` (`ADMIN_UIDS`) and `js/config/constants.js` (`ADMIN_UIDS`).
 > `tools/tests/config-consistency.test.mjs` enforces this — run it after changing
 > an admin.
+
+## Firebase Plan
+
+The project runs on **Spark (free)**. The only capability that disappears is
+Cloud Functions (and Cloud Scheduler / Secret Manager with it), so every
+browser-side callable is behind a switch in `js/config/constants.js`:
+
+```js
+export const FEATURES = {
+    STEAM_SYNC: false,       // manual Steam sync via Cloud Function
+    SCHEDULED_SYNC: false,   // daily 04:00 Cloud Scheduler run
+    AI_LOCAL_ONLY: true,     // AI recommendations call DeepSeek from the browser
+};
+```
+
+- `SCHEDULED_SYNC` without `STEAM_SYNC` throws at import time — a schedule with
+  nothing to run would fail silently.
+- `tools/tests/free-tier.test.mjs` asserts that a `firebase.json` without a
+  `functions` block can never ship with these switches on.
+- Going back to Blaze: restore `"functions": { "source": "functions" }`, flip the
+  switches to `{STEAM_SYNC: true, SCHEDULED_SYNC: true, AI_LOCAL_ONLY: false}`,
+  re-set both secrets, and disable the local scheduled task.
+
+**Do not delete `functions/`.** The code is frozen but still authoritative for
+the Blaze path, and `tools/tests/config-consistency.test.mjs` reads it for the
+admin UID, AI prompt and Steam ID assertions.
 
 ## Codex Working Notes
 
@@ -166,21 +196,30 @@ Drama items (`type: 'drama'`) calculate `playTime` from
 
 ## Steam Sync
 
-`syncSteamData` is an admin-only callable Cloud Function. It fetches the Steam
-library, fuzzy-matches local items, binds `steam_app_id`, updates playtime when
-`steam_override !== false`, and checks achievements to update
-`fullyCompleted`. `scheduledSteamSync` runs daily at 4:00 AM CST.
+Two paths, same maths:
+
+- **Blaze:** `syncSteamData` is an admin-only callable that fetches the Steam
+  library, fuzzy-matches local items, binds `steam_app_id`, raises `playTime`
+  when `steam_override !== false`, and checks achievements to update
+  `fullyCompleted`. `scheduledSteamSync` runs daily at 4:00 AM CST.
+- **Spark (current):** neither function is deployed. The browser only shows the
+  last-sync line, and `node tools/steam_sync/sync.mjs --apply` does the work from
+  this machine (Windows Task Scheduler at 04:00).
+
+Both paths share `functions/steam-sync-core.js` (name matching) and
+`functions/steam-playtime.js` (delta maths), so they cannot drift into computing
+different playtimes.
 
 ## AI Recommendations
 
-The `接下来` modal calls `getAiRecommendations`. The primary path is the
-Firebase Cloud Function. The browser fallback calls DeepSeek directly with a
-user-provided API key and includes both games and dramas.
+The `接下来` modal calls `getAiRecommendations`. On Spark
+(`FEATURES.AI_LOCAL_ONLY`) it calls DeepSeek directly from the browser with the
+admin's own API key, shown behind the gear icon. On Blaze the Cloud Function is
+the primary path and the browser call is the fallback.
 
-> **Security note**: The DeepSeek API key stored in `localStorage` is intended
-> for local development only. On the production site, the Cloud Function should
-> always be the primary path. The local-mode API key entry in the UI is hidden
-> for non-admin visitors to prevent accidental exposure.
+> **Security note**: The DeepSeek API key stored in `localStorage` is visible to
+> anyone using that browser profile. The AI section is admin-only in the UI, so
+> visitors never see the key entry.
 
 Both prompt copies must stay byte-identical. `tools/tests/config-consistency.test.mjs`
 asserts this, and the parser lives in `js/services/recommendation-parse.js` so it
@@ -221,6 +260,10 @@ tools/
 │   ├── steam_info.py
 │   ├── run.bat
 │   └── .env
+├── steam_sync/
+│   ├── sync.mjs        # Spark-plan Steam sync (Firestore REST + Steam Web API)
+│   ├── lib.mjs         # pure planning helpers (tested)
+│   └── firestore.mjs   # OAuth + proxy-aware REST transport
 ├── tests/
 │   └── (unit tests for core logic using node:test)
 ├── update_unsold_cost/
@@ -237,6 +280,10 @@ Tool notes:
   Firebase REST API.
 - `tools/steam_info/steam_info.py` fetches Steam profile/library data into CSV
   files under `tools/steam_info/output/`.
+- `tools/steam_sync/sync.mjs` replaces Cloud Scheduler on the Spark plan. It
+  dry-runs by default, reads `STEAM_API_KEY` from the env or
+  `tools/steam_sync/.env`, and writes through the Firestore REST API with the
+  Firebase CLI token. `--games-file` runs it offline against a fixture.
 - `tools/tests/` contains unit tests for core logic (`netCost`, CSV parsing,
   date parsing, AI JSON parsing) using Node's built-in `node:test`.
 - `tools/update_unsold_cost/update_unsold_cost.js` is **DEPRECATED**. It violates

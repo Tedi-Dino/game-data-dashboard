@@ -1,6 +1,27 @@
 // Admin UIDs that have write access
 export const ADMIN_UIDS = ['ZPyHfPGUI4elNvRN2Q30ZqfzT6X2'];
 
+// Firebase plan feature switches — see docs/free-tier-plan.md.
+// Spark (free) has no Cloud Functions and no Cloud Scheduler, so the browser
+// must never depend on a callable. Flip these back after upgrading to Blaze:
+//   Blaze: {STEAM_SYNC: true, SCHEDULED_SYNC: true, AI_LOCAL_ONLY: false}
+//   Spark: {STEAM_SYNC: false, SCHEDULED_SYNC: false, AI_LOCAL_ONLY: true}
+export const FEATURES = {
+    // Manual Steam sync via the `syncSteamData` Cloud Function.
+    STEAM_SYNC: false,
+    // Daily 04:00 `scheduledSteamSync` run by Cloud Scheduler.
+    // Requires STEAM_SYNC: without Cloud Functions there is nothing to schedule.
+    SCHEDULED_SYNC: false,
+    // AI recommendations skip the Cloud Function and call DeepSeek directly
+    // from the browser with the user's own API key.
+    AI_LOCAL_ONLY: true,
+};
+
+// Guard against a half-flipped config (e.g. enabling the schedule while the
+// callable stays off), which would silently skip every sync.
+if (FEATURES.SCHEDULED_SYNC && !FEATURES.STEAM_SYNC) {
+    throw new Error('FEATURES.SCHEDULED_SYNC requires FEATURES.STEAM_SYNC');
+}
 
 // Unified platform metadata table — single source of truth for all platform
 // mappings below. Adding a new platform only requires one entry here.

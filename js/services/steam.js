@@ -1,15 +1,25 @@
 import { httpsCallable } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js';
 import { doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { functions, db } from '../config/firebase.js';
+import { FEATURES } from '../config/constants.js';
 
 // Track the metadata listener for cleanup
 let steamMetadataUnsubscribe = null;
+
+/**
+ * Whether this build can trigger Steam sync from the browser.
+ * False on the Spark plan, where Cloud Functions cannot be deployed.
+ */
+export const isSteamSyncAvailable = () => FEATURES.STEAM_SYNC === true;
 
 /**
  * Trigger a Steam data sync via Cloud Function.
  * @returns {{ matched?: number, updated?: number, unmatched?: Array, error?: string }}
  */
 export const triggerSteamSync = async () => {
+    if (!isSteamSyncAvailable()) {
+        return { error: '当前为 Firebase 免费套餐，无法从浏览器触发同步。请在本机运行 tools/steam_sync/sync.mjs。' };
+    }
     try {
         const fn = httpsCallable(functions, 'syncSteamData', { limitedUseAppCheckTokens: true });
         const result = await fn();
