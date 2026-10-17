@@ -48,11 +48,33 @@ export async function setCachedItems(items) {
         return new Promise((resolve) => {
             const tx = database.transaction(STORE_NAME, 'readwrite');
             const store = tx.objectStore(STORE_NAME);
-            store.put(items, CACHE_KEY);
+            // Wrap with a timestamp so the UI can tell "cached" from "live".
+            // getCachedItems already understands this shape.
+            store.put({data: items, cachedAt: Date.now()}, CACHE_KEY);
             tx.oncomplete = () => resolve();
             tx.onerror = () => resolve();
         });
     } catch {
         // ignore cache write errors
+    }
+}
+
+// Timestamp of the cached snapshot, or null when nothing is cached.
+export async function getCachedAt() {
+    try {
+        const database = await openDB();
+        return new Promise((resolve) => {
+            const tx = database.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const request = store.get(CACHE_KEY);
+            request.onsuccess = () => {
+                const result = request.result;
+                if (result && typeof result.cachedAt === 'number') resolve(result.cachedAt);
+                else resolve(null);
+            };
+            request.onerror = () => resolve(null);
+        });
+    } catch {
+        return null;
     }
 }

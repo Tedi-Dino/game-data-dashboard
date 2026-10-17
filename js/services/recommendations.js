@@ -2,6 +2,7 @@ import { httpsCallable } from 'https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { functions } from '../config/firebase.js';
 import { items } from '../core/state.js';
 import { STATUS_MAP } from '../config/constants.js';
+import { parseRecommendations } from './recommendation-parse.js';
 
 // --- Local API Key Management ---
 const LOCAL_KEY_STORAGE = 'deepseek_local_api_key';
@@ -87,64 +88,6 @@ ${customPrompt || "无特定需求，请综合推荐。"}
   {"name": "游戏名4", "reason": "推荐理由4...", "type": "游戏"},
   {"name": "剧集名1", "reason": "推荐理由5...", "type": "剧集"}
 ]` };
-};
-
-/**
- * Parse AI response text into recommendations array.
- */
-const parseRecommendations = (text) => {
-    // Strip markdown code fences if present
-    let cleaned = text.trim();
-    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-
-    // Find the first complete JSON array by tracking bracket depth
-    const startIdx = cleaned.indexOf('[');
-    if (startIdx !== -1) {
-        let depth = 0;
-        let inString = false;
-        let escaped = false;
-        for (let i = startIdx; i < cleaned.length; i++) {
-            const ch = cleaned[i];
-            if (escaped) {
-                escaped = false;
-                continue;
-            }
-            if (ch === '\\') {
-                escaped = true;
-                continue;
-            }
-            if (ch === '"') {
-                inString = !inString;
-                continue;
-            }
-            if (inString) continue;
-            if (ch === '[') depth++;
-            else if (ch === ']') {
-                depth--;
-                if (depth === 0) {
-                    cleaned = cleaned.substring(startIdx, i + 1);
-                    break;
-                }
-            }
-        }
-    }
-
-    try {
-        const recommendations = JSON.parse(cleaned);
-        // Validate: each item must have name, reason, and type
-        if (Array.isArray(recommendations) && recommendations.every(r => r.name && r.reason && r.type)) {
-            return { recommendations };
-        }
-        // If type is missing, fill in a default
-        if (Array.isArray(recommendations) && recommendations.every(r => r.name && r.reason)) {
-            const fixed = recommendations.map(r => ({ type: '游戏', ...r }));
-            return { recommendations: fixed };
-        }
-        throw new Error('Invalid structure');
-    } catch (e) {
-        console.error('Failed to parse AI response as JSON:', text, e);
-        return { error: 'AI返回的格式不正确，无法解析推荐内容。' };
-    }
 };
 
 /**

@@ -32,21 +32,34 @@ export const closeModal = (modal) => {
     }
 };
 
+// z-index of a modal, defaulting to 0 when unset.
+const zIndexOf = (el) => {
+    const z = Number.parseInt(getComputedStyle(el).zIndex, 10);
+    return Number.isFinite(z) ? z : 0;
+};
+
+// Topmost open modal. Picks the highest z-index rather than the last element in
+// DOM order — those disagree (confirm-modal sits earlier but stacks above
+// play-next-modal), which made Esc close the wrong dialog.
+// `>=` keeps DOM order as the tie-break so equal-stacked modals behave as before.
+const getTopModal = () => {
+    const openModals = Array.from(document.querySelectorAll('[aria-modal="true"]:not(.hidden)'));
+    if (openModals.length === 0) return null;
+    return openModals.reduce((top, el) => (zIndexOf(el) >= zIndexOf(top) ? el : top));
+};
+
 // Global Escape key handler — closes the topmost open modal
 document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    const openModals = Array.from(document.querySelectorAll('[aria-modal="true"]:not(.hidden)'));
-    if (openModals.length === 0) return;
-    const topModal = openModals[openModals.length - 1];
-    closeModal(topModal);
+    const topModal = getTopModal();
+    if (topModal) closeModal(topModal);
 });
 
 // Focus trap: keep Tab/Shift+Tab within the topmost open modal
 document.addEventListener('keydown', (e) => {
     if (e.key !== 'Tab') return;
-    const openModals = Array.from(document.querySelectorAll('[aria-modal="true"]:not(.hidden)'));
-    if (openModals.length === 0) return;
-    const modal = openModals[openModals.length - 1];
+    const modal = getTopModal();
+    if (!modal) return;
     const focusable = Array.from(modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'));
     if (focusable.length === 0) return;
     const first = focusable[0];
@@ -111,7 +124,7 @@ export const showAlert = (message) => {
  * If asHtml is true, the message is rendered via innerHTML with escapeHTML
  * (safe) and newlines replaced with <br>.
  */
- export const showConfirmation = (message, asHtml = false) => {
+export const showConfirmation = (message, asHtml = false) => {
     return new Promise((resolve) => {
         const modal = document.getElementById('confirm-modal');
         const messageEl = document.getElementById('confirm-modal-message');

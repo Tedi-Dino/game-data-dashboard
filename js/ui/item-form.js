@@ -126,6 +126,12 @@ const readFormData = () => {
         const appIdVal = parseFloatOrNull(document.getElementById('steam-app-id').value);
         data.steam_app_id = appIdVal != null ? Math.round(appIdVal) : null;
         data.steam_override = document.getElementById('steam-override').checked;
+    } else {
+        // saveItem uses {merge: true}, so simply omitting these would LEAVE the old
+        // binding behind after a platform change. Write null explicitly so the daily
+        // Steam sync stops overwriting this item's manually entered playTime.
+        data.steam_app_id = null;
+        data.steam_override = null;
     }
 
     // Achievement completion (all game platforms)

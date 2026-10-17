@@ -1,11 +1,15 @@
-const MINUTES_PER_HOUR = 60;
-
 const toNonNegativeMinutes = (value) => {
   const minutes = Number(value);
   return Number.isFinite(minutes) && minutes >= 0 ? Math.floor(minutes) : 0;
 };
 
 const shouldUseSteamPlaytime = (item) => Boolean(item && item.steam_app_id != null && item.steam_override !== false && item.type !== "drama" && item.type !== "hardware");
+
+// Items eligible to be LINKED to a Steam app — used before an app id is known,
+// e.g. when filtering the candidate set fed into fuzzy matching.
+// Deliberately does NOT require steam_app_id: unbound items are exactly what
+// matching is looking for, so shouldUseSteamPlaytime would filter everything out.
+const canLinkSteamItem = (item) => Boolean(item && item.steam_override !== false && item.type !== "drama" && item.type !== "hardware");
 
 const getMonthKey = (date) => {
   const observed = date instanceof Date ? date : new Date(date);
@@ -99,9 +103,9 @@ const buildSnapshotChanges = ({games, states, trackingInitialized, observedAt}) 
 };
 
 module.exports = {
-  MINUTES_PER_HOUR,
   toNonNegativeMinutes,
   shouldUseSteamPlaytime,
+  canLinkSteamItem,
   getMonthKey,
   computeDelta,
   buildSnapshotChanges,

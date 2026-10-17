@@ -6,8 +6,9 @@
  * then PATCHes each matched item in Firestore to add steam_app_id.
  *
  * Usage:
- *   node tools/bind_steam_ids/bind_steam_ids.js            # live run
- *   node tools/bind_steam_ids/bind_steam_ids.js --dry-run  # preview only, no writes
+ *   node tools/bind_steam_ids/bind_steam_ids.js                  # dry run (default), no writes
+ *   node tools/bind_steam_ids/bind_steam_ids.js --dry-run        # dry run (explicit)
+ *   node tools/bind_steam_ids/bind_steam_ids.js --apply          # LIVE run, writes to Firestore
  */
 
 const fs = require('fs');
@@ -19,7 +20,10 @@ const https = require('https');
 const PROJECT_ID = 'game-data-dashboard';
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
-const DRY_RUN = process.argv.includes('--dry-run');
+// Opt-in to writes. Running with no arguments is a preview — this matches
+// tools/update_unsold_physical_estimates/, which also requires --apply.
+// (It used to be `--dry-run` to opt OUT, so a bare invocation wrote to prod.)
+const DRY_RUN = !process.argv.includes('--apply');
 
 // ── Token ───────────────────────────────────────────────────────────────────
 

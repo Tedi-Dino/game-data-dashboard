@@ -1,7 +1,14 @@
-import { charts, setChart, removeChart, getChart } from '../core/state.js';
+import { setChart, getChart } from '../core/state.js';
+
+// The Chart.js bundle is served from a CDN (see index.html). Every render entry
+// point must check this before dereferencing the `Chart` global, otherwise a CDN
+// failure throws and takes Firestore listeners / KPI rendering down with it.
+export const isChartAvailable = () => typeof Chart !== 'undefined';
 
 // Initialize Chart.js defaults
 export const setupChartDefaults = () => {
+    if (!isChartAvailable()) return;
+
     Chart.defaults.color = '#2d2927';
     Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.08)';
     Chart.defaults.plugins.legend.position = 'bottom';
@@ -105,20 +112,92 @@ export const createExternalTooltip = (formatter) => {
     };
 };
 
+/**
+ * Render a chart, reusing the existing Chart.js instance when possible.
+ *
+ * Every render used to tear the chart down and build a new one, which throws
+ * away animation state and rebuilds the canvas even when only a few data points
+ * changed. This pushes the new data into the live instance instead. A fresh
+ * instance is still created when there is nothing to reuse, when the canvas
+ * element changed, or when the chart type changed — the type selects the
+ * controller at construction time and cannot be swapped in place.
+ *
+ * @param {string} key - Key under which the chart is stored in state.
+ * @param {HTMLCanvasElement} el - Canvas to draw into.
+ * @param {object} config - Chart.js config ({ type, data, options }).
+ * @param {*} view - Per-render data the tooltip formatter needs. Tooltip
+ *   callbacks are built once when the chart is created, so anything they close
+ *   over would go stale on a later update. Stashing it on the instance and
+ *   refreshing it on every render keeps tooltips correct; formatters read it
+ *   back via `tooltip.chart.$view`.
+ * @returns {*} The live Chart instance.
+ */
+export const renderOrUpdateChart = (key, el, config, view = undefined) => {
+    const existing = getChart(key);
+    if (existing && existing.canvas === el && existing.config.type === config.type) {
+        existing.data.labels = config.data.labels;
+        syncDatasets(existing.data, config.data.datasets || []);
+        // Options are refreshed too: some are derived from UI controls rather
+        // than item data (e.g. the y-axis title follows the physical-cost mode),
+        // so leaving them at their construction-time values would be wrong.
+        if (config.options) mergeInto(existing.options, config.options);
+        existing.$view = view;
+        existing.update();
+        return existing;
+    }
+
+    if (existing) destroyChartWithTooltip(existing);
+    const chart = new Chart(el, config);
+    chart.$view = view;
+    setChart(key, chart);
+    return chart;
+};
+
+/**
+ * Merge `next` datasets into `target.datasets` in place.
+ *
+ * Mutating instead of replacing matters: Chart.js caches parsed/element state
+ * per dataset, and swapping the objects wholesale would discard it (and break
+ * the hover animation mid-flight). Extra datasets from a previous render are
+ * truncated, new ones appended.
+ */
+const syncDatasets = (target, next) => {
+    for (let i = 0; i < next.length; i++) {
+        const incoming = next[i];
+        if (target.datasets[i]) {
+            Object.assign(target.datasets[i], incoming);
+        } else {
+            target.datasets.push(incoming);
+        }
+    }
+    if (target.datasets.length > next.length) {
+        target.datasets.length = next.length;
+    }
+};
+
+/**
+ * Deep-assign plain-object values from `source` into `target`.
+ *
+ * Only descends into plain objects; arrays and callbacks (e.g. `ticks.callback`)
+ * are replaced wholesale, which is what we want for scriptable Chart.js options.
+ */
+const mergeInto = (target, source) => {
+    if (!target || typeof target !== 'object') return source;
+    for (const key of Object.keys(source)) {
+        const value = source[key];
+        const current = target[key];
+        const canDescend =
+            value && typeof value === 'object' && !Array.isArray(value) && typeof value !== 'function' &&
+            current && typeof current === 'object' && !Array.isArray(current) && typeof current !== 'function';
+        target[key] = canDescend ? mergeInto(current, value) : value;
+    }
+    return target;
+};
+
 // Destroy a single chart and remove its tooltip element from document.body
 export const destroyChartWithTooltip = (chart) => {
     if (!chart) return;
     const tipEl = document.getElementById(`chartjs-tooltip-${chart.id}`);
     if (tipEl) tipEl.remove();
     chart.destroy();
-};
-
-// Destroy all charts and reset the chart store
-export const destroyAllCharts = () => {
-    Object.values(charts).forEach(chart => {
-        destroyChartWithTooltip(chart);
-    });
-    for (const key of Object.keys(charts)) {
-        removeChart(key);
-    }
 };

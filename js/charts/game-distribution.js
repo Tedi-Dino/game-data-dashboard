@@ -1,25 +1,16 @@
-import { items, setChart, getChart } from '../core/state.js';
-import { PLATFORM_META, PLATFORM_COLORS } from '../config/constants.js';
+import { items } from '../core/state.js';
+import { PLATFORM_META, PLATFORM_COLORS, TIME_LABEL_BY_TYPE } from '../config/constants.js';
 import { escapeHTML, formatCurrency, netCost, renderStars, effectiveRemarks, isUnsoldPhysical, UNSOLD_PHYSICAL_ESTIMATE_REMARK } from '../core/utils.js';
-import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
+import { createExternalTooltip, renderOrUpdateChart } from './setup.js';
 
-// Platform grouping: item.type → display label + color key
-const PLATFORM_MAP = {
-    physical:  { label: 'Switch',       colorKey: 'switch_physical' },
-    digital:   { label: 'Switch',       colorKey: 'switch_digital' },
-    steam:     { label: 'Steam',        colorKey: 'steam' },
-    epic:      { label: 'Epic',         colorKey: 'epic' },
-    ubi:       { label: 'Uplay',        colorKey: 'ubi' },
-    gog:       { label: 'GOG',          colorKey: 'gog' },
-    ps:        { label: 'PlayStation',  colorKey: 'ps' },
-    xbox:      { label: 'Xbox/MS',      colorKey: 'xbox' },
-    ms:        { label: 'Xbox/MS',      colorKey: 'xbox' },
-    appstore:  { label: 'App Store',    colorKey: 'appstore' },
-    googleplay:{ label: 'Google Play',  colorKey: 'googleplay' },
-    emulator:  { label: '模拟器',       colorKey: 'emulator' },
-    other:     { label: 'Other',        colorKey: 'other' },
-    drama:     { label: '剧集',         colorKey: 'drama' },
-};
+// Platform grouping: item.type -> display label + color key.
+// Derived from PLATFORM_META instead of a local copy — the local copy had already
+// drifted (drama was '剧集' here vs '剧' everywhere else).
+const PLATFORM_MAP = Object.fromEntries(
+    PLATFORM_META
+        .filter(p => p.timeLabel)
+        .map(p => [p.type, { label: p.timeLabel, colorKey: p.colorKey }])
+);
 
 // Rating → point radius (unrated=2, rated 1→2.2, 5→3, 10→4)
 const ratingToRadius = (rating) => {
@@ -116,9 +107,9 @@ export const renderGameDistributionChart = () => {
 
     const el = document.getElementById('game-distribution-chart');
     if (!el) return;
-    if (getChart('gameDistribution')) destroyChartWithTooltip(getChart('gameDistribution'));
-
-    setChart('gameDistribution', new Chart(el, {
+    // No `view` argument needed: the tooltip formatter reads everything off the
+    // raw data point (`pt`) and the live `items` import.
+    renderOrUpdateChart('gameDistribution', el, {
         type: 'scatter',
         data: { datasets: allDatasets },
         options: {
@@ -167,5 +158,5 @@ export const renderGameDistributionChart = () => {
                 },
             },
         },
-    }));
+    });
 };

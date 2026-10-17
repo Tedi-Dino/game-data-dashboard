@@ -13,22 +13,25 @@ export const ADMIN_UIDS = ['ZPyHfPGUI4elNvRN2Q30ZqfzT6X2'];
 //   timeTypes:  item.type(s) included in this time group
 //   colorKey:   key into PLATFORM_COLORS
 //   isHardware: true if hardware category
+// NOTE: previously some labels here were written as \uXXXX escapes on the very
+// same lines that used literal UTF-8 — a tool artifact that made the "single
+// source of truth" the least readable file in the repo. All literals now.
 export const PLATFORM_META = [
-    { type: 'hardware', label: '硬件', costLabel: '\u786c\u4ef6\u8bbe\u5907', costTypes: ['hardware'], timeLabel: null, timeTypes: [], colorKey: 'hardware', isHardware: true },
-    { type: 'physical', label: 'Switch\u5b9e\u4f53', costLabel: 'Switch \u5b9e\u4f53', costTypes: ['physical'], timeLabel: 'Switch', timeTypes: ['physical', 'digital'], colorKey: 'switch_physical' },
-    { type: 'digital', label: 'Switch\u6570\u5b57', costLabel: 'Switch \u6570\u5b57', costTypes: ['digital'], timeLabel: 'Switch', timeTypes: ['physical', 'digital'], colorKey: 'switch_digital' },
-    { type: 'steam', label: 'Steam', costLabel: 'Steam \u6e38\u620f', costTypes: ['steam'], timeLabel: 'Steam', timeTypes: ['steam'], colorKey: 'steam' },
-    { type: 'epic', label: 'Epic', costLabel: 'Epic \u6e38\u620f', costTypes: ['epic'], timeLabel: 'Epic', timeTypes: ['epic'], colorKey: 'epic' },
-    { type: 'ubi', label: 'Uplay', costLabel: 'Uplay \u6e38\u620f', costTypes: ['ubi'], timeLabel: 'Uplay', timeTypes: ['ubi'], colorKey: 'ubi' },
-    { type: 'gog', label: 'GOG', costLabel: 'GOG \u6e38\u620f', costTypes: ['gog'], timeLabel: 'GOG', timeTypes: ['gog'], colorKey: 'gog' },
-    { type: 'ps', label: 'PlayStation', costLabel: 'PlayStation \u6e38\u620f', costTypes: ['ps'], timeLabel: 'PlayStation', timeTypes: ['ps'], colorKey: 'ps' },
-    { type: 'xbox', label: 'Xbox/MS Store', costLabel: 'Xbox/MS \u6e38\u620f', costTypes: ['xbox', 'ms'], timeLabel: 'Xbox/MS', timeTypes: ['xbox', 'ms'], colorKey: 'xbox' },
-    { type: 'ms', label: 'Xbox/MS Store', costLabel: 'Xbox/MS \u6e38\u620f', costTypes: ['xbox', 'ms'], timeLabel: 'Xbox/MS', timeTypes: ['xbox', 'ms'], colorKey: 'ms' },
-    { type: 'appstore', label: 'App Store', costLabel: 'App Store \u6e38\u620f', costTypes: ['appstore'], timeLabel: 'App Store', timeTypes: ['appstore'], colorKey: 'appstore' },
-    { type: 'googleplay', label: 'Google Play', costLabel: 'Google Play \u6e38\u620f', costTypes: ['googleplay'], timeLabel: 'Google Play', timeTypes: ['googleplay'], colorKey: 'googleplay' },
-    { type: 'emulator', label: '\u6a21\u62df\u5668', costLabel: '\u6a21\u62df\u5668\u6e38\u620f', costTypes: ['emulator'], timeLabel: '\u6a21\u62df\u5668', timeTypes: ['emulator'], colorKey: 'emulator' },
-    { type: 'other', label: 'Other', costLabel: 'Other \u6e38\u620f', costTypes: ['other'], timeLabel: 'Other', timeTypes: ['other'], colorKey: 'other' },
-    { type: 'drama', label: '\u5267', costLabel: '\u5267', costTypes: ['drama'], timeLabel: '\u5267', timeTypes: ['drama'], colorKey: 'drama' },
+    { type: 'hardware', label: '硬件', costLabel: '硬件设备', costTypes: ['hardware'], timeLabel: null, timeTypes: [], trendKey: 'hardware', trendLabel: '硬件', colorKey: 'hardware', isHardware: true },
+    { type: 'physical', label: 'Switch 实体', costLabel: 'Switch 实体', costTypes: ['physical'], timeLabel: 'Switch', timeTypes: ['physical', 'digital'], trendKey: 'switch_physical', trendLabel: 'Switch 实体', colorKey: 'switch_physical' },
+    { type: 'digital', label: 'Switch 数字', costLabel: 'Switch 数字', costTypes: ['digital'], timeLabel: 'Switch', timeTypes: ['physical', 'digital'], trendKey: 'switch_digital', trendLabel: 'Switch 数字', colorKey: 'switch_digital' },
+    { type: 'steam', label: 'Steam', costLabel: 'Steam 游戏', costTypes: ['steam'], timeLabel: 'Steam', timeTypes: ['steam'], trendKey: 'steam', trendLabel: 'Steam', colorKey: 'steam' },
+    { type: 'epic', label: 'Epic', costLabel: 'Epic 游戏', costTypes: ['epic'], timeLabel: 'Epic', timeTypes: ['epic'], trendKey: 'epic', trendLabel: 'Epic', colorKey: 'epic' },
+    { type: 'ubi', label: 'Uplay', costLabel: 'Uplay 游戏', costTypes: ['ubi'], timeLabel: 'Uplay', timeTypes: ['ubi'], trendKey: 'ubi', trendLabel: 'Uplay', colorKey: 'ubi' },
+    { type: 'gog', label: 'GOG', costLabel: 'GOG 游戏', costTypes: ['gog'], timeLabel: 'GOG', timeTypes: ['gog'], trendKey: 'gog', trendLabel: 'GOG', colorKey: 'gog' },
+    { type: 'ps', label: 'PlayStation', costLabel: 'PlayStation 游戏', costTypes: ['ps'], timeLabel: 'PlayStation', timeTypes: ['ps'], trendKey: 'ps', trendLabel: 'PlayStation', colorKey: 'ps' },
+    { type: 'xbox', label: 'Xbox/MS Store', costLabel: 'Xbox/MS 游戏', costTypes: ['xbox', 'ms'], timeLabel: 'Xbox/MS', timeTypes: ['xbox', 'ms'], trendKey: 'xbox', trendLabel: 'Xbox/MS', colorKey: 'xbox' },
+    { type: 'ms', label: 'Xbox/MS Store', costLabel: 'Xbox/MS 游戏', costTypes: ['xbox', 'ms'], timeLabel: 'Xbox/MS', timeTypes: ['xbox', 'ms'], trendKey: 'xbox', trendLabel: 'Xbox/MS', colorKey: 'ms' },
+    { type: 'appstore', label: 'App Store', costLabel: 'App Store 游戏', costTypes: ['appstore'], timeLabel: 'App Store', timeTypes: ['appstore'], trendKey: 'appstore', trendLabel: 'App Store', colorKey: 'appstore' },
+    { type: 'googleplay', label: 'Google Play', costLabel: 'Google Play 游戏', costTypes: ['googleplay'], timeLabel: 'Google Play', timeTypes: ['googleplay'], trendKey: 'googleplay', trendLabel: 'Google Play', colorKey: 'googleplay' },
+    { type: 'emulator', label: '模拟器', costLabel: '模拟器游戏', costTypes: ['emulator'], timeLabel: '模拟器', timeTypes: ['emulator'], trendKey: 'emulator', trendLabel: '模拟器', colorKey: 'emulator' },
+    { type: 'other', label: 'Other', costLabel: 'Other 游戏', costTypes: ['other'], timeLabel: 'Other', timeTypes: ['other'], trendKey: 'other', trendLabel: 'Other', colorKey: 'other' },
+    { type: 'drama', label: '剧', costLabel: '剧', costTypes: ['drama'], timeLabel: '剧', timeTypes: ['drama'], trendKey: 'drama', trendLabel: '剧', colorKey: 'drama' },
 ];
 
 // Thin helper: get all unique entries for a given field (for derived maps)
@@ -69,15 +72,16 @@ export const TIME_COLOR_MAP = Object.fromEntries(
         .map(p => [p.timeLabel, p.colorKey])
 );
 
-// FROM_MAP (unchanged)
+
+// FROM_MAP (values unchanged — previously written as \uXXXX escapes)
 export const FROM_MAP = {
-    purchase: '\u8d2d\u4e70', free: '\u514d\u8d39', friend: '\u8d60\u9001', subscription: '\u8ba2\u9605'
+    purchase: '购买', free: '免费', friend: '赠送', subscription: '订阅'
 };
 
-// STATUS_MAP (unchanged)
+// STATUS_MAP (values unchanged — previously written as \uXXXX escapes)
 export const STATUS_MAP = {
-    playing: '\u8fdb\u884c\u4e2d', backlog: '\u5f85\u73a9', passed: '\u5df2\u5b8c\u6210',
-    abandoned: '\u5df2\u653e\u5f03', empty: '\u7a7a'
+    playing: '进行中', backlog: '待玩', passed: '已完成',
+    abandoned: '已放弃', empty: '空'
 };
 
 // PLATFORM_COLORS (unchanged)
@@ -98,3 +102,31 @@ export const PLATFORM_COLORS = {
     other: '#c0b8b0',
     drama: '#d8a8b8'
 };
+
+// --- Per-type lookups -------------------------------------------------------
+// These replace the label maps that used to be duplicated inside each chart
+// module (COST_LABELS / TIME_LABELS / PLATFORM_MAP / typeToKey). Charts import
+// them, so adding a platform now only requires editing PLATFORM_META above.
+// Declared after PLATFORM_COLORS because TREND_PLATFORM_KEYS dereferences it.
+export const COST_LABEL_BY_TYPE = Object.fromEntries(
+    PLATFORM_META.filter(p => p.costLabel).map(p => [p.type, p.costLabel])
+);
+
+export const TIME_LABEL_BY_TYPE = Object.fromEntries(
+    PLATFORM_META.filter(p => p.timeLabel).map(p => [p.type, p.timeLabel])
+);
+
+// Monthly trend buckets are finer-grained than the cost/time charts (Switch
+// physical and digital are separate series), hence their own key per type.
+export const TREND_KEY_BY_TYPE = Object.fromEntries(
+    PLATFORM_META.filter(p => p.trendKey).map(p => [p.type, p.trendKey])
+);
+
+// [{ label, key, color }] for the stacked platform bars, derived once.
+export const TREND_PLATFORM_KEYS = uniqueBy(PLATFORM_META.filter(p => p.trendKey), 'trendKey')
+    .map(p => ({ label: p.trendLabel, key: p.trendKey, color: PLATFORM_COLORS[p.colorKey] }));
+
+// Zero-filled template for one month of trend data (plus the playtime series).
+export const DEFAULT_TREND = Object.fromEntries(
+    TREND_PLATFORM_KEYS.map(({ key }) => [key, 0]).concat([['playtime', 0], ['dramaPlaytime', 0]])
+);

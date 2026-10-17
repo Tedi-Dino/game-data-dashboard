@@ -5,19 +5,21 @@ import { formatCurrency, formatNumber, escapeHTML, netCost } from '../core/utils
 // --- KPI Calculations ---
 const calcKPIs = () => {
     const games = items.filter(i => i.type !== 'hardware' && i.type !== 'drama');
-    // Exclude items where user disabled Steam override (steam_override === false)
-    const gamesForPlaytime = items.filter(i => i.type !== 'hardware' && i.type !== 'drama' && i.steam_override !== false);
+    // `steam_override === false` means "trust the locally entered playTime, do not
+    // let Steam overwrite it" — it does NOT mean "exclude from statistics".
+    // Per docs/steam-monthly-playtime-upgrade.md:51 those items must keep flowing
+    // through the original local amortization path, so they stay counted here.
     const hardware = items.filter(i => i.type === 'hardware');
     const dramas = items.filter(i => i.type === 'drama');
-    const gamesForCostCalc = gamesForPlaytime.filter(g => g.from !== 'free');
+    const gamesForCostCalc = games.filter(g => g.from !== 'free');
 
     const totalActual = items.reduce((s, i) => s + netCost(i), 0);
     const gameActual = games.reduce((s, i) => s + netCost(i), 0);
     const hardwareActual = hardware.reduce((s, i) => s + netCost(i), 0);
     const unfinishedCost = games.filter(g => g.status !== 'passed').reduce((s, i) => s + netCost(i), 0);
-    const totalPlaytime = gamesForPlaytime.reduce((s, i) => s + (i.playTime ?? 0), 0);
+    const totalPlaytime = games.reduce((s, i) => s + (i.playTime ?? 0), 0);
     const gameCount = games.length;
-    const avgPlaytime = gamesForPlaytime.length > 0 ? totalPlaytime / gamesForPlaytime.length : 0;
+    const avgPlaytime = games.length > 0 ? totalPlaytime / games.length : 0;
     const gameActualForCost = gamesForCostCalc.reduce((s, i) => s + netCost(i), 0);
     const totalPlaytimeForCost = gamesForCostCalc.reduce((s, i) => s + (i.playTime ?? 0), 0);
     const costPerHour = totalPlaytimeForCost > 0 ? gameActualForCost / totalPlaytimeForCost : null;
@@ -103,7 +105,8 @@ export const updateKpiTooltips = () => {
     // Unfinished games value
     const unfinishedGames = games.filter(g => g.status !== 'passed');
     const unfinishedPhysical = unfinishedGames.filter(g => g.type === 'physical').reduce((s, i) => s + netCost(i), 0);
-    const unfinishedDigital = unfinishedGames.filter(g => !['physical', 'hardware'].includes(g.type)).reduce((s, i) => s + netCost(i), 0);
+    // `games` already excludes hardware, so only 'physical' needs excluding here.
+    const unfinishedDigital = unfinishedGames.filter(g => g.type !== 'physical').reduce((s, i) => s + netCost(i), 0);
     const topUnfinished = [...unfinishedGames].sort((a, b) => netCost(b) - netCost(a)).slice(0, 5);
     const unfinishedTooltip = document.getElementById('unfinished-cost-tooltip');
     if (unfinishedTooltip) {

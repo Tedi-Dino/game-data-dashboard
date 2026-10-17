@@ -2,7 +2,7 @@ import { collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, query, writeBa
 import { db } from '../config/firebase.js';
 import { setItems } from '../core/state.js';
 import { formatDateTime } from '../core/utils.js';
-import { getCachedItems, setCachedItems } from '../core/cache.js';
+import { getCachedItems, setCachedItems, getCachedAt } from '../core/cache.js';
 
 let itemsCollectionRef = null;
 let unsubscribe = null;
@@ -12,6 +12,26 @@ let metadataUnsubscribe = null;
 let onDataChange = null;
 
 export const setOnDataChange = (fn) => { onDataChange = fn; };
+
+// --- Load-status banner (B16) ---
+// The metadata listener and the items listener both used to write #last-updated,
+// so a failed items read could end up labelled as a fresh successful update.
+// Errors now go to their own element and latch a flag metadata must respect.
+const setBanner = (message, tone) => {
+    const banner = document.getElementById('data-load-error');
+    if (!banner) return;
+    banner.textContent = message;
+    banner.className = tone === 'warn' ? 'text-amber-600 font-medium' : 'text-red-600 font-medium';
+    banner.classList.remove('hidden');
+};
+
+const clearBanner = () => {
+    delete document.body.dataset.itemsLoadError;
+    const banner = document.getElementById('data-load-error');
+    if (!banner) return;
+    banner.textContent = '';
+    banner.classList.add('hidden');
+};
 
 // --- Firestore Items Listener ---
 export const setupFirestoreListener = async () => {
@@ -26,6 +46,11 @@ export const setupFirestoreListener = async () => {
     const cached = await getCachedItems();
     if (cached && cached.length > 0) {
         setItems(cached);
+        const cachedAt = await getCachedAt();
+        // Say so explicitly: the numbers are a snapshot, not live data.
+        if (cachedAt) {
+            setBanner(`正在显示本地缓存数据（${formatDateTime(cachedAt)}），尚未连接云端`, 'warn');
+        }
         if (onDataChange) { try { onDataChange(); } catch (e) { console.error('onDataChange error (cache):', e); } }
     }
 
@@ -35,12 +60,14 @@ export const setupFirestoreListener = async () => {
         const items = snapshot.docs.map(doc => ({ fb_id: doc.id, ...doc.data() }));
         setItems(items);
         setCachedItems(items); // update cache
+        clearBanner(); // live data arrived — drop any cached/failed banner
         if (onDataChange) { try { onDataChange(); } catch (e) { console.error('onDataChange error:', e); } }
     }, (error) => {
         console.error('Error fetching data from Firestore: ', error);
-        const lastUpdated = document.getElementById('last-updated');
+        // Latch the failure so metadata's success callback cannot overwrite it.
+        document.body.dataset.itemsLoadError = '1';
+        setBanner('数据加载失败，当前显示的可能不是最新数据', 'error');
         const subtitle = document.getElementById('dashboard-subtitle');
-        if (lastUpdated) lastUpdated.textContent = '数据加载失败';
         if (subtitle) {
             subtitle.textContent = '加载数据失败，请检查Firebase安全规则。';
             subtitle.classList.add('text-red-500');
@@ -56,6 +83,9 @@ export const setupMetadataListener = () => {
     metadataUnsubscribe = onSnapshot(metadataRef, (docSnap) => {
         const el = document.getElementById('last-updated');
         if (!el) return;
+        // Never overwrite the failure banner: a successful metadata read alongside
+        // a failed items read used to make stale cached data look freshly synced.
+        if (document.body.dataset.itemsLoadError === '1') return;
         if (docSnap.exists() && docSnap.data().lastManualUpdate) {
             const formatted = formatDateTime(docSnap.data().lastManualUpdate);
             el.textContent = `数据更新于 ${formatted}`;

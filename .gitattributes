@@ -1,0 +1,15 @@
+# Normalize line endings so cross-file consistency checks (e.g. the A3
+# AI-prompt diff, the B10 admin-UID check) are not polluted by EOL noise.
+# Repository text is stored as LF in the index; this makes the working tree
+# LF as well, independent of each contributor's local `core.autocrlf`.
+* text=auto eol=lf
+
+# Binary assets must never be normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.zip binary

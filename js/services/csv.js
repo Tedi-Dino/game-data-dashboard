@@ -1,6 +1,10 @@
 import { items } from '../core/state.js';
 import { parseFloatOrNull, parseDateOrNull } from '../core/utils.js';
 import { bulkReplaceItems, updateLastModifiedTimestamp } from './firestore.js';
+import { todayLocalISODate } from '../core/utils.js';
+// Row/field parsing lives in its own dependency-free module (see csv-parse.js)
+// so the CSV rules can be unit-tested without the Firestore import chain.
+import { parseCSVLine, splitCSVRows } from './csv-parse.js';
 
 // CSV header columns
 const HEADERS = ['id', 'name', 'type', 'sort', 'status', 'purchaseDate', 'startDate', 'purchasePrice',
@@ -44,76 +48,6 @@ const parseCSVRow = (values, headerIndexMap) => {
     return (!item.id || !item.name || !item.type) ? null : item;
 };
 
-// Parse a single CSV line handling quoted fields with commas
-const parseCSVLine = (line) => {
-    const values = [];
-    let current = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (inQuotes) {
-            if (ch === '"') {
-                if (line[i + 1] === '"') {
-                    current += '"';
-                    i++;
-                } else {
-                    inQuotes = false;
-                }
-            } else {
-                current += ch;
-            }
-        } else {
-            if (ch === '"') {
-                inQuotes = true;
-            } else if (ch === ',') {
-                values.push(current.trim());
-                current = '';
-            } else {
-                current += ch;
-            }
-        }
-    }
-    values.push(current.trim());
-    return values;
-};
-
-// Split CSV text into rows respecting quoted-field newlines (RFC 4180).
-const splitCSVRows = (text) => {
-    const rows = [];
-    let current = '';
-    let inQuotes = false;
-    for (let i = 0; i < text.length; i++) {
-        const ch = text[i];
-        if (inQuotes) {
-            current += ch;
-            if (ch === '"') {
-                if (text[i + 1] === '"') {
-                    current += '"';
-                    i++;
-                } else {
-                    inQuotes = false;
-                }
-            }
-        } else {
-            if (ch === '"') {
-                current += ch;
-                inQuotes = true;
-            } else if (ch === '\r' && text[i + 1] === '\n') {
-                rows.push(current);
-                current = '';
-                i++;
-            } else if (ch === '\n') {
-                rows.push(current);
-                current = '';
-            } else {
-                current += ch;
-            }
-        }
-    }
-    if (current.length > 0 || rows.length > 0) rows.push(current);
-    return rows;
-};
-
 // Parse CSV text into items array
 export const parseCSVText = (text) => {
     if (text.length > 5 * 1024 * 1024) {
@@ -135,12 +69,19 @@ export const parseCSVText = (text) => {
     }
 
     const rawRows = rows.slice(1).filter(r => r.trim());
-    let skippedCount = 0;
+    const skippedDetails = [];
     const newItems = rawRows
-        .map(r => {
+        .map((r, idx) => {
             const values = parseCSVLine(r);
             const item = parseCSVRow(values, headerIndexMap);
-            if (!item) skippedCount++;
+            if (!item) {
+                const missing = ['id', 'name', 'type'].filter(f => !values[headerIndexMap[f]]);
+                skippedDetails.push({
+                    row: idx + 2, // +2: header row plus 1-based numbering
+                    preview: String(values[headerIndexMap['name']] || values.join(',')).slice(0, 30),
+                    missing
+                });
+            }
             return item;
         })
         .filter(Boolean);
@@ -154,19 +95,21 @@ export const parseCSVText = (text) => {
         seenIds.add(item.id);
     }
 
-    if (skippedCount > 0) {
-        console.warn(`CSV import: ${skippedCount} row(s) skipped due to missing id/name/type.`);
+    if (skippedDetails.length > 0) {
+        console.warn(`CSV import: ${skippedDetails.length} row(s) skipped due to missing id/name/type.`);
     }
-    return { items: newItems, skipped: skippedCount };
+    return { items: newItems, skipped: skippedDetails.length, skippedDetails };
 };
 
 // Full import: parse CSV text, then bulk-replace all items in Firestore.
+// Returns a receipt so the caller can report exactly what happened — importing
+// silently drops rows, so the UI must surface the skipped count, not swallow it.
 export const importCSV = async (text) => {
-    const { items: newItems } = parseCSVText(text);
+    const { items: newItems, skippedDetails } = parseCSVText(text);
     await bulkReplaceItems(newItems);
     await updateLastModifiedTimestamp();
+    return { imported: newItems.length, skipped: skippedDetails.length, skippedDetails };
 };
-;
 
 // Convert a value for CSV export — handles Firestore Timestamps, Dates, booleans
 const toCSVValue = (val) => {
@@ -191,7 +134,7 @@ export const exportCSV = () => {
     const url = URL.createObjectURL(blob);
     const link = Object.assign(document.createElement('a'), {
         href: url,
-        download: `game_cost_export_${new Date().toISOString().split('T')[0]}.csv`
+        download: `game_cost_export_${todayLocalISODate()}.csv`
     });
     document.body.appendChild(link);
     link.click();

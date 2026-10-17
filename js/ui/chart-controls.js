@@ -1,5 +1,5 @@
 import { getChart, removeChart } from '../core/state.js';
-import { destroyChartWithTooltip } from '../charts/setup.js';
+import { destroyChartWithTooltip, isChartAvailable } from '../charts/setup.js';
 import { renderGameDistributionChart } from '../charts/game-distribution.js';
 import { renderMonthlyTrendsChart } from '../charts/monthly-trends.js';
 import { openModal, closeModal } from './modals.js';
@@ -17,12 +17,16 @@ export const setupChartControls = () => {
 
     // Exclude hardware checkbox
     if (excludeHardwareCheckbox) {
-        excludeHardwareCheckbox.addEventListener('change', () => renderMonthlyTrendsChart());
+        excludeHardwareCheckbox.addEventListener('change', () => {
+            if (isChartAvailable()) renderMonthlyTrendsChart();
+        });
     }
 
     // Physical cartridge cost mode for the price-time scatter chart
     if (physicalCostModeSelect) {
-        physicalCostModeSelect.addEventListener('change', () => renderGameDistributionChart());
+        physicalCostModeSelect.addEventListener('change', () => {
+            if (isChartAvailable()) renderGameDistributionChart();
+        });
     }
 
     // Monthly chart fullscreen
@@ -51,7 +55,9 @@ export const setupChartControls = () => {
                 }
             }
 
-            requestAnimationFrame(() => renderMonthlyTrendsChart(true));
+            requestAnimationFrame(() => {
+                if (isChartAvailable()) renderMonthlyTrendsChart(true);
+            });
         });
     }
 

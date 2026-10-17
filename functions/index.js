@@ -10,7 +10,16 @@ const admin = require("firebase-admin");
 const {
   getMonthKey,
   buildSnapshotChanges,
+  // Existed and unit-tested but was never wired up, leaving the sync to use a
+  // weaker inline check that skipped the `type` guard.
+  shouldUseSteamPlaytime,
+  canLinkSteamItem,
 } = require("./steam-playtime.js");
+
+// Items whose playTime may be overwritten by Steam. Requires an actual Steam
+// platform item: a stale steam_app_id surviving a platform change (saveItem uses
+// merge:true) must not keep pulling Steam minutes into a manually entered value.
+const canReceiveSteamPlaytime = (item) => canLinkSteamItem(item) && item.type === "steam";
 
 admin.initializeApp();
 
@@ -28,10 +37,31 @@ const FUNCTION_LIMITS = {
   steamSync: {cooldownMs: 10 * 60 * 1000, maxPerDay: 12},
 };
 
+// `expiresAt` alone changes nothing: Firestore TTL policies are configured in the
+// console, not in this repo. Delete expired quota counters here so they do not
+// accumulate forever (one document per function per admin per day).
+async function purgeExpiredRateLimits(db, olderThanMs = 3 * 24 * 60 * 60 * 1000) {
+  const cutoff = admin.firestore.Timestamp.fromMillis(Date.now() - olderThanMs);
+  const expired = await db.collection("functionRateLimits")
+    .where("expiresAt", "<", cutoff)
+    .limit(400)
+    .get();
+  if (expired.empty) return 0;
+  const batch = db.batch();
+  expired.docs.forEach((doc) => batch.delete(doc.ref));
+  await batch.commit();
+  return expired.size;
+}
+
 async function claimFunctionQuota(name, uid) {
   const limit = FUNCTION_LIMITS[name];
   const nowMillis = Date.now();
-  const dayKey = new Date(nowMillis).toISOString().slice(0, 10);
+  // Reset the daily quota at Asia/Shanghai midnight, matching the scheduled sync
+  // timezone. toISOString() would make "today" start at 08:00 local time.
+  const dayKey = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date(nowMillis));
   const ref = admin.firestore().doc(`functionRateLimits/${name}_${uid}_${dayKey}`);
 
   const result = await admin.firestore().runTransaction(async (transaction) => {
@@ -237,10 +267,10 @@ function fuzzyMatch(steamGames, existingItems) {
   const usedAppIds = new Set();
   const usedItemIds = new Set();
 
-  // Phase 1: exact steam_app_id binding
   for (const sg of steamGames) {
     for (const item of existingItems) {
-      if (item.steam_app_id === sg.appid && !usedItemIds.has(item.fb_id)) {
+      if (item.steam_app_id === sg.appid && shouldUseSteamPlaytime(item) &&
+          canReceiveSteamPlaytime(item) && !usedItemIds.has(item.fb_id)) {
         matched.set(item.fb_id, {app_id: sg.appid, playtime_minutes: sg.playtime_forever});
         usedAppIds.add(sg.appid);
         usedItemIds.add(item.fb_id);
@@ -250,18 +280,21 @@ function fuzzyMatch(steamGames, existingItems) {
   }
 
   // Phase 2-5: fuzzy name matching
+  // Normalize every candidate name once instead of re-normalizing it inside the
+  // O(steamGames x items) loop below.
+  const candidates = existingItems.map((item) => ({item, norm: normalizeName(item.name), lower: item.name.toLowerCase().trim()}));
+
   for (const sg of steamGames) {
     if (usedAppIds.has(sg.appid)) continue;
     const steamNorm = normalizeName(sg.name);
     let bestMatch = null;
     let bestPriority = Infinity;
 
-    for (const item of existingItems) {
+    for (const {item, norm: itemNorm, lower} of candidates) {
       if (usedItemIds.has(item.fb_id)) continue;
-      const itemNorm = normalizeName(item.name);
 
       // Exact name
-      if (sg.name.toLowerCase().trim() === item.name.toLowerCase().trim()) {
+      if (sg.name.toLowerCase().trim() === lower) {
         bestMatch = item; bestPriority = 0; break;
       }
 
@@ -271,6 +304,10 @@ function fuzzyMatch(steamGames, existingItems) {
         continue;
       }
 
+      // Levenshtein is unreachable when the length difference already exceeds the
+      // acceptance threshold below — skip building the DP table entirely.
+      const lenDiff = Math.abs(steamNorm.length - itemNorm.length);
+
       // Substring containment
       if (steamNorm.length >= 4 && itemNorm.length >= 4 &&
           (steamNorm.includes(itemNorm) || itemNorm.includes(steamNorm))) {
@@ -279,10 +316,9 @@ function fuzzyMatch(steamGames, existingItems) {
       }
 
       // Levenshtein
-      if (steamNorm.length >= 4 && itemNorm.length >= 4) {
+      if (steamNorm.length >= 4 && itemNorm.length >= 4 && lenDiff <= 3) {
         const dist = levenshtein(steamNorm, itemNorm);
-        const lenDiff = Math.abs(steamNorm.length - itemNorm.length);
-        if (dist <= 2 && lenDiff <= 3) {
+        if (dist <= 2) {
           if (bestPriority > 3) { bestMatch = item; bestPriority = 3; }
         }
       }
@@ -408,8 +444,10 @@ async function collectSteamPlaytimeSnapshot(apiKey, trigger = "manual", steamGam
     const tracking = trackingSnap.exists ? trackingSnap.data() : {};
     const trackingInitialized = Boolean(tracking.initializedAt);
     const stateRefs = new Map();
-    const stateDocs = await Promise.all(games.map((game) => db.doc(`steamPlaytimeState/${game.appid}`).get()));
-    stateDocs.forEach((snap) => { if (snap.exists) stateRefs.set(snap.id, snap.data()); });
+    // One collection read instead of one document read per game — the Admin SDK
+    // bypasses security rules, so there is no reason to fan out here.
+    const stateSnaps = await db.collection("steamPlaytimeState").get();
+    stateSnaps.forEach((snap) => { if (snap.exists) stateRefs.set(snap.id, snap.data()); });
     const changes = buildSnapshotChanges({games, states: stateRefs, trackingInitialized, observedAt});
     const operations = [];
 
@@ -499,7 +537,12 @@ async function syncSteamItemsAndAchievements(apiKey, steamGames) {
 
   // 2. Read all items from Firestore
   const snapshot = await db.collection("items").get();
-  const existingItems = snapshot.docs.map(doc => ({fb_id: doc.id, ...doc.data()}));
+  const allItems = snapshot.docs.map(doc => ({fb_id: doc.id, ...doc.data()}));
+
+  // Only items that may legitimately carry Steam playtime enter matching. Without
+  // this, dramas/hardware get bound by Levenshtein and have their derived
+  // playTime (episodeCount x episodeDuration) overwritten by Steam minutes.
+  const existingItems = allItems.filter(canLinkSteamItem);
 
   // 3. Fuzzy match
   const {matched, unmatched} = fuzzyMatch(steamGames, existingItems);
@@ -538,15 +581,17 @@ async function syncSteamItemsAndAchievements(apiKey, steamGames) {
     const chunk = entries.slice(i, i + BATCH_LIMIT);
 
     for (const [fbId, info] of chunk) {
-      const item = existingItems.find(it => it.fb_id === fbId);
+      const item = allItems.find(it => it.fb_id === fbId);
       const steamPlaytimeHours = Math.round(info.playtime_minutes / 60 * 100) / 100;
       const updateData = {
         steam_app_id: info.app_id,
         steam_last_sync: admin.firestore.FieldValue.serverTimestamp(),
       };
 
-      // Only update playTime if override is enabled and Steam value is greater
-      if (item.steam_override !== false && steamPlaytimeHours > (item.playTime || 0)) {
+      // Only write playTime for items allowed to receive Steam data. The matched
+      // set is already filtered upstream; this keeps the write itself guarded
+      // even for rows that already carry a stale steam_app_id.
+      if (canReceiveSteamPlaytime(item) && steamPlaytimeHours > (item.playTime || 0)) {
         updateData.playTime = steamPlaytimeHours;
         updated++;
       }
@@ -638,6 +683,14 @@ exports.scheduledSteamSync = onSchedule(
         await performSteamSync(apiKey, "scheduled");
       } catch (error) {
         logger.error("Scheduled Steam sync failed:", error.message);
+      }
+
+      try {
+        const removed = await purgeExpiredRateLimits(admin.firestore());
+        if (removed > 0) logger.info(`Purged ${removed} expired functionRateLimits documents`);
+      } catch (error) {
+        // Never let housekeeping fail the scheduled run
+        logger.warn("functionRateLimits purge failed:", error.message);
       }
     },
 );
