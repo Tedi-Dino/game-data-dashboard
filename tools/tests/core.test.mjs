@@ -10,6 +10,12 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
+// js/core/utils.js has no imports, so it loads directly in Node — the tests below
+// exercise the real production code instead of a copy.
+const utils = await import("file:///" + path.join(repoRoot, "js/core/utils.js").replace(/\\/g, "/"));
+const { parseCSVLine, splitCSVRows } =
+    await import("file:///" + path.join(repoRoot, "js/services/csv-parse.js").replace(/\\/g, "/"));
+
 const collectJsFiles = (entry) => {
   const abs = path.join(repoRoot, entry);
   if (!existsSync(abs)) return [];
@@ -48,16 +54,12 @@ describe("source syntax", () => {
   });
 });
 
-// --- netCost logic (standalone, matching js/core/utils.js) ---
-
-const UNSOLD_PHYSICAL_ESTIMATED_COST = 30;
-
-const isUnsoldPhysical = (item) => item?.type === "physical" && !item.sellDate;
-
-const netCost = (item) => {
-  if (isUnsoldPhysical(item)) return UNSOLD_PHYSICAL_ESTIMATED_COST;
-  return (item?.purchasePrice || 0) - (item?.sellPrice || 0);
-};
+// --- Real implementations imported from js/core/utils.js ---------------------
+// These used to be re-typed copies of the production code, which meant editing
+// netCost (the "unsold physical = 30" rule) would not fail this suite. Now the
+// assertions below run against the actual shipped functions.
+const { netCost, normalizeMonth, parseLocalDateOnly, parseDateOrNull,
+        toLocalISODate, todayLocalISODate, isUnsoldPhysical, escapeHTML } = utils;
 
 describe("netCost", () => {
   it("unsold physical returns 30 estimate", () => {
@@ -90,15 +92,6 @@ describe("netCost", () => {
   });
 });
 
-// --- normalizeMonth (standalone, matching js/core/utils.js) ---
-
-const normalizeMonth = (dateStr) => {
-  if (!dateStr) return null;
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return null;
-  return date.getUTCFullYear() + "-" + String(date.getUTCMonth() + 1).padStart(2, "0");
-};
-
 describe("normalizeMonth", () => {
   it("YYYY-MM-DD to YYYY-MM", () => {
     assert.equal(normalizeMonth("2026-07-01"), "2026-07");
@@ -120,17 +113,6 @@ describe("normalizeMonth", () => {
     assert.equal(normalizeMonth("2026-12-31"), "2026-12");
   });
 });
-
-// --- parseLocalDateOnly (standalone, matching js/core/utils.js) ---
-
-const parseLocalDateOnly = (dateStr) => {
-  if (!dateStr) return null;
-  const parts = String(dateStr).split("-");
-  if (parts.length !== 3) return null;
-  const [y, m, d] = parts.map(Number);
-  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
-  return new Date(y, m - 1, d);
-};
 
 describe("parseLocalDateOnly", () => {
   it("parses YYYY-MM-DD as local date", () => {
@@ -160,39 +142,7 @@ describe("parseLocalDateOnly", () => {
   });
 });
 
-// --- CSV-like parsing: quoted field handling (standalone) ---
-
-const parseCSVLine = (line) => {
-  const values = [];
-  let current = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        current += ch;
-      }
-    } else {
-      if (ch === '"') {
-        inQuotes = true;
-      } else if (ch === ",") {
-        values.push(current.trim());
-        current = "";
-      } else {
-        current += ch;
-      }
-    }
-  }
-  values.push(current.trim());
-  return values;
-};
+// --- CSV parsing: real implementation from js/services/csv-parse.js ---
 
 describe("parseCSVLine", () => {
   it("splits simple comma-separated values", () => {
