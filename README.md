@@ -145,8 +145,18 @@ js/
 
 6. **部署**: 使用 Firebase CLI 部署：
    ```bash
-   firebase deploy
+   firebase deploy                  # 会同时发布 hosting + functions + Firestore 规则
+   firebase deploy --only hosting   # 日常发布建议用这个
+   firebase deploy --only functions
    ```
+
+   > ⚠️ `firebase.json` 把 `firestore.rules` 也纳入了部署，裸跑 `firebase deploy`
+   > 会用仓库里的规则覆盖线上安全规则。改规则时请显式执行
+   > `firebase deploy --only firestore:rules`。
+
+   > ℹ️ 管理员 UID 在三处必须保持一致：`firestore.rules`、
+   > `functions/index.js`、`js/config/constants.js`。
+   > 运行 `node --test tools/tests/*.test.mjs` 可自动校验。
 
 -----
 

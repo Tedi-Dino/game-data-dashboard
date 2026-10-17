@@ -10,7 +10,7 @@ The app uses Firebase for authentication, Firestore for data storage, and Cloud 
 
 - Google Sign-In via Firebase Auth
 - Admin UIDs hardcoded in `js/config/constants.js` (`ADMIN_UIDS`)
-- Non-admin users are restricted client-side: FAB hidden, form actions disabled
+- Non-admin users are restricted client-side: FAB hidden, form actions actually disabled (`btn.disabled = true` + `.readonly-mode-disabled` class, set by `js/ui/auth.js`)
 
 ### 2. Firestore Rules (Server)
 
