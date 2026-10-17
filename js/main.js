@@ -4,13 +4,13 @@ import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from
 
 // Core
 import { items, steamPlaytimeMonths, steamPlaytimeStates, steamPlaytimeTracking, setSortConfig } from './core/state.js';
-import { formatDateTime } from './core/utils.js';
+import { formatDateTime, toLocalISODate } from './core/utils.js';
 
 // Services
 import { setupFirestoreListener, setOnDataChange, setupMetadataListener } from './services/firestore.js';
 
 // Charts
-import { setupChartDefaults } from './charts/setup.js';
+import { setupChartDefaults, isChartAvailable } from './charts/setup.js';
 import { renderCostDistributionChart } from './charts/cost-distribution.js';
 import { renderTimeDistributionChart } from './charts/time-distribution.js';
 import { renderGameSortChart } from './charts/game-sort.js';
@@ -38,21 +38,38 @@ const getSteamPlaytimeHash = () => JSON.stringify({
     states: Array.from(steamPlaytimeStates.entries()).map(([appId, state]) => [appId, state?.lastObservedAt?.seconds || state?.lastObservedAt || null, state?.initialTotalMinutes || 0]),
 });
 
-const renderCharts = () => {
+// Accepts a precomputed Steam hash so updateDashboard only stringifies it once
+// instead of once here plus once per chart.
+const renderCharts = (steamHash) => {
+    // Chart.js is loaded from a CDN. If it failed, skip chart rendering instead of
+    // throwing: KPIs, tables and auth must keep working.
+    if (!isChartAvailable()) return;
+
     // Per-chart data signatures — only rebuild charts whose data changed.
+    // Signature fields must cover EVERY field the chart reads, or main.js skips
+    // the re-render and the chart silently shows stale data.
     const chartConfigs = [
-        { name: 'cost', fn: renderCostDistributionChart, fields: ['purchasePrice','sellPrice','type','sellDate','from','remarks'] },
-        { name: 'time', fn: renderTimeDistributionChart, fields: ['playTime','type','status'] },
-        { name: 'scatter', fn: renderGameDistributionChart, fields: ['playTime','purchasePrice','sellPrice','rating','type','name','from','remarks'] },
-        { name: 'monthly', fn: renderMonthlyTrendsChart, fields: ['playTime','purchasePrice','sellPrice','type','status','purchaseDate','startDate','sellDate','passDate','name','episodeCount','episodeDuration'] },
-        { name: 'genre', fn: renderGameSortChart, fields: ['sort','type'] },
+    // cost: netCost() reads type/sellDate; tooltip reads name
+    { name: 'cost', fn: renderCostDistributionChart, fields: ['purchasePrice','sellPrice','type','sellDate','from','remarks','name'] },
+    // time: tooltip reads name
+    { name: 'time', fn: renderTimeDistributionChart, fields: ['playTime','type','status','name'] },
+    // scatter: y-value depends on isUnsoldPhysical -> sellDate, absent sellPrice
+    { name: 'scatter', fn: renderGameDistributionChart, fields: ['playTime','purchasePrice','sellPrice','rating','type','name','from','remarks','sellDate'] },
+    // monthly: tooltip renders stars -> rating
+    { name: 'monthly', fn: renderMonthlyTrendsChart, fields: ['playTime','purchasePrice','sellPrice','type','status','purchaseDate','startDate','sellDate','passDate','name','episodeCount','episodeDuration','rating'] },
+    // genre: playTime drives the sector size itself — Steam daily sync updates it
+    { name: 'genre', fn: renderGameSortChart, fields: ['sort','type','playTime','name','rating'] },
     ];
 
     if (!window._chartHashes) window._chartHashes = {};
 
     for (const { name, fn, fields } of chartConfigs) {
+        // Unfinished games amortize up to "now", so the monthly chart also depends
+        // on the wall clock (see monthly-trends.js `new Date()` end dates). Fold
+        // today's date into the signature so a page left open past midnight recalcs.
+        const todayKey = toLocalISODate(new Date());
         const sig = items.map(i => fields.map(f => i[f] ?? '').join('|')).join(',')
-            + (name === 'monthly' ? `|steam:${getSteamPlaytimeHash()}` : '');
+            + (name === 'monthly' ? `|steam:${steamHash}|today:${todayKey}` : '');
         if (window._chartHashes[name] === sig) continue;
         window._chartHashes[name] = sig;
         try {
@@ -76,13 +93,26 @@ const updateDashboard = () => {
     const newHash = items.map(i => i.fb_id + '|' + i.playTime + '|' + i.purchasePrice + '|' + i.sellPrice + '|' + i.rating + '|' + i.status + '|' + i.type + '|' + i.sort + '|' + i.fullyCompleted + '|' + i.purchaseDate + '|' + i.startDate + '|' + i.sellDate + '|' + i.passDate + '|' + i.name + '|' + i.from + '|' + i.episodeCount + '|' + i.episodeDuration + '|' + (i.remarks || '')).join(',') + '|' + steamHash;
     if (newHash !== lastItemsHash) {
         lastItemsHash = newHash;
-        renderCharts();
+        renderCharts(steamHash);
     }
 
     const listModal = document.getElementById('list-modal');
     if (listModal && !listModal.classList.contains('hidden')) {
         renderItemsList();
     }
+};
+
+// Five independent listeners all fire during cold start (IndexedDB cache, the
+// Firestore snapshot, and three Steam onSnapshots). Coalesce them into a single
+// render per frame instead of repeating the same full recompute five times.
+let dashboardQueued = false;
+const scheduleDashboardUpdate = () => {
+    if (dashboardQueued) return;
+    dashboardQueued = true;
+    requestAnimationFrame(() => {
+        dashboardQueued = false;
+        updateDashboard();
+    });
 };
 
 // --- Auth actions ---
@@ -113,7 +143,19 @@ const setupModalBackdrop = (modalId) => {
 
 // --- Initialization ---
 const initApp = () => {
-    setupChartDefaults();
+    // Never let a failed CDN asset keep the page on its loading skeleton.
+    document.body.classList.remove('skeleton-loading');
+
+    // Chart.js comes from a CDN (index.html) — guard every use of the global.
+    if (typeof Chart !== 'undefined') {
+        try {
+            setupChartDefaults();
+        } catch (e) {
+            console.error('Chart.js defaults setup failed:', e);
+        }
+    } else {
+        console.warn('Chart.js unavailable — charts disabled, dashboard still functional.');
+    }
 
     // Auth buttons
     document.getElementById('login-btn')?.addEventListener('click', signInWithGoogle);
@@ -241,12 +283,12 @@ const initApp = () => {
     setupKpiTooltips();
 
     // Firestore data change → update dashboard
-    setOnDataChange(updateDashboard);
+    setOnDataChange(scheduleDashboardUpdate);
 
     // Start listeners
     setupFirestoreListener();
     setupMetadataListener();
-    setupSteamPlaytimeListener(updateDashboard);
+    setupSteamPlaytimeListener(scheduleDashboardUpdate);
 
     // Card entrance animations (cap delay for snappy feel)
     document.querySelectorAll('.card-animation').forEach((card, index) => {

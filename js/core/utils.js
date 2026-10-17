@@ -8,48 +8,82 @@ export const formatNumber = (value) => (Number.isFinite(value) ? value : 0).toFi
 export const parseFloatOrNull = (value) =>
     (value === '' || value === null || isNaN(parseFloat(value)) ? null : parseFloat(value));
 
-// Safe date parser: returns null for falsy or invalid input
-export const parseDateOrNull = (value) => {
-    if (!value) return null;
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return null;
-    return d.toISOString().slice(0, 10);
-};
-
-// Convert Firestore Timestamp, Date, or string to YYYY-MM-DD for <input type="date">
-export const formatDateForInput = (value) => {
+// Format any date-like value as a LOCAL "YYYY-MM-DD" string.
+// This is the inverse of parseLocalDateOnly.
+// Never use Date#toISOString() to derive a calendar date for users: it converts
+// to UTC first, so before the local UTC offset elapses it yields YESTERDAY.
+export const toLocalISODate = (value) => {
     if (!value) return '';
-    if (value.toDate) return value.toDate().toISOString().slice(0, 10);
-    if (value instanceof Date) return value.toISOString().slice(0, 10);
-    // Parse string — handle both YYYY-MM-DD and YYYY/M/D formats
-    const normalized = String(value).replace(/\//g, '-');
-    const d = parseLocalDateOnly(normalized);
-    if (!d) return normalized.slice(0, 10);
-    // Format as local YYYY-MM-DD for <input type="date">
+    let d;
+    if (value instanceof Date) d = value;
+    else if (typeof value.toDate === 'function') d = value.toDate();
+    else d = new Date(value);
+    if (isNaN(d.getTime())) return '';
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
 };
 
-// Format a Date/Timestamp to "MM/DD HH:mm"
+// Today's date as a LOCAL "YYYY-MM-DD" string.
+export const todayLocalISODate = () => toLocalISODate(new Date());
+
+// Safe date parser: normalizes any supported input to a LOCAL YYYY-MM-DD string.
+export const parseDateOrNull = (value) => {
+    if (!value) return null;
+    if (value instanceof Date || typeof value.toDate === 'function') return toLocalISODate(value);
+    const raw = String(value).trim();
+    if (!raw) return null;
+    // A date-only string must be parsed in LOCAL time. `new Date('YYYY-MM-DD')`
+    // is specified as UTC midnight, and 'YYYY/M/D' as local midnight — feeding
+    // either through toISOString() shifts the day for anyone east of UTC.
+    const datePart = raw.replace(/\//g, '-').split('T')[0];
+    const localDate = parseLocalDateOnly(datePart);
+    if (localDate) return toLocalISODate(localDate);
+    const d = new Date(raw.replace(/\//g, '-'));
+    if (isNaN(d.getTime())) return null;
+    return toLocalISODate(d);
+};
+
+// Convert Firestore Timestamp, Date, or string to LOCAL YYYY-MM-DD for <input type="date">
+export const formatDateForInput = (value) => {
+    if (!value) return '';
+    if (value instanceof Date || typeof value.toDate === 'function') return toLocalISODate(value);
+    // Parse string — handle both YYYY-MM-DD and YYYY/M/D formats
+    const normalized = String(value).replace(/\//g, '-');
+    const d = parseLocalDateOnly(normalized.split('T')[0]);
+    return d ? toLocalISODate(d) : '';
+};
+
+// Format a Date/Timestamp to "MM/DD HH:mm" (local time)
 export const formatDateTime = (value) => {
-    let d = value?.toDate ? value.toDate() : (value instanceof Date ? value : null);
+    let d = value instanceof Date ? value : (typeof value?.toDate === 'function' ? value.toDate() : null);
     if (!d && typeof value === 'string') {
-        const parsed = new Date(value);
-        if (!isNaN(parsed.getTime())) d = parsed;
+        // Date-only strings are UTC-specified; parse them in local time first so
+        // the rendered day matches what the user originally entered.
+        const localDate = parseLocalDateOnly(value.replace(/\//g, '-').split('T')[0]);
+        d = localDate || (isNaN(new Date(value).getTime()) ? null : new Date(value));
     }
     if (!d) return '';
     return `${('0' + (d.getMonth() + 1)).slice(-2)}/${('0' + d.getDate()).slice(-2)} ${('0' + d.getHours()).slice(-2)}:${('0' + d.getMinutes()).slice(-2)}`;
 };
 
-// Normalize a date string to "YYYY-MM" format (UTC-consistent)
+// Normalize a date input to "YYYY-MM" using LOCAL calendar parts.
+// Grouping must follow the user's own calendar; UTC conversion moves dates near
+// a month boundary into the neighbouring month outside UTC+00:00.
 export const normalizeMonth = (dateStr) => {
     if (!dateStr) return null;
-    const date = new Date(dateStr);
+    if (dateStr instanceof Date || typeof dateStr.toDate === 'function') {
+        const d = dateStr instanceof Date ? dateStr : dateStr.toDate();
+        if (isNaN(d.getTime())) return null;
+        return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2);
+    }
+    const raw = String(dateStr).trim();
+    const local = parseLocalDateOnly(raw.replace(/\//g, '-').split('T')[0]);
+    if (local) return local.getFullYear() + '-' + ('0' + (local.getMonth() + 1)).slice(-2);
+    const date = new Date(raw.replace(/\//g, '-'));
     if (isNaN(date.getTime())) return null;
-    // Use UTC to avoid timezone-dependent month grouping
-    return date.getUTCFullYear() + '-' + ('0' + (date.getUTCMonth() + 1)).slice(-2);
+    return date.getFullYear() + '-' + ('0' + (date.getMonth() + 1)).slice(-2);
 };
 
 // Render star rating as HTML (10-point scale → 5 stars with half-star support)

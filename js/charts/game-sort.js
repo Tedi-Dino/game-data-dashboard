@@ -1,6 +1,6 @@
-import { items, setChart, getChart } from '../core/state.js';
+import { items } from '../core/state.js';
 import { hashCode, renderStars, escapeHTML } from '../core/utils.js';
-import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
+import { createExternalTooltip, renderOrUpdateChart } from './setup.js';
 
 export const renderGameSortChart = () => {
     const itemsWithSort = items.filter(i => i.type !== 'hardware' && i.sort && i.playTime > 0);
@@ -18,9 +18,9 @@ export const renderGameSortChart = () => {
     const el = document.getElementById('game-sort-chart');
     if (!el) return;
 
-    if (getChart('gameSort')) destroyChartWithTooltip(getChart('gameSort'));
-
-    setChart('gameSort', new Chart(el, {
+    // No `view` argument needed: the tooltip formatter reads `items` (a live
+    // import from state.js) and `dataset.data`, never a captured local.
+    renderOrUpdateChart('gameSort', el, {
         type: 'doughnut',
         data: {
             labels,
@@ -63,5 +63,5 @@ export const renderGameSortChart = () => {
                 }
             }
         }
-    }));
+    });
 };

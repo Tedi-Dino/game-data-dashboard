@@ -83,3 +83,10 @@ public/
 # Performance test tools
 tools/perf_test/node_modules/
 tools/perf_test/results.json
+
+# Local export helper — contains hardcoded firebase-tools OAuth client
+# credentials (see audit B22). Never commit this directory.
+tools/export_firestore_csv/
+
+# Agent/IDE working data (session notes, temp artifacts)
+.workbuddy/

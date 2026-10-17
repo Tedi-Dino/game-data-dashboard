@@ -1,5 +1,5 @@
 import { items } from '../core/state.js';
-import { escapeHTML } from '../core/utils.js';
+import { escapeHTML, parseLocalDateOnly } from '../core/utils.js';
 import { openModal, closeModal } from './modals.js';
 
 /**
@@ -19,10 +19,6 @@ export const setupOnThisDay = () => {
 
         // Build a Set of "M-D" strings for today +/- 3 days
         const targetDates = new Set();
-        const startDate = new Date(today);
-        startDate.setDate(today.getDate() - 3);
-        const endDate = new Date(today);
-        endDate.setDate(today.getDate() + 3);
         for (let offset = -3; offset <= 3; offset++) {
             const d = new Date(today);
             d.setDate(today.getDate() + offset);
@@ -33,8 +29,10 @@ export const setupOnThisDay = () => {
 
         items.forEach(item => {
             if (item.type !== 'hardware' && item.purchaseDate) {
-                const purchaseDate = new Date(item.purchaseDate);
-                if (!isNaN(purchaseDate.getTime())) {
+                // Parse in local time: 'YYYY-MM-DD' via `new Date()` is UTC midnight,
+                // which reports the previous day in every western timezone.
+                const purchaseDate = parseLocalDateOnly(String(item.purchaseDate).split('T')[0]);
+                if (purchaseDate) {
                     const purchaseYear = purchaseDate.getFullYear();
                     const key = `${purchaseDate.getMonth()}-${purchaseDate.getDate()}`;
                     if (purchaseYear < currentYear && targetDates.has(key)) {
@@ -62,8 +60,8 @@ export const setupOnThisDay = () => {
                     const itemMonths = new Set();
                     gamesByYear[year].forEach(g => {
                         if (g.purchaseDate) {
-                            const d = new Date(g.purchaseDate);
-                            if (!isNaN(d.getTime())) itemMonths.add(d.getMonth());
+                            const d = parseLocalDateOnly(String(g.purchaseDate).split('T')[0]);
+                            if (d) itemMonths.add(d.getMonth());
                         }
                     });
                     const months = [...itemMonths].sort((a, b) => a - b);

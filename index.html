@@ -459,6 +459,9 @@ window.cdnLoadError = function(name) {
             <div class="mb-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
                 <p id="last-updated" class="text-stone-500">正在加载数据...</p>
                 <p id="steam-sync-status" class="text-stone-400 hidden"></p>
+                <!-- Dedicated banner: kept separate from #last-updated so a metadata
+                     update can never overwrite a failed-load message again. -->
+                <p id="data-load-error" class="text-red-600 font-medium hidden"></p>
             </div>
             <div class="overflow-auto">
                 <table class="w-full text-sm text-left text-stone-700">

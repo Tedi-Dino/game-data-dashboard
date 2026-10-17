@@ -262,12 +262,24 @@ html::-webkit-scrollbar-thumb:hover { background: #78716c; }
     opacity: 0.85;
 }
 
-/* === Readonly Mode === */
+/* === Readonly Mode ===
+   No `pointer-events: none` here: that also kills `title` tooltips and text
+   selection. Interaction is blocked by the `disabled` attribute set in auth.js,
+   which stops both mouse and keyboard activation. */
 .readonly-mode-disabled {
     cursor: not-allowed;
     background-color: #d6d0ca;
     opacity: 0.5;
-    pointer-events: none;
+}
+
+/* Read-only visitors keep full text selection; only the row-click affordance goes
+   away. handleEditItem() already refuses edits server-side-agnostically. */
+.readonly-table {
+    cursor: default;
+}
+
+.readonly-table tr:hover {
+    background-color: transparent;
 }
 
 /* === Achievement Gold Row === */

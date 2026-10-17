@@ -1,5 +1,5 @@
 import { items, sortConfig, setSortConfig, setIsEditingFromList } from '../core/state.js';
-import { formatCurrency, renderStarsForTable, formatDateForInput, escapeHTML, getStartDate, netCost, effectiveRemarks, isUnsoldPhysical } from '../core/utils.js';
+import { formatCurrency, renderStarsForTable, formatDateForInput, escapeHTML, getStartDate, netCost, effectiveRemarks, isUnsoldPhysical, parseLocalDateOnly } from '../core/utils.js';
 import { TYPE_MAP, FROM_MAP, STATUS_MAP } from '../config/constants.js';
 import { openModal, closeModal } from './modals.js';
 import { isAdmin } from './auth.js';
@@ -14,6 +14,27 @@ const renderSteamSource = (item) => {
     if (!item.steam_app_id) return '<span class="steam-source text-stone-400" title="未绑定"><i class="fas fa-cloud-slash"></i></span>';
     if (item.steam_override === false) return '<span class="steam-source text-amber-500" title="本地数据"><i class="fas fa-cloud-arrow-down"></i></span>';
     return '<span class="steam-source text-emerald-500" title="Steam 云端"><i class="fas fa-cloud"></i></span>';
+};
+
+/**
+ * Show/hide rows according to a search term.
+ * Only text in currently visible columns is matched, so collapsed detail columns
+ * stay hidden until expanded.
+ *
+ * This logic used to be duplicated verbatim in three places (toggle collapsing,
+ * after re-render, and the search debounce) with three different comments — they
+ * had already drifted. One source of truth now.
+ */
+const applyRowFilter = (container, term) => {
+    if (!container) return;
+    const normalized = String(term || '').toLowerCase();
+    container.querySelectorAll('tr').forEach(row => {
+        const visibleText = Array.from(row.querySelectorAll('td'))
+            .filter(td => !td.classList.contains('collapsible-col') || td.classList.contains('expanded'))
+            .map(td => td.textContent.toLowerCase())
+            .join(' ');
+        row.style.display = visibleText.includes(normalized) ? '' : 'none';
+    });
 };
 
 let detailColsExpanded = false;
@@ -40,17 +61,7 @@ export const setupDetailColsToggle = () => {
         // Re-apply search filter so hidden rows stay hidden
         const searchInput = document.getElementById('list-search-input');
         if (searchInput && searchInput.value) {
-            const term = searchInput.value.toLowerCase();
-            const tbody = document.getElementById('items-table-body');
-            if (tbody) {
-                tbody.querySelectorAll('tr').forEach(row => {
-                    const visibleText = Array.from(row.querySelectorAll('td'))
-                        .filter(td => !td.classList.contains('collapsible-col') || td.classList.contains('expanded'))
-                        .map(td => td.textContent.toLowerCase())
-                        .join(' ');
-                    row.style.display = visibleText.includes(term) ? '' : 'none';
-                });
-            }
+            applyRowFilter(document.getElementById('items-table-body'), searchInput.value);
         }
     });
 };
@@ -72,9 +83,13 @@ export const renderItemsList = () => {
     if (noDataMsg) noDataMsg.classList.add('hidden');
 
     // Sort items
+    // Parse stored 'YYYY-MM-DD' as LOCAL midnight so sort order matches the
+    // calendar day the user actually entered.
     const getDateVal = (item, key) => {
         const raw = item[key];
-        return raw ? new Date(raw).getTime() : -Infinity;
+        if (!raw) return -Infinity;
+        const d = parseLocalDateOnly(String(raw).split('T')[0]);
+        return d ? d.getTime() : -Infinity;
     };
 
     const sorted = [...items].sort((a, b) => {
@@ -88,9 +103,12 @@ export const renderItemsList = () => {
             if (a.status === 'playing') {
                 const aStart = getStartDate(a);
                 const bStart = getStartDate(b);
-                const aDate = aStart ? new Date(aStart).getTime() : -Infinity;
-                const bDate = bStart ? new Date(bStart).getTime() : -Infinity;
-                return aDate - bDate;
+                const toTime = (v) => {
+                    if (!v) return -Infinity;
+                    const d = parseLocalDateOnly(String(v).split('T')[0]);
+                    return d ? d.getTime() : -Infinity;
+                };
+                return toTime(aStart) - toTime(bStart);
             }
             if (a.status === 'passed') {
                 const aDate = getDateVal(a, 'passDate');
@@ -146,12 +164,14 @@ export const renderItemsList = () => {
         if (statusClass && !item.fullyCompleted) classes.push(statusClass);
         row.className = classes.join(' ');
         row.dataset.fb_id = item.fb_id;
+        // playTime is numeric on every current write path, but it was the one
+        // dynamic value in this template that skipped escaping — escape it too.
         row.innerHTML = `
             <td class="px-4 py-3 font-mono whitespace-nowrap">${escapeHTML(item.id) || '/'}</td>
             <td class="px-4 py-3 font-medium">${item.fullyCompleted ? `<span class="achievement-name"><i class="fas fa-trophy achievement-name-trophy"></i> ${escapeHTML(item.name)}</span>` : escapeHTML(item.name) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.sort) || '/'}</td>
             <td class="px-4 py-3 text-center whitespace-nowrap">${renderStarsForTable(item.rating)}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${item.playTime != null ? `${item.playTime}h` : '/'} ${renderSteamSource(item)}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${item.playTime != null ? `${escapeHTML(item.playTime)}h` : '/'} ${renderSteamSource(item)}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.passDate) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(item.purchaseDate) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(item.startDate) || '/'}</td>
@@ -167,15 +187,7 @@ export const renderItemsList = () => {
     // Re-apply any pending search filter so it survives data refreshes
     const searchInput = document.getElementById('list-search-input');
     if (searchInput && searchInput.value) {
-        const term = searchInput.value.toLowerCase();
-        tbody.querySelectorAll('tr').forEach(row => {
-            // Only search visible columns (not collapsible-col without .expanded)
-            const visibleText = Array.from(row.querySelectorAll('td'))
-                .filter(td => !td.classList.contains('collapsible-col') || td.classList.contains('expanded'))
-                .map(td => td.textContent.toLowerCase())
-                .join(' ');
-            row.style.display = visibleText.includes(term) ? '' : 'none';
-        });
+        applyRowFilter(tbody, searchInput.value);
     }
 };
 
@@ -225,17 +237,9 @@ export const setupListSearch = () => {
     searchInput.addEventListener('keyup', () => {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
-            const term = searchInput.value.toLowerCase();
             const tbody = document.getElementById('items-table-body');
             if (!tbody) return;
-            tbody.querySelectorAll('tr').forEach(row => {
-                // Only search visible columns (not hidden collapsible columns)
-                const visibleText = Array.from(row.querySelectorAll('td'))
-                    .filter(td => !td.classList.contains('collapsible-col') || td.classList.contains('expanded'))
-                    .map(td => td.textContent.toLowerCase())
-                    .join(' ');
-                row.style.display = visibleText.includes(term) ? '' : 'none';
-            });
+            applyRowFilter(tbody, searchInput.value);
         }, 150);
     });
 };

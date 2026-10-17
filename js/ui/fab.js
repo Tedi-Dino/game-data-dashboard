@@ -28,8 +28,10 @@ export const setupFab = () => {
             itemId.value = '';
             itemCustomId.value = '';
             deleteBtn.classList.add('hidden');
-            purchaseDate.value = new Date().toISOString().split('T')[0];
-            document.getElementById('start-date').value = new Date().toISOString().split('T')[0];
+            // Local calendar date — `toISOString()` would return yesterday for any
+            // moment before the timezone offset elapses (e.g. every morning < 08:00 CST).
+            purchaseDate.value = todayLocalISODate();
+            document.getElementById('start-date').value = todayLocalISODate();
             itemStatus.value = 'empty';
             passDateContainer.classList.add('hidden');
             setFormMode('game');

@@ -1,29 +1,21 @@
-import { items, setChart, getChart } from '../core/state.js';
-import { PLATFORM_COLORS, TIME_TYPE_MAP, TIME_COLOR_MAP } from '../config/constants.js';
+import { items } from '../core/state.js';
+import { PLATFORM_COLORS, TIME_TYPE_MAP, TIME_COLOR_MAP, TIME_LABEL_BY_TYPE } from '../config/constants.js';
 import { escapeHTML } from '../core/utils.js';
-import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
-
-const TIME_LABELS = {
-    physical: 'Switch', digital: 'Switch',
-    steam: 'Steam', epic: 'Epic', ubi: 'Uplay', gog: 'GOG',
-    ps: 'PlayStation', xbox: 'Xbox/MS', ms: 'Xbox/MS', appstore: 'App Store',
-    googleplay: 'Google Play', emulator: '模拟器', other: 'Other',
-    drama: '剧'
-};
+import { createExternalTooltip, renderOrUpdateChart } from './setup.js';
 
 export const renderTimeDistributionChart = () => {
     const rawData = {};
     items.forEach(i => {
-        const label = TIME_LABELS[i.type];
+        const label = TIME_LABEL_BY_TYPE[i.type];
         if (label) rawData[label] = (rawData[label] || 0) + (i.playTime || 0);
     });
     const sortedEntries = Object.entries(rawData).filter(([_, v]) => v > 0).sort((a, b) => b[1] - a[1]);
     const el = document.getElementById('time-distribution-chart');
     if (!el) return;
 
-    if (getChart('timeDistribution')) destroyChartWithTooltip(getChart('timeDistribution'));
-
-    setChart('timeDistribution', new Chart(el, {
+    // No `view` argument needed: the tooltip formatter reads `items` (a live
+    // import from state.js) and `dataset.data`, never a captured local.
+    renderOrUpdateChart('timeDistribution', el, {
         type: 'doughnut',
         data: {
             labels: sortedEntries.map(([l]) => l),
@@ -70,5 +62,5 @@ export const renderTimeDistributionChart = () => {
                 }
             }
         }
-    }));
+    });
 };

@@ -1,35 +1,19 @@
-import { items, steamPlaytimeMonths, steamPlaytimeStates, steamPlaytimeTracking, setChart, getChart } from '../core/state.js';
-import { PLATFORM_COLORS } from '../config/constants.js';
-import { formatCurrency, normalizeMonth, renderStars, escapeHTML, getStartDate, netCost, isUnsoldPhysical } from '../core/utils.js';
-import { createExternalTooltip, destroyChartWithTooltip } from './setup.js';
+import { items, steamPlaytimeMonths, steamPlaytimeStates, steamPlaytimeTracking } from '../core/state.js';
+import { PLATFORM_COLORS, DEFAULT_TREND, TREND_PLATFORM_KEYS, TREND_KEY_BY_TYPE } from '../config/constants.js';
+import { formatCurrency, normalizeMonth, renderStars, escapeHTML, getStartDate, netCost, isUnsoldPhysical, parseLocalDateOnly } from '../core/utils.js';
+import { createExternalTooltip, renderOrUpdateChart } from './setup.js';
 
-const DEFAULT_TREND = {
-    hardware: 0, switch_physical: 0, switch_digital: 0, steam: 0, epic: 0,
-    ubi: 0, gog: 0, ps: 0, xbox: 0, appstore: 0, googleplay: 0,
-    emulator: 0, other: 0, drama: 0, playtime: 0, dramaPlaytime: 0
-};
 
-const PLATFORM_DATA_KEYS = [
-    { label: '硬件', key: 'hardware', color: PLATFORM_COLORS.hardware },
-    { label: 'Switch 实体', key: 'switch_physical', color: PLATFORM_COLORS.switch_physical },
-    { label: 'Switch 数字', key: 'switch_digital', color: PLATFORM_COLORS.switch_digital },
-    { label: 'Steam', key: 'steam', color: PLATFORM_COLORS.steam },
-    { label: 'Epic', key: 'epic', color: PLATFORM_COLORS.epic },
-    { label: 'Uplay', key: 'ubi', color: PLATFORM_COLORS.ubi },
-    { label: 'GOG', key: 'gog', color: PLATFORM_COLORS.gog },
-    { label: 'PlayStation', key: 'ps', color: PLATFORM_COLORS.ps },
-    { label: 'Xbox/MS', key: 'xbox', color: PLATFORM_COLORS.xbox },
-    { label: 'App Store', key: 'appstore', color: PLATFORM_COLORS.appstore },
-    { label: 'Google Play', key: 'googleplay', color: PLATFORM_COLORS.googleplay },
-    { label: '模拟器', key: 'emulator', color: PLATFORM_COLORS.emulator },
-    { label: 'Other', key: 'other', color: PLATFORM_COLORS.other },
-    { label: '剧', key: 'drama', color: PLATFORM_COLORS.drama }
-];
-
+// Parse any date-like value. Date-only strings ('YYYY-MM-DD') must be read as
+// LOCAL midnight — `new Date('YYYY-MM-DD')` is specified as UTC midnight, which
+// shifts every stored date by the UTC offset and skews month attribution.
 const asDate = (value) => {
     if (!value) return null;
     if (typeof value.toDate === 'function') return value.toDate();
-    const date = new Date(value);
+    if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+    const localDate = parseLocalDateOnly(String(value).replace(/\//g, '-').split('T')[0]);
+    if (localDate) return localDate;
+    const date = new Date(String(value).replace(/\//g, '-'));
     return Number.isNaN(date.getTime()) ? null : date;
 };
 
@@ -47,7 +31,8 @@ export const calcAmortizedPlaytime = (totalHours, startDate, endDate, monthStart
 
 const getTrackedState = (item) => {
     if (item.type === 'hardware' || item.type === 'drama' || item.steam_override === false || item.steam_app_id == null) return null;
-    return item.steam_app_id != null ? item.steam_app_id : null;
+    // `steam_app_id == null` already returned above, so this is never the null branch.
+    return item.steam_app_id;
 };
 
 const getHistoryEndDate = (item, state) => {
@@ -81,12 +66,8 @@ const buildTrends = (currentItems) => {
     const trends = {};
     const allMonths = new Set();
 
-    // Map item.type to trend key
-    const typeToKey = {
-        physical: 'switch_physical',
-        digital: 'switch_digital',
-        ms: 'xbox'
-    };
+    // Map item.type to trend key — derived from PLATFORM_META
+    const typeToKey = TREND_KEY_BY_TYPE;
 
     const stateByAppId = steamPlaytimeStates;
 
@@ -161,9 +142,13 @@ const buildTrends = (currentItems) => {
 
 /**
  * Compute playtime amortized across days that fall within the given month bounds.
- * For passed items: distributes playtime evenly from purchaseDate to passDate.
- * For in-progress items: distributes from purchaseDate to today.
+ * The window starts at getStartDate(item) — i.e. `startDate` when set, falling
+ * back to `purchaseDate` — and ends at `passDate` (passed items) or today
+ * (in-progress items).
  * Returns the portion (in hours) attributable to [monthStart, monthEnd].
+ *
+ * Thin pass-through to getItemMonthlyPlaytime; kept so the tooltip formatter has
+ * a stable name to call.
  */
 const calcMonthlyPlaytime = (item, monthStart, monthEnd, monthKey) =>
     getItemMonthlyPlaytime(item, monthStart, monthEnd, monthKey);
@@ -179,7 +164,7 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
     const sortedMonths = Array.from(allMonths).sort();
 
     // Platform datasets (stacked bars)
-    const platformDatasets = PLATFORM_DATA_KEYS
+    const platformDatasets = TREND_PLATFORM_KEYS
         .filter(({ key }) => {
             const hasData = sortedMonths.some(m => (trends[m]?.[key] || 0) !== 0);
             return hasData;
@@ -238,9 +223,9 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
     const el = document.getElementById(canvasId);
     if (!el) return;
 
-    if (getChart(chartKey)) destroyChartWithTooltip(getChart(chartKey));
-
-    setChart(chartKey, new Chart(el, {
+    // No `view` argument needed: this chart's tooltip formatter only reads the
+    // live `items` / `steamPlaytime*` imports from state.js, never a local.
+    renderOrUpdateChart(chartKey, el, {
         type: 'bar',
         data: {
             labels: sortedMonths,
@@ -307,18 +292,24 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
                         const currentMonthStart = new Date(Date.UTC(y, m - 1, 1));
                         const currentMonthEnd = new Date(Date.UTC(y, m, 0));
 
-                        const topPlaytimeItems = items
-                            .filter(i => i.type !== 'hardware')
-                            .map(item => ({ ...item, monthlyBreakdown: calcMonthlyPlaytime(item, currentMonthStart, currentMonthEnd, month) }))
-                            .filter(item => item.monthlyBreakdown.total > 0.01)
+                        // Compute each item's breakdown ONCE — this block runs on
+                        // every hover, and the two lists below are just views of it.
+                        const eligibleItems = items.filter(i => i.type !== 'hardware');
+                        const breakdowns = eligibleItems.map(item => ({
+                            item,
+                            breakdown: calcMonthlyPlaytime(item, currentMonthStart, currentMonthEnd, month)
+                        }));
+
+                        const topPlaytimeItems = breakdowns
+                            .filter(entry => entry.breakdown.total > 0.01)
+                            .map(entry => ({ ...entry.item, monthlyBreakdown: entry.breakdown }))
                             .sort((a, b) => b.monthlyBreakdown.total - a.monthlyBreakdown.total)
                             .slice(0, 5);
 
                         const trackedHours = Object.values(steamPlaytimeMonths.get(month)?.minutesByApp || {})
                             .reduce((sum, value) => sum + Number(value || 0), 0) / 60;
-                        const estimatedHours = items
-                            .filter(i => i.type !== 'hardware')
-                            .reduce((sum, item) => sum + calcMonthlyPlaytime(item, currentMonthStart, currentMonthEnd, month).estimated, 0);
+                        const estimatedHours = breakdowns
+                            .reduce((sum, entry) => sum + entry.breakdown.estimated, 0);
 
                         let html = `<div class="font-bold text-base mb-2 border-b border-stone-200 pb-1">${month} 月报</div>`;
                         const initializedAt = asDate(steamPlaytimeTracking?.initializedAt);
@@ -350,5 +341,5 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
                 }
             }
         }
-    }));
+    });
 };
