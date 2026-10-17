@@ -35,10 +35,21 @@ Note for Windows PowerShell:
 Common deploy commands:
 
 ```bash
-firebase deploy
+firebase deploy                  # hosting + functions + Firestore RULES
 firebase deploy --only hosting
 firebase deploy --only functions
 ```
+
+> **Caution:** `firebase.json` wires `firestore.rules` into the deploy, so a bare
+> `firebase deploy` silently republishes your security rules from this repo. If
+> the committed rules are stale or edited, that changes the live permission
+> boundary. Prefer `--only hosting` / `--only functions` for routine releases and
+> deploy rules deliberately with `firebase deploy --only firestore:rules`.
+
+> **Admin UIDs** live in three places that must stay identical: `firestore.rules`,
+> `functions/index.js` (`ADMIN_UIDS`) and `js/config/constants.js` (`ADMIN_UIDS`).
+> `tools/tests/config-consistency.test.mjs` enforces this — run it after changing
+> an admin.
 
 ## Codex Working Notes
 
@@ -120,8 +131,11 @@ When adding fields that affect rendered output, include them in that hash.
 
 Google Sign-In is handled through Firebase Auth. Admin UIDs are hardcoded in
 `js/config/constants.js`. Non-admin users get read-only UI: FAB hidden and form
-actions disabled. Admins can add/edit/delete items, import/export CSV, and run
-Steam sync.
+actions actually disabled (`btn.disabled = true` plus a `.readonly-mode-disabled`
+class — see `js/ui/auth.js`). Table rows no longer receive `pointer-events: none`,
+so visitors can still select and copy text; edits are blocked by the `isAdmin()`
+guard in `handleEditItem()`. Admins can add/edit/delete items, import/export CSV,
+and run Steam sync.
 
 ## Data Model
 
@@ -167,6 +181,30 @@ user-provided API key and includes both games and dramas.
 > for local development only. On the production site, the Cloud Function should
 > always be the primary path. The local-mode API key entry in the UI is hidden
 > for non-admin visitors to prevent accidental exposure.
+
+Both prompt copies must stay byte-identical. `tools/tests/config-consistency.test.mjs`
+asserts this, and the parser lives in `js/services/recommendation-parse.js` so it
+can be unit tested without loading Firebase.
+
+## Known Trade-offs
+
+These are deliberate decisions, **not oversights** — do not "fix" them without
+asking first.
+
+- **Tailwind Play CDN** (`index.html:38`). Tailwind's own docs mark the Play CDN
+  as unsuitable for production: it compiles CSS at runtime in the browser and
+  blocks first paint. The correct fix is a pre-generated static stylesheet,
+  which requires running the Tailwind CLI — i.e. a build step, which conflicts
+  with this project's zero-build constraint. Resolving it needs a product
+  decision (accept the cost, add SRI + `defer`, or vendor a generated CSS file),
+  so it stays as-is for now.
+- **No Content-Security-Policy header.** The page pulls from roughly nine
+  external origins (Firebase, gstatic, Tailwind, Chart.js, Font Awesome, Steam,
+  DeepSeek, ui-avatars replacements). Enumerating all of them is error-prone:
+  missing one breaks the live site. Deferred deliberately.
+- **Local `core.autocrlf` settings are per-machine.** `.gitattributes` pins
+  repository line endings to LF, so cross-file consistency checks (the A3 prompt
+  diff, the B10 admin-UID test) are not affected by a contributor's local config.
 
 ## Standalone Tools
 

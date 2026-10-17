@@ -145,8 +145,19 @@ Too lazy to enter hundreds of Steam games manually? You can use the **Steam Web 
 
 6. **Deploy**: Use the Firebase CLI to deploy:
    ```bash
-   firebase deploy
+   firebase deploy                  # also republishes Firestore rules
+   firebase deploy --only hosting   # recommended for routine releases
+   firebase deploy --only functions
    ```
+
+   > ⚠️ `firebase.json` includes `firestore.rules` in the deploy, so a bare
+   > `firebase deploy` overwrites the live security rules with whatever is
+   > committed here. Deploy rules deliberately via
+   > `firebase deploy --only firestore:rules`.
+
+   > ℹ️ The admin UID must stay identical in `firestore.rules`,
+   > `functions/index.js` and `js/config/constants.js`.
+   > `node --test tools/tests/*.test.mjs` verifies this automatically.
 
 -----
 

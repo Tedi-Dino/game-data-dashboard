@@ -237,7 +237,7 @@ export const setSteamPlaytimeTracking = (value) => { /* ... */ };
 | `js/services/steam-playtime.js`（新增） | Firestore 月度集合、追踪元数据的实时监听和取消订阅。 |
 | `js/main.js` | 初始化监听器；将 Steam 月度数据纳入月度图重绘哈希。 |
 | `js/charts/monthly-trends.js` | 合并固定历史估算、Steam 追踪增量和原有本地/剧集数据；统一 tooltip 口径。 |
-| `tools/tests/steam-playtime-tests.mjs`（新增） | 覆盖纯计算函数：首次基线、正差量、零差量、负差量、跨月、混合历史。 |
+| `tools/tests/steam-playtime.test.mjs`（新增） | 覆盖纯计算函数：首次基线、正差量、零差量、负差量、跨月、混合历史。 |
 | Firestore 安全规则（仓库外，如有） | 仅为仪表盘所需角色授予 `steamPlaytimeMonths` 与追踪元数据读取权限；Cloud Functions 通过 Admin SDK 写入。不可为了方便放宽其他集合规则。 |
 | `README.md`（可选） | 简述月度 Steam 时长从何时开始追踪、历史数据为何标为估算。 |
 
