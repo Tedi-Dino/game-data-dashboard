@@ -57,6 +57,13 @@ firebase deploy --only firestore:rules
 
 ## Firebase Plan
 
+**Policy (2026-10-18): Spark is the default and the long-term plan.** The online
+site is expected to stay on the free tier; Blaze is an optional branch that must
+keep working, not the baseline every change is designed against. New features
+must therefore work without Cloud Functions, Cloud Scheduler or Secret Manager —
+if a feature cannot, it has to degrade visibly (hidden entry point or local
+substitute), never as a silent no-op.
+
 The project runs on **Spark (free)**. The only capability that disappears is
 Cloud Functions (and Cloud Scheduler / Secret Manager with it), so every
 browser-side callable is behind a switch in `js/config/constants.js`:
@@ -80,6 +87,10 @@ export const FEATURES = {
   then waits forever for a token. With enforcement left on, every read returns
   `permission-denied` and the dashboard shows nothing. See
   `docs/free-tier-plan.md` §2.1 before turning either back on.
+- **Paid-only UI must not be visible.** `#steam-sync-btn` stays hidden unless
+  `STEAM_SYNC` is on, and the AI column of the `接下来` modal is hidden for
+  non-admins (the DeepSeek key lives in the admin's browser on this plan), so a
+  visitor never sees an entry point that can only fail.
 - Going back to Blaze: restore `"functions": { "source": "functions" }`, flip the
   switches to `{STEAM_SYNC: true, SCHEDULED_SYNC: true, AI_LOCAL_ONLY: false}`,
   re-set both secrets, disable the local scheduled task, and only then verify
@@ -102,6 +113,8 @@ admin UID, AI prompt and Steam ID assertions.
   `__pycache__/`, Firebase debug logs, and tool output directories.
 - `AGENTS.md` is the current AI-agent guide. `CLAUDE.md` is legacy context and
   should not be treated as the source of truth.
+- `docs/README.md` indexes the documentation. `docs/archive/` holds one-off audit
+  reports and finished plans — read them for history, never as current truth.
 
 ## Design System
 
@@ -210,9 +223,10 @@ Two paths, same maths:
   library, fuzzy-matches local items, binds `steam_app_id`, raises `playTime`
   when `steam_override !== false`, and checks achievements to update
   `fullyCompleted`. `scheduledSteamSync` runs daily at 4:00 AM CST.
-- **Spark (current):** neither function is deployed. The browser only shows the
+- **Spark (default):** neither function is deployed. The browser only shows the
   last-sync line, and `node tools/steam_sync/sync.mjs --apply` does the work from
-  this machine (Windows Task Scheduler at 04:00).
+  this machine (Windows Task Scheduler at 04:00). The in-page sync button is
+  never rendered on this plan.
 
 Both paths share `functions/steam-sync-core.js` (name matching) and
 `functions/steam-playtime.js` (delta maths), so they cannot drift into computing
@@ -224,6 +238,10 @@ The `接下来` modal calls `getAiRecommendations`. On Spark
 (`FEATURES.AI_LOCAL_ONLY`) it calls DeepSeek directly from the browser with the
 admin's own API key, shown behind the gear icon. On Blaze the Cloud Function is
 the primary path and the browser call is the fallback.
+
+The whole AI column is hidden for non-admins on the free plan — a visitor has no
+key, so the panel could only ever return "未配置 API Key". The backlog list takes
+the full width instead.
 
 > **Security note**: The DeepSeek API key stored in `localStorage` is visible to
 > anyone using that browser profile. The AI section is admin-only in the UI, so
@@ -255,8 +273,11 @@ asking first.
 
 ## Standalone Tools
 
+`tools/README.md` is the index (status + dry-run/credential rules). Layout:
+
 ```text
 tools/
+├── README.md
 ├── bind_steam_ids/
 │   └── bind_steam_ids.js
 ├── cost_per_hour/
@@ -266,8 +287,7 @@ tools/
 │   └── (Puppeteer performance test scripts)
 ├── steam_info/
 │   ├── steam_info.py
-│   ├── run.bat
-│   └── .env
+│   └── run.bat
 ├── steam_sync/
 │   ├── sync.mjs        # Spark-plan Steam sync (Firestore REST + Steam Web API)
 │   ├── lib.mjs         # pure planning helpers (tested)
@@ -279,6 +299,10 @@ tools/
 └── update_unsold_physical_estimates/
     └── update_unsold_physical_estimates.js
 ```
+
+Anything that writes defaults to dry-run; only `--apply` writes. Scripts authenticate
+with the Firebase CLI OAuth token, i.e. project-owner credentials that bypass
+`firestore.rules` — see `docs/firebase-security.md`.
 
 Tool notes:
 

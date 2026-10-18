@@ -4,11 +4,15 @@
 
 在这里**视奸**我的游戏记录吧：
 
-**最新云同步版**: [game-data-dashboard.web.app](https://game-data-dashboard.web.app)
+**在线版（Firebase 免费套餐）**: [game-data-dashboard.web.app](https://game-data-dashboard.web.app)
+
+> **套餐定位（2026-10-18 起）**：本项目长期运行在 Firebase **Spark（免费）套餐**，
+> 免费版是主线；Blaze（付费）只作为可选分支保留，不再是默认前提。
+> 具体差异见下方「免费版能力边界」。
 
 -----
 
-本项目是一个开源的游戏数据仪表盘，旨在通过数据可视化来量化和分析您的整个游戏生涯。项目从一个纯粹的本地版本发展而来，现在演进到了功能强大、由 Firebase 驱动的**云同步版**，采用模块化架构，代码清晰易维护。
+本项目是一个开源的游戏数据仪表盘，旨在通过数据可视化来量化和分析您的整个游戏生涯。项目从一个纯粹的本地版本发展而来，现在演进到了由 Firebase 驱动的在线版，采用模块化架构，代码清晰易维护。
 
 无论您是追求详尽数据分析的核心玩家，还是只想为自己的游戏收藏简单记个账，这个项目都能满足您的需求。
 
@@ -21,18 +25,36 @@
 ## ✨ 核心功能
 
 - **🔐 Google账号一键登录** — 无需注册，安全便捷地访问您的数据。
-- **🔄 数据实时云同步** — 所有记录保存在云端 Firestore，永不丢失，并能在任何设备上同步。
+- **🔄 数据实时云同步** — 所有记录保存在云端 Firestore，各设备实时同步；个人使用量远低于免费额度。
 - **🎭 管理员与只读模式** — 可将自己的账号设为管理员，拥有写入权限；而其他访客则为只读模式，您可以放心地将链接分享给朋友！
 - **📊 全方位数据可视化** — 通过 KPI 卡片、环形图、条形图和趋势图，直观展示消费、时间、平台分布、游戏类型偏好等信息。
 - **💡 特色探索功能**:
   - **那年今日** — 回顾往年同期的游戏足迹，看看历史上的今天你沉迷于哪款大作。
-  - **接下来玩** — **独家AI推荐功能！** 分析您最近（3个月内）通关的游戏、评分和待玩列表（Backlog），通过云函数调用大语言模型，为您提供个性化的游戏推荐理由，帮助您解决"游戏荒"的烦恼。
+  - **接下来玩** — 汇总你的待玩清单；管理员还可用 AI 推荐（免费版由浏览器直连 DeepSeek，需要自备 API Key，访客看不到该面板）。
 - **⭐ 更精细的数据维度**:
   - **游戏状态** — 精确追踪游戏是"正在玩"、"待玩"、"已通关"还是"已弃坑"。
   - **个人评分** — 为您的游戏打分（1-10分，支持半星），让数据更具个人色彩，并用于AI推荐分析。
-  - **🏆 全成就追踪** — 标记已达成100%成就的游戏。Steam游戏可通过同步自动检测，其他平台手动标记。数据表中全成就行以金色边框+脉冲动画高亮显示。
+  - **🏆 全成就追踪** — 标记已达成100%成就的游戏。Steam 游戏由本机同步脚本自动检测，其他平台手动标记。数据表中全成就行以金色边框+脉冲动画高亮显示。
 - **🎭 剧集追踪** — 除了游戏，还可以追踪您观看的剧集，自动计算观看时长。
 - **📥 灵活的导入/导出** — 支持 CSV 格式的数据迁移和备份。
+
+-----
+
+## 🆓 免费版能力边界
+
+站点长期运行在 Spark（免费）套餐，能力差异全部收敛到 `js/config/constants.js` 的 `FEATURES` 开关：
+
+| 能力 | 免费版（当前） | 需要 Blaze |
+| --- | --- | --- |
+| 页面托管 / 自定义域名 | ✅ | — |
+| Google 登录 | ✅ | — |
+| Firestore 实时同步（50k 读 / 20k 写 每天） | ✅ | — |
+| 图表、KPI、CSV 导入导出 | ✅ | — |
+| Steam 数据同步 | 🖥️ 本机 `tools/steam_sync/sync.mjs` + 任务计划程序 | ☁️ 页内一键同步 + 每日 04:00 云端定时 |
+| AI 推荐 | 🖥️ 浏览器直连 DeepSeek，Key 存在本机，仅管理员可见 | ☁️ 云函数持 Key（当前实现仍只对管理员开放） |
+| App Check | ❌ 关闭（国内取不到 reCAPTCHA 令牌） | ⚠️ 需先验证令牌可签发 |
+
+页面上不会出现用不了的入口：免费版下 Steam 同步按钮不显示，AI 推荐面板对访客隐藏（只留待玩清单），避免"点了没反应"。
 
 -----
 
@@ -43,15 +65,20 @@
 ```
 js/
 ├── config/
-│   ├── firebase.js          # Firebase 初始化
-│   └── constants.js          # 管理员UID、平台颜色、类型映射等
+│   ├── firebase.js          # Firebase 初始化（App Check 由开关控制）
+│   └── constants.js          # 管理员UID、FEATURES 开关、平台颜色、类型映射
 ├── core/
+│   ├── cache.js              # IndexedDB 缓存，首屏秒开
 │   ├── state.js              # 中心化状态管理
 │   └── utils.js              # 格式化工具（货币、日期、评分等）
 ├── services/
 │   ├── firestore.js          # Firestore 实时监听、CRUD 操作
 │   ├── csv.js                # CSV 导入/导出
-│   └── recommendations.js    # AI 游戏推荐（云函数 + DeepSeek 备用）
+│   ├── csv-parse.js          # CSV 解析（纯函数，可单测）
+│   ├── steam.js              # Steam 同步入口（免费版仅保留状态展示）
+│   ├── steam-playtime.js     # Steam 时长增量监听
+│   ├── recommendations.js    # AI 推荐（免费版浏览器直连 DeepSeek）
+│   └── recommendation-parse.js  # 推荐 JSON 解析（纯函数，可单测）
 ├── charts/
 │   ├── setup.js              # Chart.js 配置
 │   ├── cost-distribution.js  # 成本分布图
@@ -65,7 +92,7 @@ js/
 │   ├── modals.js             # 弹窗管理
 │   ├── item-form.js          # 添加/编辑表单
 │   ├── data-table.js         # 数据表格
-│   ├── play-next.js          # AI 推荐弹窗
+│   ├── play-next.js          # AI 推荐弹窗（访客隐藏 AI 栏）
 │   ├── fab.js                # 浮动操作按钮
 │   ├── csv-handlers.js       # CSV 按钮事件
 │   ├── chart-controls.js     # 图表控制
@@ -128,7 +155,7 @@ js/
 
 ## 🔧 如何自行部署
 
-**⚠️ 安全提示：** 以下步骤中的代码片段包含了您项目的敏感凭证。**请勿将填写有真实凭证的文件直接上传到公开的 Git 仓库。** 建议使用环境变量或 Firebase App Check 来保护您的应用。
+**⚠️ 安全提示：** 以下步骤中的代码片段包含了您项目的敏感凭证。**请勿将填写有真实凭证的文件直接上传到公开的 Git 仓库。** Firebase Web API Key 本身可以公开，真正的边界是 `firestore.rules` 与管理员 UID；App Check 可选，但开启前请先确认能取到令牌（见 `docs/free-tier-plan.md` §2.1）。
 
 1. **创建Firebase项目**: 前往 [Firebase 控制台](https://console.firebase.google.com/) 创建一个新项目 (免费的 Spark 套餐即可)。
 
@@ -165,9 +192,10 @@ js/
    需要在 `tools/steam_sync/.env` 里配置 `STEAM_API_KEY`（[申请地址](https://steamcommunity.com/dev/apikey)），
    再用 Windows 任务计划程序设为每天 04:00 运行。详见 `docs/free-tier-plan.md`。
 
-> 💡 **升级回 Blaze（付费）时**：在 `firebase.json` 补回
+> 💡 **可选：升级回 Blaze（付费）**（非默认路线）：在 `firebase.json` 补回
 > `"functions": { "source": "functions" }`，把 `js/config/constants.js` 的
-> `FEATURES` 三个开关翻转，重新配置两个函数密钥，并停用本机的同步任务。
+> `FEATURES` 开关翻回去，重新配置两个函数密钥，并停用本机的同步任务。
+> 前端无需改动——Steam 同步按钮、AI 云端模式会随开关自动恢复显示。
 
 -----
 
