@@ -94,3 +94,10 @@ tools/export_firestore_csv/
 
 # Agent/IDE working data (session notes, temp artifacts)
 .workbuddy/
+
+# Python caches (tools/*.py)
+__pycache__/
+*.pyc
+
+# Local static-server logs (see .server-*.log)
+.server-*.log

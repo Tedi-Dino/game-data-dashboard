@@ -4,11 +4,15 @@
 
 Come **stalk** my gaming records here:
 
-**Latest Cloud Version**: [game-data-dashboard.web.app](https://game-data-dashboard.web.app)
+**Live site (Firebase Spark / free plan)**: [game-data-dashboard.web.app](https://game-data-dashboard.web.app)
+
+> **Plan positioning (since 2026-10-18)**: this project runs on Firebase's **Spark
+> (free) plan** long-term. The free tier is the mainline; Blaze (paid) is kept only
+> as an optional branch. See "Free-tier boundaries" below.
 
 -----
 
-This project is an open-source game data dashboard designed to quantify and analyze your entire gaming career through data visualization. Evolving from a pure local version, it now features a powerful **cloud-synced version** powered by Firebase with a modular architecture for clean, maintainable code.
+This project is an open-source game data dashboard designed to quantify and analyze your entire gaming career through data visualization. Evolving from a pure local version, it now runs as a Firebase-backed online dashboard with a modular architecture for clean, maintainable code.
 
 Whether you're a core gamer seeking detailed data analysis or just want a simple ledger for your collection, this project has you covered.
 
@@ -26,13 +30,31 @@ If you plan to modify this repository with Codex, read `AGENTS.md` first. The hi
 - **📊 Comprehensive Visualization** — Intuitive KPIs, doughnut charts, bar charts, and trend graphs display your spending, playtime, platform distribution, genre preferences, and more.
 - **💡 Fun Discovery Features**:
   - **On This Day** — Look back at your gaming activity from the same period in previous years.
-  - **Play Next** — **Exclusive AI Recommendation!** Analyzes your recently completed games (within the last 3 months), your ratings, and your current backlog. Calls a Large Language Model via a cloud function to provide personalized recommendations and reasons, helping you decide what to play next.
+  - **Play Next** — Lists your backlog; admins also get AI recommendations (on the free plan the browser calls DeepSeek with your own API key — visitors don't see that panel).
 - **⭐ More Granular Data**:
   - **Game Status** — Precisely track whether a game is "Playing," "Backlog," "Passed," or "Abandoned."
   - **Personal Rating** — Rate your games on a 1-10 scale (half-star support) to add a personal touch to your data and feed the AI recommendation engine.
-  - **🏆 Achievement Tracking** — Mark games with 100% achievements. Steam games are auto-detected via sync; other platforms use manual toggle. Fully-completed rows in the data table are highlighted with a gold border and pulse animation.
+  - **🏆 Achievement Tracking** — Mark games with 100% achievements. Steam games are auto-detected by the local sync script; other platforms use a manual toggle. Fully-completed rows in the data table are highlighted with a gold border and pulse animation.
 - **🎭 Drama Tracking** — Besides games, also track TV dramas you've watched with automatic duration calculation.
 - **📥 Flexible Import/Export** — Supports data migration and backup in CSV format.
+
+-----
+
+## 🆓 Free-tier boundaries
+
+The site runs on the Spark plan. Every difference is collapsed into the `FEATURES` switch in `js/config/constants.js`:
+
+| Capability | Free plan (current) | Requires Blaze |
+| --- | --- | --- |
+| Hosting / custom domain | ✅ | — |
+| Google sign-in | ✅ | — |
+| Firestore realtime sync (50k reads / 20k writes per day) | ✅ | — |
+| Charts, KPIs, CSV import/export | ✅ | — |
+| Steam sync | 🖥️ local `tools/steam_sync/sync.mjs` + Task Scheduler | ☁️ in-page button + daily 04:00 cloud job |
+| AI recommendations | 🖥️ browser → DeepSeek, key stored locally, admin only | ☁️ Cloud Function holds the key (still admin-only in the UI) |
+| App Check | ❌ disabled (reCAPTCHA tokens never resolve on mainland networks) | ⚠️ verify tokens first |
+
+Nothing unclickable is left on the page: the Steam sync button is hidden on the free plan, and the AI panel is hidden from visitors (the backlog list stays).
 
 -----
 
@@ -43,15 +65,20 @@ Modular architecture, zero-build, vanilla JavaScript ES modules:
 ```
 js/
 ├── config/
-│   ├── firebase.js          # Firebase initialization
-│   └── constants.js          # Admin UIDs, platform colors, type maps, etc.
+│   ├── firebase.js          # Firebase init (App Check behind a switch)
+│   └── constants.js          # Admin UIDs, FEATURES switches, platform colors, type maps
 ├── core/
+│   ├── cache.js              # IndexedDB cache for instant first paint
 │   ├── state.js              # Centralized state management
 │   └── utils.js              # Formatters (currency, dates, ratings, etc.)
 ├── services/
 │   ├── firestore.js          # Firestore real-time listener, CRUD operations
 │   ├── csv.js                # CSV import/export
-│   └── recommendations.js    # AI game recommendations (Cloud Function + DeepSeek fallback)
+│   ├── csv-parse.js          # CSV parsing (pure, unit-tested)
+│   ├── steam.js              # Steam sync entry (free plan: status display only)
+│   ├── steam-playtime.js     # Steam playtime delta listeners
+│   ├── recommendations.js    # AI recommendations (free plan: direct DeepSeek)
+│   └── recommendation-parse.js  # Recommendation JSON parser (pure, unit-tested)
 ├── charts/
 │   ├── setup.js              # Chart.js configuration
 │   ├── cost-distribution.js  # Cost distribution chart
@@ -105,7 +132,7 @@ Some core charts and metrics have specific calculation logic behind them:
 
 - **AI Recommendations**
   - **Workflow**: When you click "Play Next," the app gathers your recently completed games (within 3 months, including name, playtime, and rating) and all games in your "Backlog" status.
-  - **Backend**: This info is sent to a Firebase Cloud Function, which calls a Large Language Model (DeepSeek) with a structured prompt to recommend games from your backlog based on your recent preferences.
+  - **Backend**: On the free plan the browser calls DeepSeek directly with the admin's own API key, so the panel is admin-only. On Blaze the same prompt goes through a Cloud Function that holds the key server-side.
 
 -----
 
@@ -134,7 +161,7 @@ Too lazy to enter hundreds of Steam games manually? You can use the **Steam Web 
 
 2. **Create a Web App**: In Project Settings, click the `</>` icon to create a web app, and copy the generated `firebaseConfig` object.
 
-3. **Enable Services**: Enable **Firestore Database** and **Authentication** in the console. Under Authentication's "Sign-in method" tab, enable **Google** as a sign-in provider. If you want AI recommendations, also enable **Functions**.
+3. **Enable Services**: Enable **Firestore Database** and **Authentication** in the console. Under Authentication's "Sign-in method" tab, enable **Google** as a sign-in provider. AI recommendations call DeepSeek from the browser on the free plan, so **Functions are not required**.
 
 4. **Configure the Code**: Open `js/config/firebase.js` and paste the `firebaseConfig` from Step 2 into the designated spot.
 
@@ -143,11 +170,10 @@ Too lazy to enter hundreds of Steam games manually? You can use the **Steam Web 
    2. Go to the Firebase Console's `Authentication -> Users` page, find your account and copy its `UID`.
    3. Paste the `UID` into the `ADMIN_UIDS` array in `js/config/constants.js`.
 
-6. **Deploy**: Use the Firebase CLI to deploy:
+6. **Deploy**: Use the Firebase CLI (the free-plan `firebase.json` has no `functions` block):
    ```bash
-   firebase deploy                  # also republishes Firestore rules
-   firebase deploy --only hosting   # recommended for routine releases
-   firebase deploy --only functions
+   firebase deploy --only hosting,firestore:rules
+   firebase deploy --only hosting   # routine releases
    ```
 
    > ⚠️ `firebase.json` includes `firestore.rules` in the deploy, so a bare
@@ -158,6 +184,18 @@ Too lazy to enter hundreds of Steam games manually? You can use the **Steam Web 
    > ℹ️ The admin UID must stay identical in `firestore.rules`,
    > `functions/index.js` and `js/config/constants.js`.
    > `node --test tools/tests/*.test.mjs` verifies this automatically.
+
+7. **Steam sync (free plan)**: Cloud Scheduler is unavailable, so run it locally:
+   ```bash
+   node tools/steam_sync/sync.mjs           # dry-run
+   node tools/steam_sync/sync.mjs --apply   # write to Firestore
+   ```
+   Set `STEAM_API_KEY` in `tools/steam_sync/.env`, then schedule it daily at 04:00 with Windows Task Scheduler. See `docs/free-tier-plan.md`.
+
+> 💡 **Optional: back to Blaze (paid)** — not the default path. Restore
+> `"functions": { "source": "functions" }` in `firebase.json`, flip the `FEATURES`
+> switches, re-set both secrets, and disable the local scheduled task. No frontend
+> edits are needed: the Steam sync button and cloud AI mode reappear with the switch.
 
 -----
 

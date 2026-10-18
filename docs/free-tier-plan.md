@@ -1,5 +1,9 @@
 # Firebase Spark（免费套餐）改造方案
 
+> **状态（2026-10-18）：长期主线。** 项目确定以后主要运行在 Spark 免费套餐，
+> 本文档描述的不是一次性降级动作，而是常态能力边界。Blaze 仍作为可选分支保留，
+> 任何时刻可以按 §8 升回去，但新功能一律先满足免费版。
+>
 > 本文档据 2026-10-17 的设计结论重建 —— 原文件在当天的分支切换事故中丢失。
 > 目标：在不删代码、不改数据模型的前提下，让站点在 Spark 免费套餐下完整可用；
 > 升回 Blaze 时只需翻转一个常量。
@@ -89,6 +93,8 @@ export const FEATURES = {
 - `SCHEDULED_SYNC` 蕴含 `STEAM_SYNC` —— 没有 Cloud Functions 就不可能有 Cloud Scheduler。
 - `AI_LOCAL_ONLY` 为真时，`getAIRecommendations` 不得调用 `callCloudFunction`。
 - `STEAM_SYNC` 为假时，同步按钮不得出现在 DOM 里（管理员也一样）。
+- `AI_LOCAL_ONLY` 为真时，`接下来` 弹窗的 AI 栏对非管理员整列隐藏（访客没有 Key，
+  只会看到"未配置"），待玩清单占满宽度。
 - `firebase.json` 没有 `functions` 段时，`STEAM_SYNC` / `SCHEDULED_SYNC` 不得为真。
 
 ## 5. 前端改动
@@ -100,7 +106,7 @@ export const FEATURES = {
 | `js/main.js` | 仅在 `STEAM_SYNC` 为真时绑定按钮；同步状态展示保留（读 `metadata/steamSync`，本地脚本也会写） |
 | `js/ui/auth.js` | 管理员态只在 `STEAM_SYNC` 为真时显示按钮 |
 | `js/services/recommendations.js` | `AI_LOCAL_ONLY` 为真时跳过云函数，直接打 DeepSeek；缺 Key 时给出可操作的提示 |
-| `js/ui/play-next.js` | 隐藏"本地直连模式"复选框（免费版恒为直连），状态文案改为单一路径 |
+| `js/ui/play-next.js` | 隐藏"本地直连模式"复选框（免费版恒为直连），状态文案改为单一路径；AI 栏对非管理员整列隐藏 |
 
 ## 6. 定时同步的替代：本地脚本
 

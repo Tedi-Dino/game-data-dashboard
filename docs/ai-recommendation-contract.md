@@ -9,6 +9,12 @@ to recommend games and dramas based on user data. The prompt and response parsin
 must remain synchronized between the frontend (`js/services/recommendations.js`) 
 and the Cloud Function (`functions/index.js`).
 
+> On the current Spark (free) plan only the browser path runs: the frontend calls
+> DeepSeek directly with the admin's API key. The Cloud Function copy is frozen
+> reference code for the optional Blaze path and is **not deployed**, but it must
+> still be kept byte-identical — `tools/tests/config-consistency.test.mjs` asserts
+> the two prompts match.
+
 ## Prompt Template
 
 ### Input Fields
@@ -17,10 +23,10 @@ The following fields are interpolated into the prompt template:
 
 | Field | Source | Description |
 |-------|--------|-------------|
-| `passedGames` | items.filter(status===passed, non-hardware, non-drama) | Each line: 《\xae名》 (用户评分: X/10) |
-| `unpassedGames` | items.filter(status!==passed, non-hardware, non-drama) | Each line: 《\xae名》 (状态: statusLabel) |
-| `passedDramas` | items.filter(status===passed, drama) | Each line: 《\xae名》 (用户评分: X/10, 类型: sort) |
-| `unpassedDramas` | items.filter(status!==passed, drama) | Each line: 《\xae名》 (状态: statusLabel) |
+| `passedGames` | items.filter(status===passed, non-hardware, non-drama) | Each line: 《名称》 (用户评分: X/10) |
+| `unpassedGames` | items.filter(status!==passed, non-hardware, non-drama) | Each line: 《名称》 (状态: statusLabel) |
+| `passedDramas` | items.filter(status===passed, drama) | Each line: 《名称》 (用户评分: X/10, 类型: sort) |
+| `unpassedDramas` | items.filter(status!==passed, drama) | Each line: 《名称》 (状态: statusLabel) |
 | `customPrompt` | User input from modal | Free-text extra requirements |
 | `thinking` | Toggle from UI | Boolean: enable reasoning mode |
 

@@ -7,8 +7,8 @@ const calcKPIs = () => {
     const games = items.filter(i => i.type !== 'hardware' && i.type !== 'drama');
     // `steam_override === false` means "trust the locally entered playTime, do not
     // let Steam overwrite it" — it does NOT mean "exclude from statistics".
-    // Per docs/steam-monthly-playtime-upgrade.md:51 those items must keep flowing
-    // through the original local amortization path, so they stay counted here.
+    // Per docs/archive/steam-monthly-playtime-upgrade.md:51 those items must keep
+    // flowing through the original local amortization path, so they stay counted here.
     const hardware = items.filter(i => i.type === 'hardware');
     const dramas = items.filter(i => i.type === 'drama');
     const gamesForCostCalc = games.filter(g => g.from !== 'free');

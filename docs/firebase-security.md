@@ -1,8 +1,15 @@
 # Firebase Security Model
 
+> Updated 2026-10-18 for the Spark (free) plan. The previous revision described the
+> Blaze setup (App Check enforced for Firestore, Cloud Functions doing the writes).
+> That is no longer true and would mislead anyone auditing the live site.
+
 ## Overview
 
-The app uses Firebase for authentication, Firestore for data storage, and Cloud Functions for backend logic. Security is enforced at multiple layers.
+The app uses Firebase for authentication and Firestore for storage. On Spark there
+are **no Cloud Functions**, so the security boundary is exactly two things:
+Firestore rules and the admin UID check inside them. Everything in the browser is
+UX, not enforcement.
 
 ## Security Layers
 
@@ -10,51 +17,62 @@ The app uses Firebase for authentication, Firestore for data storage, and Cloud 
 
 - Google Sign-In via Firebase Auth
 - Admin UIDs hardcoded in `js/config/constants.js` (`ADMIN_UIDS`)
-- Non-admin users are restricted client-side: FAB hidden, form actions actually disabled (`btn.disabled = true` + `.readonly-mode-disabled` class, set by `js/ui/auth.js`)
+- Non-admin users are restricted client-side: FAB hidden, form actions actually
+  disabled (`btn.disabled = true` + `.readonly-mode-disabled`, set by
+  `js/ui/auth.js`)
 
-### 2. Firestore Rules (Server)
+### 2. Firestore Rules (Server — the real boundary)
 
-Firestore rules are committed in `firestore.rules` and deployed through `firebase.json`.
+Rules live in `firestore.rules` and are deployed through `firebase.json`.
 
-- **Read**: Anyone (authenticated or not) can read the `items` collection
-- **Write**: Only authenticated users with admin UID can write
-- **Metadata**: only dashboard-facing metadata documents are publicly readable
-- **Steam playtime**: dashboard collections are readable; writes are Cloud Functions only
-- **Default**: all other collections are denied
+- **Read**: anyone, authenticated or not, can read `items`, `steamPlaytimeMonths`
+  (and its `apps` subcollection) and `steamPlaytimeState`
+- **Write**: only an authenticated user whose UID matches the hardcoded admin UID
+  can write `items` and the whitelisted `metadata/*` documents
+- **`steamPlaytime*` writes are denied to every client** (`allow write: if false`).
+  Only privileged credentials — the local sync script running with the Firebase
+  CLI's project-owner OAuth token — can write them
+- **Default**: everything not matched above is denied
 
-App Check enforcement is enabled for Firestore. Public reads must carry a valid
-App Check token issued through the production reCAPTCHA Enterprise provider.
-The provider and browser API key accept only the two Firebase Hosting domains.
-Local development must use an App Check debug token instead of adding localhost
-to the production key allowlist.
+> Because `tools/steam_sync/sync.mjs` authenticates as the project owner, it
+> **bypasses these rules entirely**. That is why it dry-runs by default and only
+> writes with `--apply`. Never point it at a project you do not own.
 
-### 3. Cloud Functions (Server)
+### 3. App Check — deliberately UNENFORCED
 
-- Admin UID check at the start of each callable function
-- App Check enforcement with replay-protected limited-use tokens
-- The Cloud Functions runtime service account must have the
-  `roles/firebaseappcheck.tokenVerifier` role. Without it, valid App Check
-  requests fail as `functions/unauthenticated` before the callable handler runs.
-- Per-admin cooldown and daily quotas before external API calls
-- Explicit instance and concurrency caps
-- Secrets managed via Firebase Secret Manager (not in source code)
-- Functions validate input length/types before processing
+For this project, `firestore.googleapis.com` App Check enforcement is
+`UNENFORCED`, and the browser never initialises App Check
+(`FEATURES.APP_CHECK = false`).
 
-For this project, grant the role with:
+Reason: the reCAPTCHA Enterprise token request pulls `www.google.com`, which never
+completes on a mainland network. With enforcement on, the SDK waits for a token
+that never arrives and every read fails or hangs — the page renders but all data
+is empty. See `docs/free-tier-plan.md` §2.1 for the measurements.
 
-```bash
-gcloud projects add-iam-policy-binding game-data-dashboard \
-  --member="serviceAccount:84289557335-compute@developer.gserviceaccount.com" \
-  --role="roles/firebaseappcheck.tokenVerifier"
-```
+Consequence: public reads are not attested. That is acceptable here because the
+data is already intentionally public and there is no billable backend to abuse.
+Do not re-enable enforcement before confirming token issuance in the App Check
+console.
 
-### 4. Client-Side UI (Defense in Depth)
+### 4. Cloud Functions — not deployed (Spark)
 
-- Admin-only actions are hidden from non-admin users
-- But client-side hiding is NOT a security boundary — it is UX only
-- True security relies on Firestore Rules and Cloud Function auth checks
+`functions/` is frozen reference code for the optional Blaze path; it is not
+deployed and cannot be. (Leftover gen2 resources from the paid period still show
+up in some listings but are not callable with billing disabled.)
+
+If the project ever returns to Blaze, the original model applies again: admin UID
+check at the start of each callable, App Check with limited-use tokens, per-admin
+cooldown and daily quotas, secrets in Secret Manager, and input validation before
+any external API call. The Cloud Functions runtime service account also needs
+`roles/firebaseappcheck.tokenVerifier`.
+
+### 5. Client-Side UI (Defense in Depth)
+
+- Admin-only actions are hidden from non-admin users (Steam sync button, AI panel)
+- Client-side hiding is NOT a security boundary — it is UX only
+- True security relies on Firestore Rules
 
 ## Key Principle
 
-The client-side read-only UI is a convenience, not a security measure.
-Always enforce write permissions at the Firestore/Functions level.
+The client-side read-only UI is a convenience, not a security measure. Always
+enforce write permissions at the Firestore level.
