@@ -141,22 +141,17 @@ export const setupPlayNextModal = () => {
         // Hide settings panel on open
         if (settingsPanel) settingsPanel.classList.add('hidden');
 
-        // Admin-only: toggle AI section visibility
+        // AI panel is a paid-era surface: on Spark the DeepSeek key lives in the
+        // admin's own browser, so a visitor could only ever hit "未配置 API Key".
+        // Hide the whole column instead of advertising it behind a padlock, and
+        // let the backlog list take the full width.
         const aiSection = document.getElementById('ai-section');
-        if (aiSection) {
-            const lockMsg = aiSection.querySelector('.ai-locked-msg');
-            if (isAdmin()) {
-                if (lockMsg) lockMsg.remove();
-                Array.from(aiSection.children).forEach(el => { if (!el.classList.contains('ai-locked-msg')) el.style.display = ''; });
-            } else {
-                Array.from(aiSection.children).forEach(el => { if (!el.classList.contains('ai-locked-msg')) el.style.display = 'none'; });
-                if (!lockMsg) {
-                    const div = document.createElement('div');
-                    div.className = 'flex items-center justify-center h-full ai-locked-msg';
-                    div.innerHTML = '<p class="text-stone-400 text-center">🔒 AI推荐功能仅限管理员使用</p>';
-                    aiSection.appendChild(div);
-                }
-            }
+        const aiGrid = aiSection ? aiSection.parentElement : null;
+        const aiAllowed = isAdmin();
+        if (aiSection) aiSection.classList.toggle('hidden', !aiAllowed);
+        if (aiGrid) {
+            aiGrid.classList.toggle('md:grid-cols-2', aiAllowed);
+            aiGrid.classList.toggle('md:grid-cols-1', !aiAllowed);
         }
         refreshSettingsUI();
         openModal(playNextModal);

@@ -13,7 +13,7 @@ const renderSteamSource = (item) => {
     if (item.type !== 'steam') return '<span class="steam-source text-stone-300" title="非 Steam"><i class="fas fa-minus"></i></span>';
     if (!item.steam_app_id) return '<span class="steam-source text-stone-400" title="未绑定"><i class="fas fa-cloud-slash"></i></span>';
     if (item.steam_override === false) return '<span class="steam-source text-amber-500" title="本地数据"><i class="fas fa-cloud-arrow-down"></i></span>';
-    return '<span class="steam-source text-emerald-500" title="Steam 云端"><i class="fas fa-cloud"></i></span>';
+    return '<span class="steam-source text-emerald-500" title="Steam 同步数据"><i class="fas fa-cloud"></i></span>';
 };
 
 /**
