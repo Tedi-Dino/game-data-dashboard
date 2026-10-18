@@ -117,11 +117,28 @@ const scheduleDashboardUpdate = () => {
 };
 
 // --- Auth actions ---
+// Map SDK error codes to actionable text. Every sign-in failure used to be
+// swallowed into console.error, so a blocked popup, an unlisted domain and a
+// network failure all looked like "the button does nothing".
+const AUTH_ERROR_MESSAGES = {
+    'auth/popup-blocked': '浏览器拦截了登录弹窗，请允许本站弹出窗口后重试。',
+    'auth/cancelled-popup-request': '上一次登录尚未结束，请稍后重试。',
+    'auth/unauthorized-domain': '当前域名未在 Firebase 授权域名列表中，请到 Authentication → Settings → Authorized domains 添加。',
+    'auth/operation-not-allowed': 'Firebase 控制台未启用 Google 登录方式。',
+    'auth/network-request-failed': '无法连接 Google 登录服务，请检查网络或代理后重试。',
+    'auth/internal-error': '登录服务内部错误，请刷新页面后重试。',
+};
+
 const signInWithGoogle = async () => {
     try {
         await signInWithPopup(auth, new GoogleAuthProvider());
     } catch (error) {
         console.error('Google Sign-In Error:', error);
+        // Closing the popup on purpose needs no dialog.
+        if (error?.code === 'auth/popup-closed-by-user') return;
+        const message = AUTH_ERROR_MESSAGES[error?.code]
+            || `登录失败：${error?.code || error?.message || '未知错误'}`;
+        showAlert(message);
     }
 };
 

@@ -24,6 +24,13 @@ const hash = (str) => {
     return h;
 };
 
+// Module-scoped current user id. This declaration MUST stay: ES modules run in
+// strict mode, so assigning to an undeclared `userId` throws ReferenceError.
+// A previous refactor deleted it while keeping the accessors, which made
+// updateAuthUI() throw before it could switch the header to the logged-in state
+// — sign-in actually succeeded, the page just never reflected it.
+let userId = null;
+
 const getUserId = () => userId;
 
 const setUserId = (id) => { userId = id; };
