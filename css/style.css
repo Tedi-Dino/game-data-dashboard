@@ -28,15 +28,17 @@ body {
     grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 
+/* Tablet: three KPI cards share the top row, charts go full width.
+   The compact six-column dashboard needs ~1280px before the KPI cards and the
+   scatter selector stop wrapping. */
 @media (min-width: 768px) {
     .dashboard-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
     }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
     .dashboard-grid {
-        grid-template-columns: repeat(6, minmax(0, 1fr));
         grid-template-rows: minmax(0, 50fr) minmax(0, 50fr);
     }
 }
@@ -48,7 +50,7 @@ body {
     grid-template-rows: auto;
 }
 .doughnut-grid .flex-grow.relative {
-    min-height: 200px;
+    min-height: 190px;
 }
 
 @media (min-width: 768px) {
@@ -213,12 +215,14 @@ html::-webkit-scrollbar-thumb:hover { background: #78716c; }
     background-color: #b45309;
 }
 
-/* === KPI Tooltip Base === */
+/* === KPI Tooltip Base ===
+   Hidden tooltips use `display: none` rather than `opacity: 0`: they are wider
+   than their KPI card, and an invisible-but-rendered box still extends the
+   document's scrollable overflow on tablets. */
 .kpi-tooltip {
+    display: none;
     position: absolute;
-    opacity: 0;
     pointer-events: none;
-    transition: opacity 0.15s ease;
     z-index: var(--z-tooltip);
     max-width: calc(100vw - 2rem);
     background-color: #ffffff;
@@ -226,8 +230,14 @@ html::-webkit-scrollbar-thumb:hover { background: #78716c; }
     border-radius: 0.75rem;
     box-shadow: 0 10px 30px rgba(0,0,0,0.06);
 }
-.relative.group:hover .kpi-tooltip {
-    opacity: 1;
+.relative.group:hover .kpi-tooltip,
+.relative.group:focus-within .kpi-tooltip {
+    display: block;
+    animation: kpi-tooltip-fade 0.15s ease-out;
+}
+@keyframes kpi-tooltip-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 .kpi-tooltip-above {
     bottom: 100%;
@@ -450,6 +460,16 @@ body.skeleton-loading .flex-grow.relative::after {
 /* === KPI Color Accents === */
 .kpi-primary {
     color: #f5b642;
+}
+
+/* At 1280–1439 the six-column grid leaves ~163px inside each KPI card and the
+   game-count value ("5 / 23 / 78 款") wraps at text-2xl. 22px keeps it on one
+   line until the wider desktop layout restores the full size. */
+@media (min-width: 1280px) and (max-width: 1439px) {
+    #kpi-card-2 .kpi-primary,
+    #kpi-card-3 .kpi-primary {
+        font-size: 1.375rem;
+    }
 }
 
 .kpi-secondary {

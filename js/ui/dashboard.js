@@ -224,9 +224,14 @@ export const setupKpiTooltips = () => {
         if (!trigger) return;
 
         trigger.addEventListener('mouseenter', () => {
-            // Measure while invisible — disable transition briefly to avoid flash
+            // Measure while invisible — disable transition briefly to avoid flash.
+            // The tooltip is display:none until hover so hidden boxes cannot
+            // widen the document; force it measurable for this synchronous pass.
             const prevTransition = tooltip.style.transition;
             const prevPointerEvents = tooltip.style.pointerEvents;
+            const prevDisplay = tooltip.style.display;
+            tooltip.style.display = 'block';
+            tooltip.style.opacity = '0';
             tooltip.style.transition = 'none';
             tooltip.style.pointerEvents = 'none';
 
@@ -275,6 +280,8 @@ export const setupKpiTooltips = () => {
             // Restore transition (CSS :hover handles opacity)
             tooltip.style.transition = prevTransition;
             tooltip.style.pointerEvents = prevPointerEvents;
+            tooltip.style.display = prevDisplay;
+            tooltip.style.opacity = '';
         });
     });
 };

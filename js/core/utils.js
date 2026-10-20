@@ -1,5 +1,8 @@
-// Currency formatter — guards against NaN
-export const formatCurrency = (value) => `¥${(Number.isFinite(value) ? value : 0).toFixed(2)}`;
+// Currency formatter — guards against NaN, keeps the minus before the symbol
+export const formatCurrency = (value) => {
+    const amount = Number.isFinite(value) ? value : 0;
+    return `${amount < 0 ? '-' : ''}¥${Math.abs(amount).toFixed(2)}`;
+};
 
 // Plain number formatter (no ¥ symbol — for use with separate currency spans)
 export const formatNumber = (value) => (Number.isFinite(value) ? value : 0).toFixed(2);

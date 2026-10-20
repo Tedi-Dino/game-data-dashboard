@@ -59,7 +59,8 @@ describe("source syntax", () => {
 // netCost (the "unsold physical = 30" rule) would not fail this suite. Now the
 // assertions below run against the actual shipped functions.
 const { netCost, normalizeMonth, parseLocalDateOnly, parseDateOrNull,
-        toLocalISODate, todayLocalISODate, isUnsoldPhysical, escapeHTML } = utils;
+        toLocalISODate, todayLocalISODate, isUnsoldPhysical, escapeHTML,
+        formatCurrency } = utils;
 
 describe("netCost", () => {
   it("unsold physical returns 30 estimate", () => {
@@ -89,6 +90,20 @@ describe("netCost", () => {
 
   it("unknown type returns 0 when no price", () => {
     assert.equal(netCost({}), 0);
+  });
+});
+
+describe("formatCurrency", () => {
+  it("formats positive amounts with the symbol first", () => {
+    assert.equal(formatCurrency(12630), "¥12630.00");
+  });
+
+  it("puts the minus sign before the currency symbol", () => {
+    assert.equal(formatCurrency(-50), "-¥50.00");
+  });
+
+  it("falls back to zero for non-finite input", () => {
+    assert.equal(formatCurrency(NaN), "¥0.00");
   });
 });
 

@@ -259,7 +259,14 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
             },
             plugins: {
                 legend: {
+                    position: 'bottom',
                     labels: {
+                        usePointStyle: true,
+                        pointStyle: 'rectRounded',
+                        boxWidth: 8,
+                        boxHeight: 8,
+                        padding: 8,
+                        font: { size: 11 },
                         filter: (item) => {
                             return item.text !== '合计时长';
                         }
