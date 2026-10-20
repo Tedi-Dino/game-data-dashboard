@@ -47,17 +47,13 @@ window.cdnLoadError = function(name) {
     <!-- Main App Container -->
     <div id="app-container" class="max-w-screen-2xl mx-auto flex flex-col flex-grow w-full min-h-0">
         <!-- Header -->
-        <header class="mb-4 flex flex-col sm:flex-row sm:flex-wrap justify-between items-center gap-4 flex-shrink-0">
-            <div class="text-center sm:text-left">
-                <h1 class="text-3xl font-bold text-stone-900">🎬 影音游戏仪表盘</h1>
-                <p id="dashboard-subtitle" class="text-stone-500 mt-1">量化您的影音爱好：游戏与剧集的时间投入分析</p>
+        <header class="mb-4 flex flex-col gap-3 flex-shrink-0 lg:flex-row lg:flex-wrap lg:justify-between lg:items-center">
+            <div class="text-center lg:text-left">
+                <h1 class="text-2xl sm:text-3xl font-bold text-stone-900">🎬 影音游戏仪表盘</h1>
+                <p id="dashboard-subtitle" class="text-sm sm:text-base text-stone-500 mt-1">量化您的影音爱好：游戏与剧集的时间投入分析</p>
             </div>
-            <div class="flex flex-wrap justify-center items-center gap-4">
+            <div class="flex flex-wrap justify-center lg:justify-end items-center gap-2 sm:gap-3">
                  <input type="file" id="csv-import-input" class="hidden" accept=".csv">
-
-                 <div class="text-center sm:text-right">
-                    <p class="text-xs text-stone-400 mt-1">Powered by Firebase. Co-Developed by Tedi-Dino & AI ❤️</p>
-                 </div>
 
                  <div class="flex items-center space-x-2">
                     <div id="auth-controls">
@@ -81,16 +77,17 @@ window.cdnLoadError = function(name) {
                         <i class="fab fa-github text-xl"></i>
                     </a>
                 </div>
-                <button id="on-this-day-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">💡 那年今日</button>
-                <button id="play-next-btn" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">💡 接下来</button>
-                <button id="view-all-btn" class="bg-amber-700 hover:bg-amber-800 text-white font-bold py-2 px-4 rounded-lg transition-colors">📊 查看数据详情</button>
+                <div class="hidden sm:block w-px h-6 bg-stone-300" aria-hidden="true"></div>
+                <button id="on-this-day-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm sm:text-base py-2 px-3 sm:px-4 rounded-lg transition-colors whitespace-nowrap">💡 那年今日</button>
+                <button id="play-next-btn" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm sm:text-base py-2 px-3 sm:px-4 rounded-lg transition-colors whitespace-nowrap">💡 接下来</button>
+                <button id="view-all-btn" class="bg-amber-700 hover:bg-amber-800 text-white font-bold text-sm sm:text-base py-2 px-3 sm:px-4 rounded-lg transition-colors whitespace-nowrap">📊 查看数据详情</button>
             </div>
         </header>
 
         <!-- Main Content -->
-        <main id="main-content" class="dashboard-grid pb-28 lg:pb-2 flex-grow">
+        <main id="main-content" class="dashboard-grid pb-24 xl:pb-2 flex-grow">
             <!-- KPI: 消费总览 -->
-            <div id="kpi-card-1" class="card p-4 card-animation lg:col-span-1 lg:row-start-1">
+            <div id="kpi-card-1" class="card p-4 card-animation md:col-span-2 xl:col-span-1 xl:row-start-1">
                 <h3 class="text-lg font-normal text-stone-500 mb-2">💰 消费总览</h3>
                 <div class="space-y-2 flex-grow">
                     <div>
@@ -121,7 +118,7 @@ window.cdnLoadError = function(name) {
             </div>
 
             <!-- KPI: 游戏时长总览 -->
-            <div id="kpi-card-2" class="card p-4 card-animation flex flex-col lg:col-span-1 lg:row-start-2">
+            <div id="kpi-card-2" class="card p-4 card-animation flex flex-col md:col-span-2 xl:col-span-1 xl:row-start-2">
                 <h3 class="text-lg font-normal text-stone-500 mb-4">🎮 游戏时长总览</h3>
                  <div class="space-y-4 flex-grow">
                     <div class="relative group">
@@ -156,7 +153,7 @@ window.cdnLoadError = function(name) {
             </div>
 
             <!-- KPI: 剧集时长总览 -->
-            <div id="kpi-card-3" class="card p-4 card-animation flex flex-col lg:col-span-1 lg:row-start-2">
+            <div id="kpi-card-3" class="card p-4 card-animation flex flex-col md:col-span-2 xl:col-span-1 xl:row-start-2">
                 <h3 class="text-lg font-normal text-stone-500 mb-4">📺 剧集时长总览</h3>
                  <div class="space-y-4 flex-grow">
                     <div class="relative group">
@@ -183,7 +180,7 @@ window.cdnLoadError = function(name) {
             </div>
 
             <!-- Charts: Three Doughnuts -->
-            <div id="chart-card-all-doughnuts" class="card p-4 card-animation relative flex flex-col lg:col-span-3 lg:row-start-1 min-h-[480px] lg:min-h-0">
+            <div id="chart-card-all-doughnuts" class="card p-4 card-animation relative flex flex-col md:col-span-6 xl:col-span-3 xl:row-start-1 min-h-[480px] md:min-h-[380px] xl:min-h-0">
                 <h3 class="text-lg font-normal text-stone-500 mb-1">📊 消费、时间与爱好统计</h3>
                 <div class="flex-grow doughnut-grid gap-4">
                     <div class="relative flex flex-col doughnut-item-1">
@@ -202,7 +199,7 @@ window.cdnLoadError = function(name) {
             </div>
 
             <!-- Chart: Price-Time Scatter -->
-            <div id="chart-card-2" class="card p-4 card-animation flex flex-col lg:col-span-2 lg:row-start-1 min-h-[250px] lg:min-h-0">
+            <div id="chart-card-2" class="card p-4 card-animation flex flex-col md:col-span-6 xl:col-span-2 xl:row-start-1 min-h-[250px] md:min-h-[360px] xl:min-h-0">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="text-lg font-normal text-stone-500">📈 价格-时间分布</h3>
                     <div class="flex items-center space-x-1">
@@ -219,7 +216,7 @@ window.cdnLoadError = function(name) {
             </div>
 
             <!-- Chart: Monthly Trends -->
-            <div id="chart-card-3" class="card p-4 card-animation lg:col-span-4 lg:row-start-2 relative flex flex-col min-h-[300px] lg:min-h-0">
+            <div id="chart-card-3" class="card p-4 card-animation md:col-span-6 xl:col-span-4 xl:row-start-2 relative flex flex-col min-h-[460px] md:min-h-[420px] xl:min-h-0">
                 <div class="flex justify-between items-center gap-4 mb-2">
                      <h3 class="text-lg font-normal text-stone-500">🗓️ 月度消费与时间统计</h3>
                     <div class="flex items-center space-x-4">
@@ -227,7 +224,7 @@ window.cdnLoadError = function(name) {
                             <input type="checkbox" id="exclude-hardware-checkbox" class="form-checkbox">
                             <label for="exclude-hardware-checkbox" class="text-sm font-medium text-stone-600 whitespace-nowrap">不计硬件</label>
                         </div>
-                        <button id="monthly-chart-fullscreen-btn" class="lg:hidden text-stone-600 hover:text-stone-900" title="全屏查看" aria-label="全屏查看月度趋势图">
+                        <button id="monthly-chart-fullscreen-btn" class="xl:hidden text-stone-600 hover:text-stone-900" title="全屏查看" aria-label="全屏查看月度趋势图">
                             <i class="fas fa-expand-alt fa-lg"></i>
                         </button>
                     </div>
@@ -237,6 +234,10 @@ window.cdnLoadError = function(name) {
                 </div>
             </div>
         </main>
+
+        <footer class="mt-4 pb-2 text-center text-xs text-stone-400 flex-shrink-0">
+            Powered by Firebase. Co-Developed by Tedi-Dino &amp; AI ❤️
+        </footer>
     </div>
 
     <!-- Floating Action Button -->
@@ -249,7 +250,7 @@ window.cdnLoadError = function(name) {
     </div>
 
     <!-- Item Add/Edit Modal -->
-    <div id="item-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop overflow-y-auto" style="z-index: var(--z-modal);" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div id="item-modal" class="fixed inset-0 items-start justify-center p-4 hidden modal-backdrop overflow-y-auto" style="z-index: var(--z-modal);" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="card w-full max-w-lg mx-auto rounded-lg shadow-xl p-6 relative my-4">
             <h2 id="modal-title" class="text-xl font-bold text-stone-900 mb-4">添加记录</h2>
             <!-- Mode Toggle -->

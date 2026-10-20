@@ -143,7 +143,11 @@ export const renderGameDistributionChart = () => {
                         if (!pt) return null;
                         const icon = pt.type === 'drama' ? '📺' : '🎮';
                         const stars = renderStars(pt.rating, false);
+                        const meta = PLATFORM_META.find(p => p.type === pt.type);
+                        const platformLabel = meta?.label || TIME_LABEL_BY_TYPE[pt.type] || '其他';
+                        const platformColor = PLATFORM_COLORS[meta?.colorKey] || '#9ca3af';
                         let html = `<div class="font-bold text-base mb-1">${icon} ${escapeHTML(pt.name)}</div>` +
+                            `<div class="text-xs text-stone-500 mb-1"><span class="inline-block w-2 h-2 rounded-full mr-1 align-middle" style="background-color:${platformColor}"></span>${escapeHTML(platformLabel)}</div>` +
                             `<div class="text-sm">时长: <strong>${pt.x.toFixed(1)}h</strong></div>` +
                             `<div class="text-sm">${pt.isEstimatedCost ? '估算净花费' : '实际净花费'}: <strong>${formatCurrency(pt.y)}</strong></div>`;
                         if (pt.sellPrice > 0) {
