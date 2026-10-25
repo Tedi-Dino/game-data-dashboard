@@ -1,7 +1,7 @@
 import { items } from '../core/state.js';
 import { PLATFORM_COLORS, COST_TYPE_MAP, COST_COLOR_MAP, COST_LABEL_BY_TYPE } from '../config/constants.js';
 import { formatCurrency, escapeHTML, netCost } from '../core/utils.js';
-import { createExternalTooltip, renderOrUpdateChart } from './setup.js';
+import { createExternalTooltip, renderOrUpdateChart, setChartEmptyState } from './setup.js';
 
 export const renderCostDistributionChart = () => {
     const rawData = {};
@@ -14,6 +14,10 @@ export const renderCostDistributionChart = () => {
     const sortedEntries = Object.entries(rawData).filter(([_, v]) => v !== 0).sort((a, b) => b[1] - a[1]);
     const el = document.getElementById('cost-distribution-chart');
     if (!el) return;
+    setChartEmptyState('cost-distribution-empty', sortedEntries.length === 0);
+    el.setAttribute?.('aria-label', sortedEntries.length
+        ? `消费金额分布饼图：${sortedEntries.map(([label]) => label).join('、')}`
+        : '消费金额分布饼图：暂无数据');
 
     // Denominator for percentages: sum of magnitudes, otherwise mixed signs
     // produce meaningless (and possibly infinite) shares.
@@ -68,7 +72,7 @@ export const renderCostDistributionChart = () => {
                         let html = `<div class="font-bold text-base mb-2 border-b border-stone-200 pb-1 flex justify-between"><span>${escapeHTML(label)}</span><span>${formatCurrency(value)} (${percentage}%)</span></div>`;
                         html += '<h4 class="font-semibold mt-2 mb-1">支出 Top 5</h4><ul class="text-sm">';
                         topItems.forEach(item => {
-                            html += `<li class="flex justify-between my-1"><span>${escapeHTML(item.name.substring(0, 20))}</span><strong>${formatCurrency(item.value)}</strong></li>`;
+                            html += `<li class="flex justify-between my-1"><span>${escapeHTML((item.name || '').substring(0, 20))}</span><strong>${formatCurrency(item.value)}</strong></li>`;
                         });
                         if (topItems.length === 0 || topItems.every(i => i.value === 0)) {
                             html += '<li>无支出记录</li>';

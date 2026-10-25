@@ -1,160 +1,175 @@
 import { items, sortConfig, setSortConfig, setIsEditingFromList } from '../core/state.js';
-import { formatCurrency, renderStarsForTable, formatDateForInput, escapeHTML, getStartDate, netCost, effectiveRemarks, isUnsoldPhysical, parseLocalDateOnly } from '../core/utils.js';
+import {
+    formatCurrency, renderStarsForTable, formatDateForInput, escapeHTML,
+    netCost, effectiveRemarks, isUnsoldPhysical,
+} from '../core/utils.js';
 import { TYPE_MAP, FROM_MAP, STATUS_MAP } from '../config/constants.js';
 import { openModal, closeModal } from './modals.js';
 import { isAdmin } from './auth.js';
-import { setFormMode } from './item-form.js';
+import { setFormMode, resetFormModeMemory } from './item-form.js';
+import {
+    KPI_FILTERS, sortItems, matchesSearch, paginateItems, formatHours,
+} from './table-utils.js';
 
 /**
  * Render the steam data-source indicator (inline after playtime).
  * All states use Font Awesome icons at consistent size.
  */
 const renderSteamSource = (item) => {
-    if (item.type !== 'steam') return '<span class="steam-source text-stone-300" title="非 Steam"><i class="fas fa-minus"></i></span>';
-    if (!item.steam_app_id) return '<span class="steam-source text-stone-400" title="未绑定"><i class="fas fa-cloud-slash"></i></span>';
-    if (item.steam_override === false) return '<span class="steam-source text-amber-500" title="本地数据"><i class="fas fa-cloud-arrow-down"></i></span>';
-    return '<span class="steam-source text-emerald-500" title="Steam 同步数据"><i class="fas fa-cloud"></i></span>';
-};
-
-/**
- * Show/hide rows according to a search term.
- * Only text in currently visible columns is matched, so collapsed detail columns
- * stay hidden until expanded.
- *
- * This logic used to be duplicated verbatim in three places (toggle collapsing,
- * after re-render, and the search debounce) with three different comments — they
- * had already drifted. One source of truth now.
- */
-const applyRowFilter = (container, term) => {
-    if (!container) return;
-    const normalized = String(term || '').toLowerCase();
-    container.querySelectorAll('tr').forEach(row => {
-        const visibleText = Array.from(row.querySelectorAll('td'))
-            .filter(td => !td.classList.contains('collapsible-col') || td.classList.contains('expanded'))
-            .map(td => td.textContent.toLowerCase())
-            .join(' ');
-        row.style.display = visibleText.includes(normalized) ? '' : 'none';
-    });
+    const icon = (names, tone, label) =>
+        `<span class="steam-source ${tone}" title="${label}" aria-label="${label}"><i class="fas ${names}" aria-hidden="true"></i></span>`;
+    if (item.type !== 'steam') return icon('fa-minus', 'text-stone-300', '非 Steam');
+    if (!item.steam_app_id) return icon('fa-cloud-slash', 'text-stone-400', '未绑定 Steam');
+    if (item.steam_override === false) return icon('fa-cloud-arrow-down', 'text-amber-600', '本地数据');
+    return icon('fa-cloud', 'text-emerald-600', 'Steam 同步数据');
 };
 
 let detailColsExpanded = false;
+let currentPage = 1;
+let pageSize = 50;
+let activeFilterKey = null;
+
+export const getListPageSize = () => pageSize;
+export const getActiveListFilterKey = () => activeFilterKey;
+export const resetListPage = () => { currentPage = 1; };
+export const setListPageSize = (value) => {
+    pageSize = Number(value) >= 0 ? Number(value) : 50;
+    currentPage = 1;
+};
 
 /**
- * Setup the detail columns expand/collapse toggle button.
+ * Activate a KPI filter. `all` is treated as "no filter" so the chip does not
+ * advertise a restriction that is not there.
  */
-export const setupDetailColsToggle = () => {
-    const toggleBtn = document.getElementById('toggle-detail-cols');
-    if (!toggleBtn) return;
+export const setListFilter = (key) => {
+    activeFilterKey = key && key !== 'all' && KPI_FILTERS[key] ? key : null;
+    currentPage = 1;
+    updateFilterBar();
+};
 
-    toggleBtn.addEventListener('click', () => {
-        detailColsExpanded = !detailColsExpanded;
-        const cols = document.querySelectorAll('.collapsible-col');
-        cols.forEach(col => col.classList.toggle('expanded', detailColsExpanded));
+export const clearListFilter = () => {
+    activeFilterKey = null;
+    currentPage = 1;
+    updateFilterBar();
+};
 
-        const icon = toggleBtn.querySelector('i');
-        if (detailColsExpanded) {
-            toggleBtn.innerHTML = '<i class="fas fa-caret-up"></i> 折叠详情';
-        } else {
-            toggleBtn.innerHTML = '<i class="fas fa-caret-down"></i> 展开详情';
-        }
+const updateFilterBar = () => {
+    const bar = document.getElementById('list-filter-bar');
+    const label = document.getElementById('list-filter-label');
+    if (!bar) return;
+    const filter = activeFilterKey ? KPI_FILTERS[activeFilterKey] : null;
+    bar.classList.toggle('is-visible', Boolean(filter));
+    if (label) label.textContent = filter ? filter.label : '';
+};
 
-        // Re-apply search filter so hidden rows stay hidden
-        const searchInput = document.getElementById('list-search-input');
-        if (searchInput && searchInput.value) {
-            applyRowFilter(document.getElementById('items-table-body'), searchInput.value);
-        }
-    });
+const updateSearchClearButton = () => {
+    const input = document.getElementById('list-search-input');
+    const clearBtn = document.getElementById('clear-list-search-btn');
+    if (!clearBtn || !input) return;
+    clearBtn.hidden = input.value.length === 0;
+};
+
+const setEmptyState = ({ visible, title, hint }) => {
+    const box = document.getElementById('no-data-list-message');
+    if (!box) return;
+    box.classList.toggle('is-visible', visible);
+    const titleEl = document.getElementById('no-data-list-text');
+    const hintEl = document.getElementById('no-data-list-hint');
+    if (titleEl) titleEl.textContent = title;
+    if (hintEl) hintEl.textContent = hint || '';
+};
+
+const updateResultCount = (shown, total, loading) => {
+    const el = document.getElementById('list-result-count');
+    if (!el) return;
+    if (loading) {
+        el.textContent = '正在加载…';
+    } else if (total === 0) {
+        el.textContent = '共 0 条';
+    } else if (shown === total) {
+        el.textContent = `共 ${total} 条`;
+    } else {
+        el.textContent = `筛选出 ${shown} / ${total} 条`;
+    }
+};
+
+const updatePagination = (pageData) => {
+    const container = document.getElementById('table-pagination');
+    if (!container) return;
+    const visible = pageData.total > 0;
+    container.classList.toggle('is-visible', visible);
+
+    const pageInfo = document.getElementById('page-info');
+    if (pageInfo) {
+        pageInfo.textContent = pageData.total === 0
+            ? '第 0 / 0 页'
+            : `第 ${pageData.page} / ${pageData.totalPages} 页 · ${pageData.start}–${pageData.end} 条`;
+    }
+    const prev = document.getElementById('page-prev');
+    const next = document.getElementById('page-next');
+    if (prev) prev.disabled = !visible || pageData.page <= 1;
+    if (next) next.disabled = !visible || pageData.page >= pageData.totalPages;
+    const sizeSelect = document.getElementById('page-size-select');
+    if (sizeSelect && sizeSelect.value !== String(pageSize)) sizeSelect.value = String(pageSize);
 };
 
 /**
  * Render the items data table in the list modal.
+ *
+ * Search, KPI filtering, sorting and pagination all feed the same pipeline:
+ * items → filter → search → sort → page. Rendering rows only for the current
+ * page keeps the DOM small and makes Firestore refreshes deterministic.
  */
 export const renderItemsList = () => {
     const tbody = document.getElementById('items-table-body');
-    const noDataMsg = document.getElementById('no-data-list-message');
     if (!tbody) return;
 
+    const searchInput = document.getElementById('list-search-input');
+    const term = searchInput ? searchInput.value : '';
+    const filter = activeFilterKey ? KPI_FILTERS[activeFilterKey] : null;
+    const loading = items.length === 0 && document.body.classList.contains('skeleton-loading');
+
+    let filtered = filter ? items.filter(filter.predicate) : [...items];
+    filtered = filtered.filter(item => matchesSearch(item, term, detailColsExpanded));
+    const sorted = sortItems(filtered, sortConfig);
+    const pageData = paginateItems(sorted, currentPage, pageSize);
+    // A data refresh may shrink the result set below the current page.
+    currentPage = pageData.page;
+
     tbody.innerHTML = '';
+    updateFilterBar();
+    updateSearchClearButton();
+    updateResultCount(filtered.length, items.length, loading);
+    updatePagination(pageData);
 
     if (items.length === 0) {
-        if (noDataMsg) noDataMsg.classList.remove('hidden');
+        setEmptyState({
+            visible: true,
+            title: loading ? '正在加载数据…' : '暂无数据',
+            hint: loading ? '首次加载可能需要几秒钟，请稍候。' : '登录管理员后可以添加第一条记录。',
+        });
         return;
     }
-    if (noDataMsg) noDataMsg.classList.add('hidden');
 
-    // Sort items
-    // Parse stored 'YYYY-MM-DD' as LOCAL midnight so sort order matches the
-    // calendar day the user actually entered.
-    const getDateVal = (item, key) => {
-        const raw = item[key];
-        if (!raw) return -Infinity;
-        const d = parseLocalDateOnly(String(raw).split('T')[0]);
-        return d ? d.getTime() : -Infinity;
-    };
+    if (pageData.total === 0) {
+        setEmptyState({
+            visible: true,
+            title: '没有匹配的记录',
+            hint: '试试清除筛选，或换一个搜索关键词。',
+        });
+        return;
+    }
+    setEmptyState({ visible: false });
 
-    const sorted = [...items].sort((a, b) => {
-        // Multi-tier default sort
-        if (sortConfig.key === '_default') {
-            const statusOrder = { playing: 0, passed: 1 };
-            const aStatus = statusOrder[a.status] ?? 2;
-            const bStatus = statusOrder[b.status] ?? 2;
-            if (aStatus !== bStatus) return aStatus - bStatus;
+    const admin = isAdmin();
+    const detailClass = detailColsExpanded ? 'collapsible-col expanded' : 'collapsible-col';
 
-            if (a.status === 'playing') {
-                const aStart = getStartDate(a);
-                const bStart = getStartDate(b);
-                const toTime = (v) => {
-                    if (!v) return -Infinity;
-                    const d = parseLocalDateOnly(String(v).split('T')[0]);
-                    return d ? d.getTime() : -Infinity;
-                };
-                return toTime(aStart) - toTime(bStart);
-            }
-            if (a.status === 'passed') {
-                const aDate = getDateVal(a, 'passDate');
-                const bDate = getDateVal(b, 'passDate');
-                return bDate - aDate;
-            }
-            const aDate = getDateVal(a, 'purchaseDate');
-            const bDate = getDateVal(b, 'purchaseDate');
-            return bDate - aDate;
-        }
-
-        // Single-key sort
-        const getVal = (item, key) => {
-            const cost = netCost(item);
-            switch (key) {
-                case 'id': return item.id || '';
-                case 'name': return item.name || '';
-                case 'sort': return item.sort || '';
-                case 'type': return item.type || '';
-                case 'from': return item.from || '';
-                case 'status': return item.status || '';
-                case 'purchaseDate': return getDateVal(item, 'purchaseDate');
-                case 'startDate': return getDateVal(item, 'startDate');
-                case 'passDate': return getDateVal(item, 'passDate');
-                case 'purchasePrice': return item.purchasePrice ?? -1;
-                case 'actualCost': return cost;
-                case 'playTime': return item.playTime ?? -1;
-                case 'costPerHour': return (!item.playTime || item.playTime <= 0 ? Infinity : cost / item.playTime);
-                case 'rating': return item.rating ?? 0;
-                case 'steam': return item.steam_app_id ? 1 : 0;
-                default: return '';
-            }
-        };
-
-        const valA = getVal(a, sortConfig.key);
-        const valB = getVal(b, sortConfig.key);
-        const comparison = (typeof valA === 'string' && typeof valB === 'string')
-            ? valA.localeCompare(valB, 'zh-CN')
-            : (valA < valB ? -1 : (valA > valB ? 1 : 0));
-        return sortConfig.direction === 'asc' ? comparison : -comparison;
-    });
-
-    sorted.forEach(item => {
+    pageData.items.forEach(item => {
         const cost = netCost(item);
         const cph = item.playTime > 0 ? cost / item.playTime : null;
-        const costNote = isUnsoldPhysical(item) ? `<span class="ml-1 text-xs text-amber-600">${escapeHTML(effectiveRemarks(item))}</span>` : '';
+        const costNote = isUnsoldPhysical(item)
+            ? `<span class="ml-1 text-xs text-amber-700">${escapeHTML(effectiveRemarks(item))}</span>`
+            : '';
 
         const row = document.createElement('tr');
         const baseClass = 'border-b border-stone-200 hover:bg-stone-100 cursor-pointer';
@@ -164,66 +179,84 @@ export const renderItemsList = () => {
         if (statusClass && !item.fullyCompleted) classes.push(statusClass);
         row.className = classes.join(' ');
         row.dataset.fb_id = item.fb_id;
-        // playTime is numeric on every current write path, but it was the one
-        // dynamic value in this template that skipped escaping — escape it too.
+        if (admin) {
+            row.tabIndex = 0;
+            row.setAttribute('aria-label', `编辑 ${item.name || ''}`.trim());
+            row.title = '点击或按回车编辑';
+        }
+
+        const fullName = item.fullyCompleted
+            ? `<span class="achievement-name"><i class="fas fa-trophy achievement-name-trophy" aria-hidden="true"></i> ${escapeHTML(item.name)}</span>`
+            : (escapeHTML(item.name) || '/');
+
         row.innerHTML = `
-            <td class="px-4 py-3 font-mono whitespace-nowrap">${escapeHTML(item.id) || '/'}</td>
-            <td class="px-4 py-3 font-medium">${item.fullyCompleted ? `<span class="achievement-name"><i class="fas fa-trophy achievement-name-trophy"></i> ${escapeHTML(item.name)}</span>` : escapeHTML(item.name) || '/'}</td>
+            <td class="px-4 py-3 font-mono whitespace-nowrap num">${escapeHTML(item.id) || '/'}</td>
+            <td class="px-4 py-3 font-medium">${fullName}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.sort) || '/'}</td>
             <td class="px-4 py-3 text-center whitespace-nowrap">${renderStarsForTable(item.rating)}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${item.playTime != null ? `${escapeHTML(item.playTime)}h` : '/'} ${renderSteamSource(item)}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(item.passDate) || '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(item.purchaseDate) || '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(item.startDate) || '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap collapsible-col">${item.purchasePrice != null ? formatCurrency(item.purchasePrice) : '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${formatCurrency(cost)}${costNote}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${cph != null && isFinite(cph) ? formatCurrency(cph) : '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(FROM_MAP[item.from]) || '/'}</td>
-            <td class="px-4 py-3 whitespace-nowrap collapsible-col">${escapeHTML(TYPE_MAP[item.type] || item.type) || '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap num">${formatHours(item.playTime)} ${renderSteamSource(item)}</td>
+            <td class="px-4 py-3 whitespace-nowrap num">${escapeHTML(item.passDate) || '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap num ${detailClass}">${escapeHTML(item.purchaseDate) || '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap num ${detailClass}">${escapeHTML(item.startDate) || '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap num ${detailClass}">${item.purchasePrice != null ? formatCurrency(item.purchasePrice) : '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap num">${formatCurrency(cost)}${costNote}</td>
+            <td class="px-4 py-3 whitespace-nowrap num">${cph != null && Number.isFinite(cph) ? formatCurrency(cph) : '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap ${detailClass}">${escapeHTML(FROM_MAP[item.from]) || '/'}</td>
+            <td class="px-4 py-3 whitespace-nowrap ${detailClass}">${escapeHTML(TYPE_MAP[item.type] || item.type) || '/'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${escapeHTML(STATUS_MAP[item.status]) || '/'}</td>`;
         tbody.appendChild(row);
     });
-
-    // Re-apply any pending search filter so it survives data refreshes
-    const searchInput = document.getElementById('list-search-input');
-    if (searchInput && searchInput.value) {
-        applyRowFilter(tbody, searchInput.value);
-    }
 };
 
 /**
- * Update sort header indicators (▾ / ▴).
+ * Update sort header indicators (▾ / ▴), aria-sort and focus affordances.
  */
 export const updateSortHeaders = () => {
     document.querySelectorAll('.sortable-header').forEach(header => {
         const key = header.dataset.sort;
-        let text = header.textContent.replace(/[▾▴]/, '').trim();
-        if (sortConfig.key !== '_default' && key === sortConfig.key) {
-            header.textContent = `${text} ${sortConfig.direction === 'desc' ? '▾' : '▴'}`;
-            header.setAttribute('aria-sort', sortConfig.direction === 'asc' ? 'ascending' : 'descending');
-        } else {
-            header.textContent = text;
-            header.removeAttribute('aria-sort');
-        }
+        const base = header.dataset.label || header.textContent.replace(/[▾▴]/g, '').trim();
+        header.dataset.label = base;
+        const isSorted = sortConfig.key !== '_default' && key === sortConfig.key;
+        header.textContent = isSorted
+            ? `${base} ${sortConfig.direction === 'desc' ? '▾' : '▴'}`
+            : base;
+        header.setAttribute('aria-sort', isSorted
+            ? (sortConfig.direction === 'asc' ? 'ascending' : 'descending')
+            : 'none');
+        header.title = isSorted ? '点击切换排序方向' : '点击按此列排序';
     });
 };
 
 /**
- * Setup sort header click handlers.
+ * Setup sort header click + keyboard handlers.
  */
 export const setupSortHeaders = () => {
     document.querySelectorAll('.sortable-header').forEach(header => {
-        header.addEventListener('click', () => {
-            const sortKey = header.dataset.sort;
+        const sortKey = header.dataset.sort;
+        if (!sortKey) return;
+        header.tabIndex = 0;
+        header.setAttribute('aria-controls', 'items-table');
+        header.title = '点击按此列排序';
+
+        const activate = () => {
             if (sortConfig.key === sortKey) {
                 setSortConfig(sortKey, sortConfig.direction === 'asc' ? 'desc' : 'asc');
             } else {
                 setSortConfig(sortKey, 'desc');
             }
+            currentPage = 1;
             renderItemsList();
             updateSortHeaders();
+        };
+
+        header.addEventListener('click', activate);
+        header.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            e.preventDefault();
+            activate();
         });
     });
+    updateSortHeaders();
 };
 
 /**
@@ -234,28 +267,106 @@ export const setupListSearch = () => {
     if (!searchInput) return;
 
     let debounceTimer;
-    searchInput.addEventListener('keyup', () => {
+    const apply = () => {
+        currentPage = 1;
+        updateSearchClearButton();
+        renderItemsList();
+    };
+
+    searchInput.addEventListener('input', (e) => {
+        if (e.isComposing) return;
+        updateSearchClearButton();
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            const tbody = document.getElementById('items-table-body');
-            if (!tbody) return;
-            applyRowFilter(tbody, searchInput.value);
-        }, 150);
+        debounceTimer = setTimeout(apply, 150);
     });
+
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        if (!searchInput.value) return; // empty search: let Esc close the modal
+        e.preventDefault();
+        e.stopPropagation();
+        searchInput.value = '';
+        clearTimeout(debounceTimer);
+        apply();
+    });
+
+    const clearBtn = document.getElementById('clear-list-search-btn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearTimeout(debounceTimer);
+            apply();
+            searchInput.focus();
+        });
+    }
+
+    updateSearchClearButton();
 };
 
 /**
- * Handle editing an item from the list.
- * Opens the item edit modal pre-filled with the item's data.
+ * Setup the detail columns expand/collapse toggle button.
  */
+export const setupDetailColsToggle = () => {
+    const toggleBtn = document.getElementById('toggle-detail-cols');
+    if (!toggleBtn) return;
+
+    toggleBtn.addEventListener('click', () => {
+        detailColsExpanded = !detailColsExpanded;
+        document.querySelectorAll('th.collapsible-col').forEach(col => {
+            col.classList.toggle('expanded', detailColsExpanded);
+        });
+        toggleBtn.setAttribute('aria-expanded', String(detailColsExpanded));
+        toggleBtn.innerHTML = detailColsExpanded
+            ? '<i class="fas fa-caret-up" aria-hidden="true"></i> 折叠详情'
+            : '<i class="fas fa-caret-down" aria-hidden="true"></i> 展开详情';
+        // Rendering also re-applies the search against the newly visible fields.
+        renderItemsList();
+    });
+};
+
+/** Setup KPI filter chip + pagination controls. */
+export const setupListFilterBar = () => {
+    const clearBtn = document.getElementById('clear-list-filter-btn');
+    if (!clearBtn) return;
+    clearBtn.addEventListener('click', () => {
+        clearListFilter();
+        renderItemsList();
+    });
+};
+
+export const setupListPagination = () => {
+    const prev = document.getElementById('page-prev');
+    const next = document.getElementById('page-next');
+    const sizeSelect = document.getElementById('page-size-select');
+
+    if (prev) {
+        prev.addEventListener('click', () => {
+            currentPage = Math.max(1, currentPage - 1);
+            renderItemsList();
+        });
+    }
+    if (next) {
+        next.addEventListener('click', () => {
+            currentPage += 1;
+            renderItemsList();
+        });
+    }
+    if (sizeSelect) {
+        sizeSelect.value = String(pageSize);
+        sizeSelect.addEventListener('change', () => {
+            setListPageSize(sizeSelect.value);
+            renderItemsList();
+        });
+    }
+};
+
 /**
- * Setup delegated row click handler for the items table.
- * Uses event delegation on tbody instead of per-row listeners.
+ * Setup delegated row click / keyboard handler for the items table.
  */
 export const setupItemsTableClick = () => {
     const tbody = document.getElementById('items-table-body');
     if (!tbody) return;
-    // Use a flag to ensure the handler is only registered once
+    // Use a flag to ensure the handler is only registered once.
     if (tbody.dataset._delegated === 'true') return;
     tbody.dataset._delegated = 'true';
 
@@ -264,8 +375,19 @@ export const setupItemsTableClick = () => {
         if (!row) return;
         handleEditItem(row.dataset.fb_id);
     });
+    tbody.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const row = e.target.closest('tr[data-fb_id]');
+        if (!row) return;
+        e.preventDefault();
+        handleEditItem(row.dataset.fb_id);
+    });
 };
 
+/**
+ * Handle editing an item from the list.
+ * Opens the item edit modal pre-filled with the item's data.
+ */
 export const handleEditItem = (fbId) => {
     if (!isAdmin()) return;
 
@@ -287,12 +409,12 @@ export const handleEditItem = (fbId) => {
     document.getElementById('start-date').value = formatDateForInput(item.startDate);
 
     const isDrama = item.type === 'drama';
+    resetFormModeMemory();
     setFormMode(isDrama ? 'drama' : 'game');
 
     if (isDrama) {
         document.getElementById('episode-count').value = item.episodeCount ?? '';
         document.getElementById('episode-duration').value = item.episodeDuration ?? '';
-        // Update calculated time display
         const count = item.episodeCount ?? 0;
         const duration = item.episodeDuration ?? 0;
         const calculatedTime = document.getElementById('calculated-time');
@@ -303,7 +425,6 @@ export const handleEditItem = (fbId) => {
         document.getElementById('item-rating-drama').value = item.rating ?? '';
         document.getElementById('pass-date-drama').value = formatDateForInput(item.passDate);
         document.getElementById('pass-date-container-drama').classList.toggle('hidden', item.status !== 'passed');
-        // Sync drama type dropdown from sort value
         const dramaTypeSelect = document.getElementById('drama-type');
         if (dramaTypeSelect) {
             const sortVal = item.sort || '';
@@ -322,7 +443,6 @@ export const handleEditItem = (fbId) => {
         document.getElementById('sell-date').value = formatDateForInput(item.sellDate);
         document.getElementById('sell-price').value = item.sellPrice ?? '';
 
-        // Steam fields
         const steamFields = document.getElementById('steam-fields');
         if (steamFields) steamFields.classList.toggle('hidden', item.type !== 'steam');
         const steamAppIdInput = document.getElementById('steam-app-id');
@@ -330,11 +450,9 @@ export const handleEditItem = (fbId) => {
         const steamOverrideCheckbox = document.getElementById('steam-override');
         if (steamOverrideCheckbox) steamOverrideCheckbox.checked = item.steam_override !== false;
 
-        // Achievement completion checkbox
         const fullyCompletedCheckbox = document.getElementById('fully-completed');
         if (fullyCompletedCheckbox) fullyCompletedCheckbox.checked = !!item.fullyCompleted;
 
-        // Remarks
         document.getElementById('item-remarks').value = item.remarks || '';
     }
 
@@ -342,4 +460,22 @@ export const handleEditItem = (fbId) => {
 
     closeModal(listModal);
     openModal(itemModal);
+};
+
+/**
+ * Open the detail table, optionally filtered from a KPI card.
+ * Shared by the "查看数据详情" button and the clickable KPI metrics.
+ */
+export const openListModal = (filterKey = null, { resetSort = true } = {}) => {
+    const listModal = document.getElementById('list-modal');
+    if (!listModal) return;
+    const title = document.getElementById('list-modal-title');
+    const searchInput = document.getElementById('list-search-input');
+    if (title) title.textContent = '数据详情';
+    if (searchInput) searchInput.value = '';
+    if (resetSort) setSortConfig('_default', 'desc');
+    setListFilter(filterKey);
+    renderItemsList();
+    updateSortHeaders();
+    openModal(listModal);
 };

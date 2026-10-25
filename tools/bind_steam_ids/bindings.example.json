@@ -1,0 +1,12 @@
+{
+  "_comment": "Template for tools/bind_steam_ids/bind_steam_ids.js. Copy to bindings.json (gitignored). Only `bindings` is written; the other arrays are printed for reference.",
+  "bindings": [
+    ["REPLACE_WITH_20_CHAR_FIRESTORE_ID", "示例游戏", 220, "Half-Life 2"]
+  ],
+  "unmatchedSteam": [
+    [320, "Half-Life 2: Deathmatch"]
+  ],
+  "unboundItems": [
+    ["REPLACE_WITH_20_CHAR_FIRESTORE_ID", "v-0001", "示例游戏", "reason"]
+  ]
+}

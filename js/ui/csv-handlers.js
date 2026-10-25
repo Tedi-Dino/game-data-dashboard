@@ -1,5 +1,5 @@
 import { items } from '../core/state.js';
-import { showConfirmation, showAlert } from './modals.js';
+import { showConfirmation, showAlert, showToast } from './modals.js';
 import { importCSV, exportCSV, parseCSVText } from '../services/csv.js';
 
 // Render a dry-run summary of what an import would do.
@@ -44,6 +44,7 @@ export const setupCSVHandlers = () => {
                 return;
             }
             exportCSV();
+            showToast(`已导出 ${items.length} 条记录`, { tone: 'success' });
         });
     }
 
@@ -97,7 +98,7 @@ export const setupCSVHandlers = () => {
                         const rows = result.skippedDetails.slice(0, 10).map(d => d.row).join('、');
                         showAlert(`导入完成，但有行被跳过。\n\n成功导入：${result.imported} 条\n跳过：${result.skipped} 条（第 ${rows} 行）\n\n这些行未写入 Firestore，请检查 CSV 后重新导入。`);
                     } else {
-                        showAlert(`导入成功：${result.imported} 条。`);
+                        showToast(`导入成功：${result.imported} 条`, { tone: 'success' });
                     }
                 } catch (error) {
                     console.error(error);

@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f5f0ed">
+    <meta name="description" content="影音游戏仪表盘：统计游戏与剧集的消费、游玩时长和收藏进度。">
     <title>🎬 影音游戏仪表盘</title>
 
     <!-- Preconnect to external CDN domains -->
@@ -42,166 +44,178 @@ window.cdnLoadError = function(name) {
 </head>
 <body class="h-full flex flex-col p-4 skeleton-loading">
     <!-- Skip Navigation -->
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-amber-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">跳转到主内容</a>
+    <a href="#main-content" class="skip-link">跳转到主内容</a>
+
+    <noscript>
+        <div class="app-status is-visible" role="alert">本页面需要启用 JavaScript 才能加载数据。</div>
+    </noscript>
 
     <!-- Main App Container -->
     <div id="app-container" class="max-w-screen-2xl mx-auto flex flex-col flex-grow w-full min-h-0">
         <!-- Header -->
-        <header class="mb-4 flex flex-col gap-3 flex-shrink-0 lg:flex-row lg:flex-wrap lg:justify-between lg:items-center">
-            <div class="text-center lg:text-left">
+        <header class="app-header mb-4 flex-shrink-0">
+            <div class="header-title text-center lg:text-left min-w-0">
                 <h1 class="text-2xl sm:text-3xl font-bold text-stone-900">🎬 影音游戏仪表盘</h1>
                 <p id="dashboard-subtitle" class="text-sm sm:text-base text-stone-500 mt-1">量化您的影音爱好：游戏与剧集的时间投入分析</p>
             </div>
-            <div class="flex flex-wrap justify-center lg:justify-end items-center gap-2 sm:gap-3">
-                 <input type="file" id="csv-import-input" class="hidden" accept=".csv">
+            <div class="header-actions">
+                <input type="file" id="csv-import-input" class="hidden" accept=".csv" aria-label="选择要导入的 CSV 文件">
 
-                 <div class="flex items-center space-x-2">
-                    <div id="auth-controls">
-                        <button id="login-btn" title="管理员登录" aria-label="管理员登录" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
-                            <i class="fab fa-google text-xl"></i>
+                <div class="icon-cluster flex items-center gap-2">
+                    <div id="auth-controls" class="flex items-center gap-2">
+                        <button type="button" id="login-btn" title="管理员登录" aria-label="管理员登录" class="icon-btn">
+                            <i class="fab fa-google" aria-hidden="true"></i>
                         </button>
-                        <div id="user-info" class="hidden items-center space-x-2">
-                           <img id="user-avatar" class="w-10 h-10 rounded-full" alt="User Avatar">
-                           <button id="logout-btn" title="登出" aria-label="登出" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
-                               <i class="fas fa-sign-out-alt text-xl"></i>
-                           </button>
+                        <div id="user-info" class="hidden items-center gap-2">
+                            <img id="user-avatar" class="w-10 h-10 rounded-full" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='20' fill='%23d6d3d1'/%3E%3C/svg%3E" alt="用户头像">
+                            <span id="user-role" class="role-badge" hidden></span>
+                            <button type="button" id="logout-btn" title="登出" aria-label="登出" class="icon-btn">
+                                <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                            </button>
                         </div>
                     </div>
-                    <a href="https://steamcommunity.com/profiles/76561199530798696/" target="_blank" rel="noopener noreferrer" title="Steam Profile" aria-label="Steam 个人资料" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
-                        <i class="fab fa-steam text-xl"></i>
+                    <a href="https://steamcommunity.com/profiles/76561199530798696/" target="_blank" rel="noopener noreferrer" title="Steam Profile" aria-label="Steam 个人资料" class="icon-btn">
+                        <i class="fab fa-steam" aria-hidden="true"></i>
                     </a>
-                    <button id="steam-sync-btn" title="同步Steam游戏数据" aria-label="同步Steam游戏数据" class="w-10 h-10 hidden items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
-                        <i class="fas fa-sync-alt text-xl"></i>
+                    <button type="button" id="steam-sync-btn" title="同步 Steam 游戏数据" aria-label="同步 Steam 游戏数据" class="icon-btn hidden">
+                        <i class="fas fa-sync-alt" aria-hidden="true"></i>
                     </button>
-                    <a href="https://github.com/Tedi-Dino/game-data-dashboard" target="_blank" rel="noopener noreferrer" title="GitHub Repository" aria-label="GitHub 仓库" class="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 rounded-full transition-colors text-stone-700">
-                        <i class="fab fa-github text-xl"></i>
+                    <a href="https://github.com/Tedi-Dino/game-data-dashboard" target="_blank" rel="noopener noreferrer" title="GitHub Repository" aria-label="GitHub 仓库" class="icon-btn">
+                        <i class="fab fa-github" aria-hidden="true"></i>
                     </a>
                 </div>
-                <div class="hidden sm:block w-px h-6 bg-stone-300" aria-hidden="true"></div>
-                <button id="on-this-day-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm sm:text-base py-2 px-3 sm:px-4 rounded-lg transition-colors whitespace-nowrap">💡 那年今日</button>
-                <button id="play-next-btn" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm sm:text-base py-2 px-3 sm:px-4 rounded-lg transition-colors whitespace-nowrap">💡 接下来</button>
-                <button id="view-all-btn" class="bg-amber-700 hover:bg-amber-800 text-white font-bold text-sm sm:text-base py-2 px-3 sm:px-4 rounded-lg transition-colors whitespace-nowrap">📊 查看数据详情</button>
+                <div class="header-divider hidden sm:block w-px h-6 bg-stone-300" aria-hidden="true"></div>
+                <div class="quick-actions">
+                    <button type="button" id="on-this-day-btn" class="btn btn-accent whitespace-nowrap"><i class="fas fa-lightbulb" aria-hidden="true"></i> 那年今日</button>
+                    <button type="button" id="play-next-btn" class="btn btn-accent-soft whitespace-nowrap"><i class="fas fa-forward" aria-hidden="true"></i> 接下来</button>
+                    <button type="button" id="view-all-btn" class="btn btn-primary whitespace-nowrap"><i class="fas fa-table" aria-hidden="true"></i> 查看数据详情</button>
+                </div>
             </div>
         </header>
 
+        <div id="app-status" class="app-status" role="status" aria-live="polite"></div>
+
         <!-- Main Content -->
-        <main id="main-content" class="dashboard-grid pb-24 xl:pb-2 flex-grow">
+        <main id="main-content" class="dashboard-grid pb-24 xl:pb-2 flex-grow" tabindex="-1">
             <!-- KPI: 消费总览 -->
-            <div id="kpi-card-1" class="card p-4 card-animation md:col-span-2 xl:col-span-1 xl:row-start-1">
-                <h3 class="text-lg font-normal text-stone-500 mb-2">💰 消费总览</h3>
-                <div class="space-y-2 flex-grow">
-                    <div>
-                        <p class="text-sm text-stone-600">实际总支出</p>
+            <section id="kpi-card-1" class="card kpi-card p-4 card-animation md:col-span-3 xl:col-span-4 xl:row-start-1" aria-labelledby="kpi-cost-heading">
+                <h2 id="kpi-cost-heading" class="kpi-card-title">💰 消费总览</h2>
+                <div class="kpi-metrics flex-grow">
+                    <div class="kpi-metric kpi-main" data-kpi-filter="all" role="button" tabindex="0" aria-label="查看全部消费记录">
+                        <p class="kpi-label">实际总支出</p>
                         <p class="text-2xl font-bold kpi-primary"><span class="kpi-currency">¥</span><span class="kpi-number" id="total-actual-cost">加载中...</span></p>
                     </div>
-                    <div class="relative group">
-                        <p class="text-sm text-stone-600">游戏总消费</p>
-                        <div class="flex items-center">
-                            <p class="text-xl font-semibold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="game-actual-cost">-</span></p>
-                            <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                    <div class="kpi-subgrid">
+                        <div class="relative group kpi-metric" data-kpi-filter="games" role="button" tabindex="0" aria-label="查看游戏总消费对应的游戏记录">
+                            <p class="kpi-label">游戏总消费</p>
+                            <div class="flex items-center">
+                                <p class="text-xl font-semibold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="game-actual-cost">-</span></p>
+                                <span class="kpi-caret" aria-hidden="true">&gt;</span>
+                            </div>
+                            <div id="game-cost-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
                         </div>
-                        <div id="game-cost-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
-                    </div>
-                     <div>
-                        <p class="text-sm text-stone-600">硬件总投入</p>
-                        <p class="text-xl font-semibold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="hardware-actual-cost">-</span></p>
-                    </div>
-                    <div class="relative group">
-                        <p class="text-sm text-stone-600">未通关游戏价值</p>
-                        <div class="flex items-center">
-                            <p class="text-xl font-semibold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="unfinished-games-cost">-</span></p>
-                            <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                        <div class="kpi-metric" data-kpi-filter="hardware" role="button" tabindex="0" aria-label="查看硬件设备记录">
+                            <p class="kpi-label">硬件总投入</p>
+                            <p class="text-xl font-semibold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="hardware-actual-cost">-</span></p>
                         </div>
-                        <div id="unfinished-cost-tooltip" class="kpi-tooltip kpi-tooltip-above w-80 text-sm rounded-lg p-3"></div>
+                        <div class="relative group kpi-metric" data-kpi-filter="unfinishedGames" role="button" tabindex="0" aria-label="查看未通关游戏记录">
+                            <p class="kpi-label">未通关游戏价值</p>
+                            <div class="flex items-center">
+                                <p class="text-xl font-semibold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="unfinished-games-cost">-</span></p>
+                                <span class="kpi-caret" aria-hidden="true">&gt;</span>
+                            </div>
+                            <div id="unfinished-cost-tooltip" class="kpi-tooltip kpi-tooltip-above w-80 text-sm rounded-lg p-3"></div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
             <!-- KPI: 游戏时长总览 -->
-            <div id="kpi-card-2" class="card p-4 card-animation flex flex-col md:col-span-2 xl:col-span-1 xl:row-start-2">
-                <h3 class="text-lg font-normal text-stone-500 mb-4">🎮 游戏时长总览</h3>
-                 <div class="space-y-4 flex-grow">
-                    <div class="relative group">
-                        <p class="text-sm text-stone-600">全成就 / 通关 / 全部游戏</p>
+            <section id="kpi-card-2" class="card kpi-card p-4 card-animation md:col-span-3 xl:col-span-4 xl:row-start-1" aria-labelledby="kpi-games-heading">
+                <h2 id="kpi-games-heading" class="kpi-card-title">🎮 游戏时长总览</h2>
+                <div class="kpi-metrics kpi-metrics-2 flex-grow">
+                    <div class="relative group kpi-metric" data-kpi-filter="games" role="button" tabindex="0" aria-label="查看全部游戏记录">
+                        <p class="kpi-label">全成就 / 通关 / 全部游戏</p>
                         <div class="flex items-center">
-                           <p class="text-2xl font-bold kpi-primary"><span class="kpi-number" id="total-games">-</span> <span class="kpi-unit">款</span></p>
-                           <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                            <p class="text-2xl font-bold kpi-primary"><span class="kpi-number" id="total-games">-</span> <span class="kpi-unit">款</span></p>
+                            <span class="kpi-caret" aria-hidden="true">&gt;</span>
                         </div>
                         <div id="total-games-tooltip" class="kpi-tooltip kpi-tooltip-above w-[34rem] text-sm rounded-lg p-3"></div>
                     </div>
-                    <div class="relative group">
-                        <p class="text-sm text-stone-600">总计游玩</p>
+                    <div class="relative group kpi-metric" data-kpi-filter="playedGames" role="button" tabindex="0" aria-label="查看有时长的游戏记录">
+                        <p class="kpi-label">总计游玩</p>
                         <div class="flex items-center">
-                           <p class="text-xl font-semibold kpi-secondary"><span class="kpi-number" id="total-playtime">-</span> <span class="kpi-unit">小时</span></p>
-                           <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                            <p class="text-xl font-semibold kpi-secondary"><span class="kpi-number" id="total-playtime">-</span> <span class="kpi-unit">小时</span></p>
+                            <span class="kpi-caret" aria-hidden="true">&gt;</span>
                         </div>
                         <div id="playtime-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
                     </div>
-                    <div>
-                        <p class="text-sm text-stone-600">平均游戏时长</p>
+                    <div class="kpi-metric" data-kpi-filter="games" role="button" tabindex="0" aria-label="查看全部游戏记录">
+                        <p class="kpi-label">平均游戏时长</p>
                         <p class="text-xl font-semibold kpi-secondary"><span class="kpi-number" id="avg-playtime">-</span> <span class="kpi-unit">小时/款</span></p>
                     </div>
-                    <div class="relative group">
-                        <p class="text-sm text-stone-600">单位时间价格</p>
+                    <div class="relative group kpi-metric" data-kpi-filter="paidGames" role="button" tabindex="0" aria-label="查看付费游戏记录">
+                        <p class="kpi-label">单位时间价格</p>
                         <div class="flex items-center">
-                            <p class="text-xl font-bold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="cost-per-hour">-</span> <span class="kpi-unit">/h</span></p>
-                            <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                            <p class="text-xl font-bold kpi-secondary"><span class="kpi-currency">¥</span><span class="kpi-number" id="cost-per-hour">-</span> <span id="cost-per-hour-unit" class="kpi-unit">/h</span></p>
+                            <span class="kpi-caret" aria-hidden="true">&gt;</span>
                         </div>
                         <div id="cph-tooltip" class="kpi-tooltip kpi-tooltip-above w-80 text-sm rounded-lg p-3"></div>
                     </div>
                 </div>
-            </div>
+            </section>
 
             <!-- KPI: 剧集时长总览 -->
-            <div id="kpi-card-3" class="card p-4 card-animation flex flex-col md:col-span-2 xl:col-span-1 xl:row-start-2">
-                <h3 class="text-lg font-normal text-stone-500 mb-4">📺 剧集时长总览</h3>
-                 <div class="space-y-4 flex-grow">
-                    <div class="relative group">
-                        <p class="text-sm text-stone-600">追剧数量</p>
+            <section id="kpi-card-3" class="card kpi-card p-4 card-animation md:col-span-6 xl:col-span-4 xl:row-start-1" aria-labelledby="kpi-dramas-heading">
+                <h2 id="kpi-dramas-heading" class="kpi-card-title">📺 剧集时长总览</h2>
+                <div class="kpi-metrics kpi-metrics-3 flex-grow">
+                    <div class="relative group kpi-metric kpi-main" data-kpi-filter="dramas" role="button" tabindex="0" aria-label="查看剧集记录">
+                        <p class="kpi-label">追剧数量</p>
                         <div class="flex items-center">
-                           <p class="text-2xl font-bold kpi-primary"><span class="kpi-number" id="total-dramas">-</span> <span class="kpi-unit">部</span></p>
-                           <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                            <p class="text-2xl font-bold kpi-primary"><span class="kpi-number" id="total-dramas">-</span> <span class="kpi-unit">部</span></p>
+                            <span class="kpi-caret" aria-hidden="true">&gt;</span>
                         </div>
                         <div id="total-dramas-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
                     </div>
-                    <div class="relative group">
-                        <p class="text-sm text-stone-600">总计观剧</p>
+                    <div class="relative group kpi-metric" data-kpi-filter="watchedDramas" role="button" tabindex="0" aria-label="查看有观看时长的剧集">
+                        <p class="kpi-label">总计观剧</p>
                         <div class="flex items-center">
-                           <p class="text-xl font-semibold kpi-secondary"><span class="kpi-number" id="total-drama-time">-</span> <span class="kpi-unit">小时</span></p>
-                           <span class="text-stone-500 font-bold text-lg px-2 opacity-50 group-hover:opacity-100 transition-opacity">&gt;</span>
+                            <p class="text-xl font-semibold kpi-secondary"><span class="kpi-number" id="total-drama-time">-</span> <span class="kpi-unit">小时</span></p>
+                            <span class="kpi-caret" aria-hidden="true">&gt;</span>
                         </div>
                         <div id="drama-time-tooltip" class="kpi-tooltip kpi-tooltip-above w-72 text-sm rounded-lg p-3"></div>
                     </div>
-                    <div>
-                        <p class="text-sm text-stone-600">平均观剧时长</p>
+                    <div class="kpi-metric" data-kpi-filter="dramas" role="button" tabindex="0" aria-label="查看剧集记录">
+                        <p class="kpi-label">平均观剧时长</p>
                         <p class="text-xl font-semibold kpi-secondary"><span class="kpi-number" id="avg-drama-time">-</span> <span class="kpi-unit">小时/部</span></p>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Charts: Three Doughnuts -->
-            <div id="chart-card-all-doughnuts" class="card p-4 card-animation relative flex flex-col md:col-span-6 xl:col-span-3 xl:row-start-1 min-h-[480px] md:min-h-[380px] xl:min-h-0">
-                <h3 class="text-lg font-normal text-stone-500 mb-1">📊 消费、时间与爱好统计</h3>
-                <div class="flex-grow doughnut-grid gap-4">
-                    <div class="relative flex flex-col doughnut-item-1">
-                        <div class="flex-grow relative"><canvas id="cost-distribution-chart" role="img" aria-label="消费金额分布饼图"></canvas></div>
-                        <h4 class="text-center text-sm font-normal text-stone-500 mt-1">金额分布</h4>
-                    </div>
-                    <div class="relative flex flex-col doughnut-item-2">
-                        <div class="flex-grow relative"><canvas id="time-distribution-chart" role="img" aria-label="游戏时间分布饼图"></canvas></div>
-                         <h4 class="text-center text-sm font-normal text-stone-500 mt-1">时间分布</h4>
-                    </div>
-                    <div class="relative flex flex-col doughnut-item-3">
-                        <div class="flex-grow relative"><canvas id="game-sort-chart" role="img" aria-label="游戏类型分布饼图"></canvas></div>
-                        <h4 class="text-center text-sm font-normal text-stone-500 mt-1">玩的最多的游戏/剧集类型</h4>
+            <!-- Chart: Monthly Trends -->
+            <section id="chart-card-3" class="card chart-card chart-card-main p-4 card-animation md:col-span-6 xl:col-span-8 xl:row-start-2" aria-labelledby="monthly-heading">
+                <div class="flex justify-between items-center gap-4 mb-2 flex-wrap">
+                    <h2 id="monthly-heading" class="chart-card-title">🗓️ 月度消费与时间统计</h2>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="exclude-hardware-checkbox" class="form-checkbox">
+                            <label for="exclude-hardware-checkbox" class="text-sm font-medium text-stone-600 whitespace-nowrap">不计硬件</label>
+                        </div>
+                        <button type="button" id="monthly-chart-fullscreen-btn" class="icon-btn icon-btn-sm xl:hidden" title="全屏查看" aria-label="全屏查看月度趋势图">
+                            <i class="fas fa-expand-alt" aria-hidden="true"></i>
+                        </button>
                     </div>
                 </div>
-            </div>
+                <div class="flex-grow relative chart-body">
+                    <canvas id="monthly-trends-chart" role="img" aria-label="月度消费与时间统计图">月度消费与时间统计图</canvas>
+                    <p id="monthly-trends-empty" class="chart-empty" hidden>所选时间内暂无记录</p>
+                </div>
+            </section>
 
             <!-- Chart: Price-Time Scatter -->
-            <div id="chart-card-2" class="card p-4 card-animation flex flex-col md:col-span-6 xl:col-span-2 xl:row-start-1 min-h-[250px] md:min-h-[360px] xl:min-h-0">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-lg font-normal text-stone-500">📈 价格-时间分布</h3>
+            <section id="chart-card-2" class="card chart-card chart-card-side p-4 card-animation md:col-span-6 xl:col-span-4 xl:row-start-2" aria-labelledby="scatter-heading">
+                <div class="flex justify-between items-center gap-2 mb-2 flex-wrap">
+                    <h2 id="scatter-heading" class="chart-card-title">📈 价格-时间分布</h2>
                     <div class="flex items-center space-x-1">
                         <label for="physical-cost-mode-select" class="sr-only">实体卡带花费口径</label>
                         <select id="physical-cost-mode-select" class="form-select text-xs py-1 pl-2 pr-7">
@@ -210,29 +224,39 @@ window.cdnLoadError = function(name) {
                         </select>
                     </div>
                 </div>
-                <div class="flex-grow relative">
-                    <canvas id="game-distribution-chart" role="img" aria-label="价格时间分布散点图"></canvas>
+                <div class="flex-grow relative chart-body">
+                    <canvas id="game-distribution-chart" role="img" aria-label="价格与游玩时长的散点分布图">价格时间分布散点图</canvas>
+                    <p id="game-distribution-empty" class="chart-empty" hidden>暂无已游玩的游戏数据</p>
                 </div>
-            </div>
+            </section>
 
-            <!-- Chart: Monthly Trends -->
-            <div id="chart-card-3" class="card p-4 card-animation md:col-span-6 xl:col-span-4 xl:row-start-2 relative flex flex-col min-h-[460px] md:min-h-[420px] xl:min-h-0">
-                <div class="flex justify-between items-center gap-4 mb-2">
-                     <h3 class="text-lg font-normal text-stone-500">🗓️ 月度消费与时间统计</h3>
-                    <div class="flex items-center space-x-4">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="exclude-hardware-checkbox" class="form-checkbox">
-                            <label for="exclude-hardware-checkbox" class="text-sm font-medium text-stone-600 whitespace-nowrap">不计硬件</label>
+            <!-- Charts: Three Doughnuts -->
+            <section id="chart-card-all-doughnuts" class="card chart-card chart-card-distribution p-4 card-animation md:col-span-6 xl:col-span-12 xl:row-start-3" aria-labelledby="doughnuts-heading">
+                <h2 id="doughnuts-heading" class="chart-card-title mb-2">📊 消费、时间与爱好统计</h2>
+                <div class="flex-grow doughnut-grid">
+                    <div class="relative flex flex-col doughnut-item-1">
+                        <div class="flex-grow relative chart-body">
+                            <canvas id="cost-distribution-chart" role="img" aria-label="消费金额分布饼图：按实体、数字、硬件与剧集划分">消费金额分布饼图</canvas>
+                            <p id="cost-distribution-empty" class="chart-empty" hidden>暂无消费数据</p>
                         </div>
-                        <button id="monthly-chart-fullscreen-btn" class="xl:hidden text-stone-600 hover:text-stone-900" title="全屏查看" aria-label="全屏查看月度趋势图">
-                            <i class="fas fa-expand-alt fa-lg"></i>
-                        </button>
+                        <h3 class="chart-caption mt-1">金额分布</h3>
+                    </div>
+                    <div class="relative flex flex-col doughnut-item-2">
+                        <div class="flex-grow relative chart-body">
+                            <canvas id="time-distribution-chart" role="img" aria-label="游戏时间分布饼图：按平台划分">游戏时间分布饼图</canvas>
+                            <p id="time-distribution-empty" class="chart-empty" hidden>暂无游玩时长</p>
+                        </div>
+                        <h3 class="chart-caption mt-1">时间分布</h3>
+                    </div>
+                    <div class="relative flex flex-col doughnut-item-3">
+                        <div class="flex-grow relative chart-body">
+                            <canvas id="game-sort-chart" role="img" aria-label="游戏与剧集类型分布饼图">类型分布饼图</canvas>
+                            <p id="game-sort-empty" class="chart-empty" hidden>暂无类型数据</p>
+                        </div>
+                        <h3 class="chart-caption mt-1">玩的最多的游戏/剧集类型</h3>
                     </div>
                 </div>
-                <div class="flex-grow relative">
-                    <canvas id="monthly-trends-chart" role="img" aria-label="月度消费与时间统计图"></canvas>
-                </div>
-            </div>
+            </section>
         </main>
 
         <footer class="mt-4 pb-2 text-center text-xs text-stone-400 flex-shrink-0">
@@ -242,34 +266,34 @@ window.cdnLoadError = function(name) {
 
     <!-- Floating Action Button -->
     <div class="fab-container hidden">
-        <button id="export-btn" class="fab-secondary" title="导出 CSV" aria-label="导出 CSV"><i class="fas fa-upload fa-lg"></i></button>
-        <button id="import-btn" class="fab-secondary" title="导入 CSV" aria-label="导入 CSV"><i class="fas fa-download fa-lg"></i></button>
-        <div id="add-item-fab" class="fab-main" title="添加记录" aria-label="添加记录">
-            <i class="fas fa-plus fa-lg"></i>
-        </div>
+        <button type="button" id="export-btn" class="fab-secondary" title="导出 CSV" aria-label="导出 CSV"><i class="fas fa-upload fa-lg" aria-hidden="true"></i></button>
+        <button type="button" id="import-btn" class="fab-secondary" title="导入 CSV" aria-label="导入 CSV"><i class="fas fa-download fa-lg" aria-hidden="true"></i></button>
+        <button type="button" id="add-item-fab" class="fab-main" title="添加记录" aria-label="添加记录" aria-expanded="false" aria-controls="item-modal">
+            <i class="fas fa-plus fa-lg" aria-hidden="true"></i>
+        </button>
     </div>
 
     <!-- Item Add/Edit Modal -->
-    <div id="item-modal" class="fixed inset-0 items-start justify-center p-4 hidden modal-backdrop overflow-y-auto" style="z-index: var(--z-modal);" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <div class="card w-full max-w-lg mx-auto rounded-lg shadow-xl p-6 relative my-4">
-            <h2 id="modal-title" class="text-xl font-bold text-stone-900 mb-4">添加记录</h2>
+    <div id="item-modal" class="fixed inset-0 items-start justify-center p-3 sm:p-4 hidden modal-backdrop overflow-y-auto" style="z-index: var(--z-modal);" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="card modal-card w-full max-w-lg mx-auto rounded-lg shadow-xl p-4 sm:p-6 relative my-4">
+            <h2 id="modal-title" class="text-xl font-bold text-stone-900 mb-4 pr-10">添加记录</h2>
             <!-- Mode Toggle -->
-            <div id="mode-toggle" class="flex items-center bg-stone-100 rounded-lg p-1 text-sm mb-4 relative">
-                <button type="button" id="mode-game-btn" class="flex-1 px-3 py-1.5 font-medium rounded-md bg-amber-600 text-white transition-colors cursor-pointer">🎮 游戏</button>
-                <button type="button" id="mode-drama-btn" class="flex-1 px-3 py-1.5 font-medium rounded-md text-stone-600 hover:bg-stone-200 transition-colors cursor-pointer">📺 剧集</button>
+            <div id="mode-toggle" class="mode-toggle flex items-center rounded-lg p-1 text-sm mb-4 relative" role="group" aria-label="记录类型">
+                <button type="button" id="mode-game-btn" class="mode-btn flex-1 px-3 py-1.5 font-medium rounded-md" aria-pressed="true">🎮 游戏</button>
+                <button type="button" id="mode-drama-btn" class="mode-btn flex-1 px-3 py-1.5 font-medium rounded-md" aria-pressed="false">📺 剧集</button>
             </div>
-            <form id="item-form" class="space-y-4">
+            <form id="item-form" class="space-y-4" autocomplete="off">
                 <input type="hidden" id="item-id">
                 <input type="hidden" id="form-mode" value="game">
                 <!-- Common Fields -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label for="item-custom-id" class="block text-sm font-medium text-stone-700">ID (自定义)</label>
-                        <input type="text" id="item-custom-id" class="form-input w-full mt-1" required maxlength="20">
+                        <label for="item-custom-id" class="form-label">ID (自定义)</label>
+                        <input type="text" id="item-custom-id" class="form-input w-full mt-1" required maxlength="20" autocomplete="off" data-autofocus>
                     </div>
                     <div>
-                        <label for="item-name" class="block text-sm font-medium text-stone-700">名称</label>
-                        <input type="text" id="item-name" class="form-input w-full mt-1" required>
+                        <label for="item-name" class="form-label">名称</label>
+                        <input type="text" id="item-name" class="form-input w-full mt-1" required maxlength="120">
                     </div>
                 </div>
                 <div id="from-price-row" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -429,156 +453,200 @@ window.cdnLoadError = function(name) {
                     </div>
                 </div>
 
-                <div class="flex justify-end space-x-4 pt-4">
-                    <button type="button" id="delete-btn" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">删除</button>
-                    <button type="button" id="cancel-btn" class="bg-stone-400 hover:bg-stone-500 text-white font-bold py-2 px-4 rounded-lg">取消</button>
-                    <button type="submit" id="save-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg">保存</button>
+                <div class="form-actions flex flex-wrap justify-end gap-3 pt-4">
+                    <button type="button" id="delete-btn" class="btn btn-danger hidden">删除</button>
+                    <button type="button" id="cancel-btn" class="btn btn-secondary">取消</button>
+                    <button type="submit" id="save-btn" class="btn btn-primary">保存</button>
                 </div>
             </form>
-            <button id="close-modal-btn" class="absolute top-4 right-4 text-stone-500 hover:text-stone-900" aria-label="关闭"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            <button type="button" id="close-modal-btn" class="icon-btn modal-close" aria-label="关闭">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
         </div>
     </div>
 
     <!-- Data List Modal -->
-    <div id="list-modal" class="fixed inset-0 p-4 hidden modal-backdrop overflow-y-auto" style="z-index: var(--z-modal);" role="dialog" aria-modal="true" aria-labelledby="list-modal-title">
-        <div class="card w-full max-w-7xl mx-auto rounded-lg shadow-xl p-6 relative my-auto flex flex-col">
-            <div class="flex justify-between items-center mb-4 flex-shrink-0">
-                <h2 id="list-modal-title" class="text-xl font-bold text-stone-900">数据详情</h2>
-                <button id="close-list-modal-btn" class="text-stone-500 hover:text-stone-900" aria-label="关闭"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
-            </div>
-            <div class="mb-4 flex items-center gap-3">
-                <div class="relative flex-1">
-                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <i class="fas fa-search text-stone-400"></i>
-                    </div>
-                    <input type="text" id="list-search-input" class="form-input w-full pl-10" placeholder="搜索名称、分类、类型...">
+    <div id="list-modal" class="fixed inset-0 p-3 sm:p-4 hidden modal-backdrop overflow-y-auto" style="z-index: var(--z-modal);" role="dialog" aria-modal="true" aria-labelledby="list-modal-title">
+        <div class="card modal-card list-modal-card w-full max-w-7xl mx-auto rounded-lg shadow-xl p-3 sm:p-6 relative my-auto flex flex-col max-h-[92vh]">
+            <div class="flex justify-between items-center gap-3 mb-4 flex-shrink-0">
+                <div class="min-w-0">
+                    <h2 id="list-modal-title" class="text-xl font-bold text-stone-900">数据详情</h2>
+                    <p id="list-result-count" class="text-sm text-stone-500 mt-0.5" aria-live="polite">正在加载…</p>
                 </div>
-                <button id="toggle-detail-cols" class="text-xs text-stone-400 hover:text-stone-600 whitespace-nowrap px-3 py-2 rounded border border-stone-200 hover:border-stone-300 transition-colors">
-                    <i class="fas fa-caret-down"></i> 展开详情
+                <button type="button" id="close-list-modal-btn" class="icon-btn modal-close" aria-label="关闭">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
-            <div class="mb-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
-                <p id="last-updated" class="text-stone-500">正在加载数据...</p>
+            <div class="list-toolbar mb-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 flex-shrink-0">
+                <div class="relative flex-1 min-w-0">
+                    <div class="search-icon absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none" aria-hidden="true">
+                        <i class="fas fa-search text-stone-400"></i>
+                    </div>
+                    <label for="list-search-input" class="sr-only">搜索记录</label>
+                    <input type="text" id="list-search-input" class="form-input w-full pl-10 pr-10" placeholder="搜索名称、分类、状态…" autocomplete="off" enterkeyhint="search">
+                    <button type="button" id="clear-list-search-btn" class="search-clear" aria-label="清除搜索" hidden>×</button>
+                </div>
+                <button type="button" id="toggle-detail-cols" class="btn btn-secondary btn-sm whitespace-nowrap" aria-expanded="false" aria-controls="items-table">
+                    <i class="fas fa-caret-down" aria-hidden="true"></i> 展开详情
+                </button>
+            </div>
+            <div id="list-filter-bar" class="filter-bar mb-3 flex-shrink-0">
+                <span class="text-sm text-stone-600">筛选：<strong id="list-filter-label" class="text-amber-800"></strong></span>
+                <button type="button" id="clear-list-filter-btn" class="filter-clear">清除筛选</button>
+            </div>
+            <div class="mb-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-sm flex-shrink-0">
+                <p id="last-updated" class="text-stone-500">正在加载数据…</p>
                 <p id="steam-sync-status" class="text-stone-400 hidden"></p>
                 <!-- Dedicated banner: kept separate from #last-updated so a metadata
                      update can never overwrite a failed-load message again. -->
-                <p id="data-load-error" class="text-red-600 font-medium hidden"></p>
+                <p id="data-load-error" class="text-red-700 font-medium hidden" role="alert"></p>
             </div>
-            <div class="overflow-auto">
-                <table class="w-full text-sm text-left text-stone-700">
-                    <thead class="text-xs text-stone-500 uppercase bg-stone-100">
+            <div id="items-table-scroll" class="table-scroll flex-grow min-h-0 overflow-auto" role="region" aria-label="记录数据表" tabindex="0">
+                <table id="items-table" class="items-table w-full text-sm text-left text-stone-700" aria-describedby="list-result-count">
+                    <caption class="sr-only">游戏、硬件与剧集记录，可按列排序</caption>
+                    <thead class="text-xs text-stone-600 bg-stone-100">
                         <tr>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="id">ID</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="name">名称</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="sort">分类</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="rating">评分</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="playTime">游玩时长</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="passDate">通关日期</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap collapsible-col" data-sort="purchaseDate">购入日期</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap collapsible-col" data-sort="startDate">开始游玩</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap collapsible-col" data-sort="purchasePrice">购入价格</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="actualCost">实际支出</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="costPerHour">时间成本</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap collapsible-col" data-sort="from">来源</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap collapsible-col" data-sort="type">类型</th>
-                            <th scope="col" class="px-4 py-3 sortable-header cursor-pointer whitespace-nowrap" data-sort="status">状态</th>
+                            <th scope="col" class="sortable-header" data-sort="id" aria-sort="none">ID</th>
+                            <th scope="col" class="sortable-header" data-sort="name" aria-sort="none">名称</th>
+                            <th scope="col" class="sortable-header" data-sort="sort" aria-sort="none">分类</th>
+                            <th scope="col" class="sortable-header" data-sort="rating" aria-sort="none">评分</th>
+                            <th scope="col" class="sortable-header" data-sort="playTime" aria-sort="none">游玩时长</th>
+                            <th scope="col" class="sortable-header" data-sort="passDate" aria-sort="none">通关日期</th>
+                            <th scope="col" class="sortable-header collapsible-col" data-sort="purchaseDate" aria-sort="none">购入日期</th>
+                            <th scope="col" class="sortable-header collapsible-col" data-sort="startDate" aria-sort="none">开始游玩</th>
+                            <th scope="col" class="sortable-header collapsible-col" data-sort="purchasePrice" aria-sort="none">购入价格</th>
+                            <th scope="col" class="sortable-header" data-sort="actualCost" aria-sort="none">实际支出</th>
+                            <th scope="col" class="sortable-header" data-sort="costPerHour" aria-sort="none">时间成本</th>
+                            <th scope="col" class="sortable-header collapsible-col" data-sort="from" aria-sort="none">来源</th>
+                            <th scope="col" class="sortable-header collapsible-col" data-sort="type" aria-sort="none">类型</th>
+                            <th scope="col" class="sortable-header" data-sort="status" aria-sort="none">状态</th>
                         </tr>
                     </thead>
                     <tbody id="items-table-body"></tbody>
                 </table>
-                 <div id="no-data-list-message" class="text-center py-10 text-stone-400 hidden">暂无数据</div>
+                <div id="no-data-list-message" class="empty-state">
+                    <i class="fas fa-folder-open" aria-hidden="true"></i>
+                    <p id="no-data-list-text">暂无数据</p>
+                    <p id="no-data-list-hint" class="empty-hint"></p>
+                </div>
             </div>
+            <nav id="table-pagination" class="table-pagination flex-shrink-0" aria-label="数据表分页">
+                <div class="flex items-center gap-2">
+                    <label for="page-size-select" class="text-sm text-stone-600 whitespace-nowrap">每页</label>
+                    <select id="page-size-select" class="form-select py-1 pl-2 pr-7 text-sm w-auto">
+                        <option value="25">25</option>
+                        <option value="50" selected>50</option>
+                        <option value="100">100</option>
+                        <option value="0">全部</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="page-prev" class="btn btn-secondary btn-sm" aria-label="上一页">上一页</button>
+                    <span id="page-info" class="page-info" aria-live="polite">第 0 / 0 页</span>
+                    <button type="button" id="page-next" class="btn btn-secondary btn-sm" aria-label="下一页">下一页</button>
+                </div>
+            </nav>
         </div>
     </div>
 
     <!-- Monthly Chart Fullscreen Modal -->
     <div id="monthly-chart-fullscreen-modal" class="fixed inset-0 hidden modal-backdrop" style="z-index: var(--z-modal-fullscreen); overflow: hidden;" role="dialog" aria-modal="true" aria-label="月度趋势全屏">
         <div id="fullscreen-chart-container" class="card relative bg-white border-none shadow-none">
-             <button id="close-monthly-chart-fullscreen-btn" class="absolute top-4 right-4 text-stone-600 hover:text-stone-900" title="退出全屏" aria-label="退出全屏" style="z-index: var(--z-modal-confirm); background: rgba(0,0,0,0.08); padding: 8px; border-radius: 50%;">
-                <i class="fas fa-compress-alt fa-lg"></i>
+            <button type="button" id="close-monthly-chart-fullscreen-btn" class="icon-btn icon-btn-sm absolute top-4 right-4" title="退出全屏" aria-label="退出全屏" style="z-index: var(--z-modal-confirm); background: rgba(0,0,0,0.08); padding: 8px; border-radius: 50%;">
+                <i class="fas fa-compress-alt" aria-hidden="true"></i>
             </button>
             <div class="w-full h-full relative">
-                 <canvas id="monthly-trends-chart-fullscreen" role="img" aria-label="月度消费与时间统计全屏图"></canvas>
+                <canvas id="monthly-trends-chart-fullscreen" role="img" aria-label="月度消费与时间统计全屏图">月度消费与时间统计全屏图</canvas>
             </div>
         </div>
     </div>
 
     <!-- On This Day Modal -->
-    <div id="on-this-day-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal);" role="dialog" aria-modal="true" aria-labelledby="on-this-day-title">
-        <div class="card w-full max-w-md mx-auto rounded-lg shadow-xl p-6 relative">
-            <div class="flex justify-between items-center mb-4">
+    <div id="on-this-day-modal" class="fixed inset-0 items-center justify-center p-3 sm:p-4 hidden modal-backdrop overflow-y-auto" style="z-index: var(--z-modal);" role="dialog" aria-modal="true" aria-labelledby="on-this-day-title">
+        <div class="card modal-card w-full max-w-md mx-auto rounded-lg shadow-xl p-4 sm:p-6 relative my-auto">
+            <div class="flex justify-between items-center gap-3 mb-1">
                 <h2 id="on-this-day-title" class="text-xl font-bold text-stone-900">💡 那年今日</h2>
-                <button id="close-on-this-day-modal-btn" class="text-stone-500 hover:text-stone-900" aria-label="关闭"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                <button type="button" id="close-on-this-day-modal-btn" class="icon-btn modal-close" aria-label="关闭">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
             </div>
-            <div id="on-this-day-content" class="space-y-4 max-h-[60vh] overflow-y-auto text-stone-700"></div>
+            <p id="on-this-day-subtitle" class="text-sm text-stone-500 mb-4"></p>
+            <div id="on-this-day-content" class="space-y-4 max-h-[60vh] overflow-y-auto text-stone-700" aria-live="polite"></div>
         </div>
     </div>
 
     <!-- Confirm Modal -->
-    <div id="confirm-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal-confirm);" role="alertdialog" aria-modal="true" aria-labelledby="confirm-modal-title">
-        <div class="card w-full max-w-sm mx-auto rounded-lg shadow-xl p-6 relative">
+    <div id="confirm-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal-confirm);" role="alertdialog" aria-modal="true" aria-labelledby="confirm-modal-title" aria-describedby="confirm-modal-message">
+        <div class="card modal-card w-full max-w-sm mx-auto rounded-lg shadow-xl p-6 relative">
             <h2 id="confirm-modal-title" class="text-lg font-bold text-stone-900 mb-4">请确认</h2>
             <p id="confirm-modal-message" class="text-stone-600 mb-6">您确定要执行此操作吗？</p>
-            <div class="flex justify-end space-x-4">
-                <button type="button" id="confirm-cancel-btn" class="bg-stone-400 hover:bg-stone-500 text-white font-bold py-2 px-4 rounded-lg">取消</button>
-                <button type="button" id="confirm-ok-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">确认</button>
+            <div class="flex flex-wrap justify-end gap-3">
+                <button type="button" id="confirm-cancel-btn" class="btn btn-secondary" data-autofocus>取消</button>
+                <button type="button" id="confirm-ok-btn" class="btn btn-danger">确认</button>
             </div>
         </div>
     </div>
 
     <!-- Play Next Modal -->
-    <div id="play-next-modal" class="fixed inset-0 items-center justify-center p-4 hidden modal-backdrop" style="z-index: var(--z-modal);" role="dialog" aria-modal="true" aria-labelledby="play-next-modal-title">
-        <div class="card w-full max-w-4xl mx-auto rounded-lg shadow-xl p-6 relative flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+    <div id="play-next-modal" class="fixed inset-0 items-center justify-center p-3 sm:p-4 hidden modal-backdrop overflow-y-auto" style="z-index: var(--z-modal);" role="dialog" aria-modal="true" aria-labelledby="play-next-modal-title">
+        <div class="card modal-card w-full max-w-4xl mx-auto rounded-lg shadow-xl p-4 sm:p-6 relative flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center gap-3 mb-4 flex-shrink-0">
                 <h2 id="play-next-modal-title" class="text-xl font-bold text-stone-900">💡 接下来</h2>
-                <button id="close-play-next-modal-btn" class="text-stone-500 hover:text-stone-900" aria-label="关闭"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                <button type="button" id="close-play-next-modal-btn" class="icon-btn modal-close" aria-label="关闭">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow min-h-0">
-                <div id="my-backlog-container" class="flex flex-col min-h-0 transition-all duration-300 ease-in-out">
-                    <h3 id="my-backlog-title" class="text-lg font-semibold text-amber-700 mb-2 flex-shrink-0 cursor-pointer flex justify-between items-center group">
-                        <span>📌 我的待玩/待看列表</span>
-                        <i id="my-backlog-toggle-icon" class="fas fa-chevron-up text-sm opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 flex-grow min-h-0">
+                <div id="my-backlog-container" class="flex flex-col min-h-0 min-w-0 transition-all duration-300 ease-in-out">
+                    <h3 id="my-backlog-title" class="backlog-title" role="button" tabindex="0" aria-expanded="true" aria-controls="my-play-next-list">
+                        <span>📌 我的待玩/待看列表 <span id="my-backlog-count" class="backlog-count"></span></span>
+                        <i id="my-backlog-toggle-icon" class="fas fa-chevron-up text-sm opacity-60 group-hover:opacity-100 transition-opacity" aria-hidden="true"></i>
                     </h3>
-                    <div id="my-play-next-list" class="space-y-2 overflow-y-auto pr-2"></div>
+                    <div id="my-play-next-list" class="space-y-2 overflow-y-auto pr-2 min-h-0"></div>
                 </div>
-                <div id="ai-section" class="flex flex-col min-h-0">
+                <div id="ai-section" class="flex flex-col min-h-0 min-w-0">
                     <div class="flex items-center gap-2 mb-2 flex-shrink-0">
                         <h3 class="text-lg font-semibold text-amber-700">🤖 AI 推荐</h3>
-                        <button id="ai-settings-toggle" class="text-stone-500 hover:text-amber-600 transition-colors ml-auto" title="API 设置" aria-label="API 设置">
-                            <i class="fas fa-cog"></i>
+                        <button type="button" id="ai-settings-toggle" class="icon-btn icon-btn-sm ml-auto" title="API 设置" aria-label="API 设置" aria-expanded="false" aria-controls="ai-settings-panel">
+                            <i class="fas fa-cog" aria-hidden="true"></i>
                         </button>
                     </div>
                     <!-- API Settings Panel -->
                     <div id="ai-settings-panel" class="hidden mb-3 p-3 bg-stone-50 rounded-lg border border-stone-200 flex-shrink-0 space-y-3 text-sm">
                         <div>
-                            <label for="ai-api-key-input" class="text-stone-700 font-medium block mb-1">DeepSeek API Key</label>
-                            <div class="flex gap-2">
-                                <input type="password" id="ai-api-key-input" class="form-input flex-grow" placeholder="粘贴你的 DeepSeek API Key">
-                                <button id="ai-api-key-save-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-1 px-3 rounded text-xs transition-colors">保存</button>
-                                <button id="ai-api-key-clear-btn" class="bg-stone-300 hover:bg-stone-400 text-stone-800 font-bold py-1 px-3 rounded text-xs transition-colors">清除</button>
+                            <label for="ai-api-key-input" class="form-label">DeepSeek API Key</label>
+                            <div class="flex flex-wrap gap-2 mt-1">
+                                <input type="password" id="ai-api-key-input" class="form-input flex-grow min-w-[10rem]" placeholder="粘贴你的 DeepSeek API Key" autocomplete="off" spellcheck="false">
+                                <button type="button" id="ai-api-key-toggle" class="btn btn-secondary btn-sm" aria-pressed="false" aria-label="显示 API Key"><i class="fas fa-eye" aria-hidden="true"></i></button>
+                                <button type="button" id="ai-api-key-save-btn" class="btn btn-primary btn-sm">保存</button>
+                                <button type="button" id="ai-api-key-clear-btn" class="btn btn-secondary btn-sm">清除</button>
                             </div>
                         </div>
                         <div id="ai-local-mode-row" class="flex items-center gap-2">
                             <input type="checkbox" id="ai-local-mode-checkbox" class="form-checkbox">
-                            <label for="ai-local-mode-checkbox" class="text-stone-700">本地直连模式（绕过Cloud Function）</label>
+                            <label for="ai-local-mode-checkbox" class="text-stone-700">本地直连模式（绕过 Cloud Function）</label>
                         </div>
                         <div class="flex items-center gap-2">
                             <input type="checkbox" id="ai-thinking-mode-checkbox" class="form-checkbox">
                             <label for="ai-thinking-mode-checkbox" class="text-stone-700">深度思考模式（更慢但更精准）</label>
                         </div>
-                        <p id="ai-settings-status" class="text-stone-500 text-xs"></p>
+                        <p id="ai-settings-status" class="settings-status text-stone-500 text-xs"></p>
                     </div>
                     <div class="flex gap-2 mb-3 flex-shrink-0">
-                        <input type="text" id="ai-prompt-input" class="form-input flex-grow" placeholder="输入你想玩/看的类型或风格...">
-                        <button id="ai-prompt-send-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-3 rounded-lg transition-colors" aria-label="发送AI推荐请求">
-                            <i class="fas fa-paper-plane"></i>
+                        <label for="ai-prompt-input" class="sr-only">AI 推荐偏好</label>
+                        <input type="text" id="ai-prompt-input" class="form-input flex-grow min-w-0" placeholder="输入你想玩/看的类型或风格…" autocomplete="off" data-autofocus>
+                        <button type="button" id="ai-prompt-send-btn" class="btn btn-primary px-3" aria-label="发送 AI 推荐请求">
+                            <i class="fas fa-paper-plane" aria-hidden="true"></i>
                         </button>
                     </div>
-                    <div id="ai-recommendations-list" class="space-y-3 overflow-y-auto pr-2 hidden"></div>
+                    <div id="ai-recommendations-list" class="space-y-3 overflow-y-auto pr-2 min-h-0 hidden" aria-live="polite"></div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Toast live region: populated by showToast(), announced without stealing focus -->
+    <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="false"></div>
 
     <script type="module" src="js/main.js"></script>
 

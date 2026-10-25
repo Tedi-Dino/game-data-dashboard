@@ -1,20 +1,81 @@
-let lastFocusedEl = null;
+// Focus origin per modal. A single global slot broke nested dialogs: opening
+// the delete confirmation over the edit form overwrote the form's opener, so
+// closing both could leave focus on a hidden button.
+const lastFocusedByModal = new WeakMap();
 
 // Import escapeHTML for safe HTML rendering
 import { escapeHTML } from '../core/utils.js';
+
+// --- Modal close hooks -------------------------------------------------------
+// Persistent hooks run every time a modal closes (e.g. tearing down a chart).
+// Dialog promises use the same mechanism as a one-shot hook so Escape/backdrop
+// can no longer leave a `showConfirmation()` promise pending forever.
+const closeHandlers = new WeakMap();
+
+export const onModalClose = (modal, handler) => {
+    if (!modal || typeof handler !== 'function') return () => {};
+    let handlers = closeHandlers.get(modal);
+    if (!handlers) {
+        handlers = new Set();
+        closeHandlers.set(modal, handlers);
+    }
+    handlers.add(handler);
+    return () => handlers.delete(handler);
+};
+
+const runCloseHandlers = (modal) => {
+    const handlers = closeHandlers.get(modal);
+    if (!handlers) return;
+    // Copy first: a handler may unregister itself while running.
+    [...handlers].forEach(handler => {
+        try {
+            handler();
+        } catch (error) {
+            console.error('Modal close handler failed:', error);
+        }
+    });
+};
+
+const syncBodyScrollLock = () => {
+    const openCount = document.querySelectorAll('[aria-modal="true"]:not(.hidden)').length;
+    document.body.classList.toggle('modal-open', openCount > 0);
+};
+
+// Only visible, enabled elements may take focus. `offsetParent` is null for
+// display:none nodes, which is exactly what hidden form rows need.
+const getFocusable = (modal) => {
+    if (!modal) return [];
+    const selector = 'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    return Array.from(modal.querySelectorAll(selector)).filter(el => {
+        if (el.disabled) return false;
+        if (el.getAttribute('aria-hidden') === 'true') return false;
+        if (typeof el.getClientRects === 'function') return el.getClientRects().length > 0;
+        return el.offsetParent !== null;
+    });
+};
 
 /**
  * Open a modal by removing 'hidden' and adding 'flex' classes.
  */
 export const openModal = (modal) => {
     if (!modal) return;
-    lastFocusedEl = document.activeElement;
+    const wasOpen = !modal.classList.contains('hidden');
+    if (!wasOpen) {
+        const opener = document.activeElement;
+        // Only remember an opener that is actually outside this dialog.
+        if (opener && opener !== document.body && !modal.contains(opener)) {
+            lastFocusedByModal.set(modal, opener);
+        }
+    }
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-    // Focus the first focusable element inside the modal
+    syncBodyScrollLock();
+
     requestAnimationFrame(() => {
-        const focusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        if (focusable) focusable.focus();
+        const preferred = modal.querySelector('[data-autofocus]:not([disabled])');
+        const focusable = getFocusable(modal);
+        const target = (preferred && focusable.includes(preferred)) ? preferred : focusable[0];
+        if (target) target.focus();
     });
 };
 
@@ -23,12 +84,19 @@ export const openModal = (modal) => {
  */
 export const closeModal = (modal) => {
     if (!modal) return;
+    const wasOpen = !modal.classList.contains('hidden');
+    const opener = lastFocusedByModal.get(modal);
+    lastFocusedByModal.delete(modal);
+    if (wasOpen) runCloseHandlers(modal);
     modal.classList.add('hidden');
     modal.classList.remove('flex');
-    // Restore focus to element that was focused before the modal opened
-    if (lastFocusedEl && typeof lastFocusedEl.focus === 'function') {
-        lastFocusedEl.focus();
-        lastFocusedEl = null;
+    syncBodyScrollLock();
+
+    // Restore focus to this dialog's own opener. Rows can be re-rendered while
+    // an edit modal is open, so a detached node must not become the target.
+    if (wasOpen && opener && opener.isConnected !== false
+        && typeof opener.focus === 'function') {
+        opener.focus();
     }
 };
 
@@ -41,29 +109,34 @@ const zIndexOf = (el) => {
 // Topmost open modal. Picks the highest z-index rather than the last element in
 // DOM order — those disagree (confirm-modal sits earlier but stacks above
 // play-next-modal), which made Esc close the wrong dialog.
-// `>=` keeps DOM order as the tie-break so equal-stacked modals behave as before.
 const getTopModal = () => {
     const openModals = Array.from(document.querySelectorAll('[aria-modal="true"]:not(.hidden)'));
     if (openModals.length === 0) return null;
     return openModals.reduce((top, el) => (zIndexOf(el) >= zIndexOf(top) ? el : top));
 };
 
-// Global Escape key handler — closes the topmost open modal
+// Global Escape key handler — closes the topmost open modal.
 document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
+    if (e.key !== 'Escape' || e.defaultPrevented) return;
     const topModal = getTopModal();
     if (topModal) closeModal(topModal);
 });
 
-// Focus trap: keep Tab/Shift+Tab within the topmost open modal
+// Focus trap: keep Tab/Shift+Tab within the topmost open modal.
 document.addEventListener('keydown', (e) => {
     if (e.key !== 'Tab') return;
     const modal = getTopModal();
     if (!modal) return;
-    const focusable = Array.from(modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'));
+    const focusable = getFocusable(modal);
     if (focusable.length === 0) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
+
+    if (!modal.contains(document.activeElement)) {
+        e.preventDefault();
+        first.focus();
+        return;
+    }
     if (e.shiftKey && document.activeElement === first) {
         e.preventDefault();
         last.focus();
@@ -73,9 +146,32 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// --- Long-lived dialog state --------------------------------------------------
+// The confirm modal is a single DOM node shared by alerts and confirmations.
+// Settling the previous promise before reusing it avoids a stuck promise when
+// two dialogs overlap (e.g. an error alert while a delete confirmation is open).
+let activeDialogSettler = null;
+
+const settleActiveDialog = () => {
+    const settle = activeDialogSettler;
+    activeDialogSettler = null;
+    if (settle) settle();
+};
+
+const wireDialog = (modal, onBackdrop) => {
+    const handleBackdrop = (e) => {
+        if (e.target === modal) {
+            if (onBackdrop) onBackdrop();
+            else closeModal(modal);
+        }
+    };
+    modal.addEventListener('click', handleBackdrop);
+    return () => modal.removeEventListener('click', handleBackdrop);
+};
+
 /**
  * Show an alert dialog (OK only, no cancel).
- * Returns a Promise that resolves when dismissed.
+ * Returns a Promise that resolves when dismissed, including via Escape/backdrop.
  */
 export const showAlert = (message) => {
     return new Promise((resolve) => {
@@ -90,39 +186,41 @@ export const showAlert = (message) => {
             return;
         }
 
+        settleActiveDialog();
         if (titleEl) titleEl.textContent = '提示';
-        okBtn.classList.remove('hidden');
         if (cancelBtn) cancelBtn.classList.add('hidden');
-        messageEl.textContent = '';
-        messageEl.innerHTML = escapeHTML(message).replace(/\n/g, '<br>');
+        messageEl.textContent = String(message || '');
 
+        // Clone so listeners from an earlier confirmation cannot fire again.
         const newOkBtn = okBtn.cloneNode(true);
+        newOkBtn.classList.remove('hidden', 'btn-danger');
+        newOkBtn.classList.add('btn', 'btn-primary');
+        newOkBtn.textContent = '知道了';
         okBtn.parentNode.replaceChild(newOkBtn, okBtn);
 
         let settled = false;
-        const handleConfirm = () => {
+        const offClose = onModalClose(modal, () => settle());
+        const offBackdrop = wireDialog(modal, () => closeModal(modal));
+
+        const settle = () => {
             if (settled) return;
             settled = true;
-            closeModal(modal);
-            newOkBtn.removeEventListener('click', handleConfirm);
-            modal.removeEventListener('click', handleBackdrop);
-            if (cancelBtn) cancelBtn.classList.remove('hidden');
+            offClose();
+            offBackdrop();
+            activeDialogSettler = null;
             resolve();
         };
-        const handleBackdrop = (e) => { if (e.target === modal) handleConfirm(); };
+        activeDialogSettler = settle;
 
-        newOkBtn.addEventListener('click', handleConfirm);
-        modal.addEventListener('click', handleBackdrop);
+        newOkBtn.addEventListener('click', () => closeModal(modal));
         openModal(modal);
     });
 };
 
 /**
  * Show a confirmation dialog.
- * Returns a Promise that resolves with true (confirmed) or false (cancelled).
- * Supports nested calls — each call gets its own fresh listeners.
- * If asHtml is true, the message is rendered via innerHTML with escapeHTML
- * (safe) and newlines replaced with <br>.
+ * Returns a Promise resolving true (confirmed) or false (cancelled / dismissed).
+ * Escape and backdrop clicks cancel; they never leave the caller hanging.
  */
 export const showConfirmation = (message, asHtml = false) => {
     return new Promise((resolve) => {
@@ -137,57 +235,92 @@ export const showConfirmation = (message, asHtml = false) => {
             return;
         }
 
-        // Reset title in case previous call changed it
+        settleActiveDialog();
         if (titleEl) titleEl.textContent = '请确认';
-        // Ensure OK button is visible (previous calls may have hidden it)
-        okBtn.classList.remove('hidden');
+        cancelBtn.classList.remove('hidden');
         if (asHtml) {
             messageEl.innerHTML = escapeHTML(message).replace(/\n/g, '<br>');
         } else {
-            messageEl.textContent = message;
+            messageEl.textContent = String(message || '');
         }
 
-        // Clone and replace OK button to clear old listeners
         const newOkBtn = okBtn.cloneNode(true);
+        newOkBtn.classList.remove('hidden', 'btn-primary');
+        newOkBtn.classList.add('btn', 'btn-danger');
+        newOkBtn.textContent = '确认';
         okBtn.parentNode.replaceChild(newOkBtn, okBtn);
 
-        // Clone and replace Cancel button too (so main.js's permanent listener doesn't stack)
         const newCancelBtn = cancelBtn.cloneNode(true);
+        newCancelBtn.classList.remove('hidden');
+        newCancelBtn.classList.add('btn', 'btn-secondary');
+        newCancelBtn.textContent = '取消';
         cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
 
         let settled = false;
-
-        const handleConfirm = () => {
+        const settle = (result) => {
             if (settled) return;
             settled = true;
+            offClose();
+            offBackdrop();
+            activeDialogSettler = null;
+            resolve(result);
+        };
+
+        const offClose = onModalClose(modal, () => settle(false));
+        const offBackdrop = wireDialog(modal, () => closeModal(modal));
+        activeDialogSettler = () => settle(false);
+
+        newOkBtn.addEventListener('click', () => {
+            // Settle as confirmed *before* closeModal(): closeModal runs the
+            // close hook, which would otherwise settle false and turn every
+            // confirmation (delete/import) into a cancellation.
+            settle(true);
             closeModal(modal);
-            cleanup();
-            resolve(true);
-        };
-
-        const handleCancel = () => {
-            if (settled) return;
-            settled = true;
-            closeModal(modal);
-            cleanup();
-            resolve(false);
-        };
-
-        const cleanup = () => {
-            newOkBtn.removeEventListener('click', handleConfirm);
-            newCancelBtn.removeEventListener('click', handleCancel);
-            modal.removeEventListener('click', handleBackdrop);
-        };
-
-        // Close on backdrop click
-        const handleBackdrop = (e) => {
-            if (e.target === modal) handleCancel();
-        };
-
-        newOkBtn.addEventListener('click', handleConfirm);
-        newCancelBtn.addEventListener('click', handleCancel);
-        modal.addEventListener('click', handleBackdrop);
-
+        });
+        newCancelBtn.addEventListener('click', () => closeModal(modal));
         openModal(modal);
     });
+};
+
+/**
+ * Lightweight non-blocking notification. The live region in index.html is
+ * aria-live="polite"; the toast itself never steals focus.
+ */
+export const showToast = (message, { tone = 'info', timeout = 3400 } = {}) => {
+    const region = document.getElementById('toast-region');
+    if (!region) return;
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${tone}`;
+
+    const icon = document.createElement('i');
+    icon.className = tone === 'error'
+        ? 'fas fa-circle-exclamation'
+        : (tone === 'success' ? 'fas fa-circle-check' : 'fas fa-circle-info');
+    icon.setAttribute('aria-hidden', 'true');
+
+    const text = document.createElement('span');
+    text.className = 'toast-text';
+    text.textContent = String(message || '');
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'toast-close';
+    close.setAttribute('aria-label', '关闭提示');
+    close.textContent = '×';
+
+    toast.append(icon, text, close);
+    region.appendChild(toast);
+    while (region.children.length > 4) region.firstElementChild.remove();
+
+    let dismissed = false;
+    const dismiss = () => {
+        if (dismissed) return;
+        dismissed = true;
+        toast.classList.add('is-leaving');
+        setTimeout(() => toast.remove(), 180);
+    };
+    close.addEventListener('click', dismiss);
+    requestAnimationFrame(() => toast.classList.add('is-visible'));
+    if (timeout > 0) setTimeout(dismiss, timeout);
+    return dismiss;
 };

@@ -50,7 +50,7 @@ The site runs on the Spark plan. Every difference is collapsed into the `FEATURE
 | Google sign-in | ✅ | — |
 | Firestore realtime sync (50k reads / 20k writes per day) | ✅ | — |
 | Charts, KPIs, CSV import/export | ✅ | — |
-| Steam sync | 🖥️ local `tools/steam_sync/sync.mjs` + Task Scheduler | ☁️ in-page button + daily 04:00 cloud job |
+| Steam sync | 🖥️ local `tools/steam_sync/sync.mjs`, run manually (you may add your own task; the repo does not) | ☁️ in-page button + daily 04:00 cloud job in the Blaze code (needs billing + deploy) |
 | AI recommendations | 🖥️ browser → DeepSeek, key stored locally, admin only | ☁️ Cloud Function holds the key (still admin-only in the UI) |
 | App Check | ❌ disabled (reCAPTCHA tokens never resolve on mainland networks) | ⚠️ verify tokens first |
 
@@ -190,12 +190,18 @@ Too lazy to enter hundreds of Steam games manually? You can use the **Steam Web 
    node tools/steam_sync/sync.mjs           # dry-run
    node tools/steam_sync/sync.mjs --apply   # write to Firestore
    ```
-   Set `STEAM_API_KEY` in `tools/steam_sync/.env`, then schedule it daily at 04:00 with Windows Task Scheduler. See `docs/free-tier-plan.md`.
+   Set `STEAM_API_KEY` in `tools/steam_sync/.env`. If you want a daily run, create
+   your own Task Scheduler entry; the repo does not create one, and this machine
+   has no registered task matching `NewGame` / `steam_sync/sync.mjs`. See
+   `docs/free-tier-plan.md`.
 
 > 💡 **Optional: back to Blaze (paid)** — not the default path. Restore
 > `"functions": { "source": "functions" }` in `firebase.json`, flip the `FEATURES`
-> switches, re-set both secrets, and disable the local scheduled task. No frontend
-> edits are needed: the Steam sync button and cloud AI mode reappear with the switch.
+> switches, re-set both secrets, and disable any local scheduled task you created
+> yourself. No frontend edits are needed: the Steam sync button and cloud AI mode
+> reappear with the switch. Note: `functions:list` may still show legacy ACTIVE
+> metadata, but with billing disabled the Scheduler API returns 403; do not treat
+> that as a running cloud job.
 
 -----
 

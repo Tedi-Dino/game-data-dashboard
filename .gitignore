@@ -62,8 +62,10 @@ node_modules/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
-**/.env
+# dotenv environment variables file; keep placeholder templates committable
+**/.env*
+!**/.env.example
+!**/.env.sample
 
 # Service account keys (Admin SDK / CI). Never commit these.
 *.service-account.json
@@ -80,6 +82,15 @@ old/
 
 # Data exports
 *.csv
+
+# Local tool data — personal purchase/library snapshots. Keep on this machine,
+# never commit. Examples committed alongside each script are placeholders only.
+tools/create_items/batch.json
+tools/bind_steam_ids/bindings.json
+tools/update_unsold_physical_estimates/repairs.json
+tools/dump_items/*.json
+tools/dump_items/out/
+tools/steam_info/output/
 
 # Firebase default hosting page
 public/

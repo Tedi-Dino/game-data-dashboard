@@ -6,10 +6,10 @@
 
 ## Overview
 
-The app uses Firebase for authentication and Firestore for storage. On Spark there
-are **no Cloud Functions**, so the security boundary is exactly two things:
-Firestore rules and the admin UID check inside them. Everything in the browser is
-UX, not enforcement.
+The app uses Firebase for authentication and Firestore for storage. On Spark the
+Cloud Functions backend is not usable (billing disabled), so the security
+boundary is exactly two things: Firestore rules and the admin UID check inside
+them. Everything in the browser is UX, not enforcement.
 
 ## Security Layers
 
@@ -54,11 +54,14 @@ data is already intentionally public and there is no billable backend to abuse.
 Do not re-enable enforcement before confirming token issuance in the App Check
 console.
 
-### 4. Cloud Functions — not deployed (Spark)
+### 4. Cloud Functions — billing disabled (stale metadata may remain)
 
-`functions/` is frozen reference code for the optional Blaze path; it is not
-deployed and cannot be. (Leftover gen2 resources from the paid period still show
-up in some listings but are not callable with billing disabled.)
+`functions/` is frozen reference code for the optional Blaze path. Billing is
+disabled (`billingEnabled=false`), so there is no working Functions backend:
+`firebase functions:list` can still show the three legacy **ACTIVE** function
+entries from the paid period, but the Cloud Scheduler API returns **403**. Treat
+those entries as metadata, not as running jobs; do not assume callables or the
+daily sync are available.
 
 If the project ever returns to Blaze, the original model applies again: admin UID
 check at the start of each callable, App Check with limited-use tokens, per-admin
@@ -71,6 +74,54 @@ any external API call. The Cloud Functions runtime service account also needs
 - Admin-only actions are hidden from non-admin users (Steam sync button, AI panel)
 - Client-side hiding is NOT a security boundary — it is UX only
 - True security relies on Firestore Rules
+
+## Client-Side Data Handling
+
+- **CSV import** (`js/services/csv-parse.js`) runs before any Firestore write.
+  It caps input at 5 MB / 5000 rows / 64 columns, rejects duplicate headers and
+  ids, invalid dates, out-of-range numbers and control characters, and reports
+  skipped rows instead of silently dropping them.
+- **CSV export** prefixes leading `= + - @` text with an apostrophe so Excel and
+  Sheets render it as text rather than executing it. Import removes that guard,
+  so the stored value is unchanged.
+- **Bulk replace** suppresses intermediate renders while it deletes/inserts, but
+  it keeps the newest Firestore snapshot that arrived during the import and
+  applies it afterwards. Dropping that snapshot left the table and charts stuck
+  on pre-import (or mid-delete) data.
+- **AI fallback** on Spark calls DeepSeek directly from the admin's browser with
+  the admin's own key. The request aborts after 60 seconds; the key stays in
+  `localStorage` and is visible to anyone using that browser profile (known
+  trade-off, admin-only UI).
+
+## Repository Hygiene (2026-10-25 maintenance)
+
+A full working-tree + all-history **file/blob** scan found no private keys,
+service-account JSON, Steam API key, DeepSeek key, cloud tokens or personal email
+addresses in file contents (the scrub tests use a synthetic `example.invalid`
+fixture). The only credential-shaped strings are:
+
+- the Firebase **web API key** in `js/config/firebase.js` (public client config,
+  not a private key);
+- the Firebase CLI's **installed-app OAuth client id/secret** in the local tools
+  (shipped publicly inside `firebase-tools`, not a user secret).
+
+A separate audit of **git commit metadata** found one private address reused as
+author/committer across all 89 commits. The value is deliberately not reproduced
+in this repository. The one annotated tag also has a tagger email outside the
+author/committer scope. `tools/history_email_scrub/` is a dry-run-by-default tool
+that rewrites author/committer emails only, in an isolated bare mirror, and
+verifies trees/names/dates/messages; it has **not** been run against this repo.
+Rewriting refs cannot remove the address from existing clones, forks, reflogs or
+hosting caches.
+
+Real data batches are now data, not code: `tools/create_items/batch.json`,
+`tools/bind_steam_ids/bindings.json` and
+`tools/update_unsold_physical_estimates/repairs.json` are gitignored, with
+`*.example.json` placeholders committed. `tools/dump_items/out/` and
+`tools/steam_info/output/` are ignored too. Historical game names, prices and
+Steam IDs that were already committed stay in git history by design — they are
+the same data the public dashboard shows. The email metadata is the exception:
+see `docs/archive/security-report-2026-10-25.md` for the scrub plan.
 
 ## Key Principle
 

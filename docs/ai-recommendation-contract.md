@@ -11,9 +11,10 @@ and the Cloud Function (`functions/index.js`).
 
 > On the current Spark (free) plan only the browser path runs: the frontend calls
 > DeepSeek directly with the admin's API key. The Cloud Function copy is frozen
-> reference code for the optional Blaze path and is **not deployed**, but it must
-> still be kept byte-identical — `tools/tests/config-consistency.test.mjs` asserts
-> the two prompts match.
+> reference code for the optional Blaze path. Billing is disabled, so it cannot
+> execute even if legacy ACTIVE metadata is still listed in `functions:list`. It
+> must still be kept byte-identical — `tools/tests/config-consistency.test.mjs`
+> asserts the two prompts match.
 
 ## Prompt Template
 

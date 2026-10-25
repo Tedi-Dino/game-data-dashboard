@@ -8,6 +8,7 @@
 | [`audit-report-2026-10-16.md`](audit-report-2026-10-16.md) | 2026-10-16 | 全量审计报告（29 项问题，P0/P1/P2 分级） |
 | [`audit-verification-2026-10-16.md`](audit-verification-2026-10-16.md) | 2026-10-16 | 对上述报告的对抗式复核，30 条断言判定 |
 | [`audit-fix-report-2026-10-17.md`](audit-fix-report-2026-10-17.md) | 2026-10-17 | 审计问题的修复汇总与验证记录 |
+| [`security-report-2026-10-25.md`](security-report-2026-10-25.md) | 2026-10-25 | 凭证/私人数据全历史扫描、维护修复与测试记录（原定写入 `.git/maintenance-backups/`） |
 | [`optimization-plan.md`](optimization-plan.md) | 2026-07-05 | 早期优化计划（12 项），已全部结案 |
 | [`steam-monthly-playtime-upgrade.md`](steam-monthly-playtime-upgrade.md) | 2026-07 | Steam 月度时长统计的改造规格（已实现） |
 

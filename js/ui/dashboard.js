@@ -3,7 +3,7 @@ import { PLATFORM_META } from '../config/constants.js';
 import { formatCurrency, formatNumber, escapeHTML, netCost } from '../core/utils.js';
 
 // --- KPI Calculations ---
-const calcKPIs = () => {
+export const calcKPIs = () => {
     const games = items.filter(i => i.type !== 'hardware' && i.type !== 'drama');
     // `steam_override === false` means "trust the locally entered playTime, do not
     // let Steam overwrite it" — it does NOT mean "exclude from statistics".
@@ -49,18 +49,20 @@ export const updateDashboardKPIs = () => {
     setText('total-games', `${kpi.fullyCompletedCount} / ${kpi.passedCount} / ${kpi.gameCount}`);
     setText('total-playtime', kpi.totalPlaytime.toFixed(2));
     setText('avg-playtime', kpi.avgPlaytime.toFixed(2));
-    setText('cost-per-hour', kpi.costPerHour !== null ? formatNumber(kpi.costPerHour) : '/');
+    const hasCph = kpi.costPerHour !== null;
+    setText('cost-per-hour', hasCph ? formatNumber(kpi.costPerHour) : '—');
     setText('total-dramas', kpi.dramaCount);
     setText('total-drama-time', kpi.totalDramaTime.toFixed(2));
     setText('avg-drama-time', kpi.avgDramaTime.toFixed(2));
 
-    // Hide/show currency symbol for cost-per-hour when it's "/"
+    // Hide both the currency symbol and the "/h" unit when there is no value,
+    // otherwise the cell renders as "— /h".
     const cphEl = document.getElementById('cost-per-hour');
     if (cphEl) {
         const currencySpan = cphEl.parentElement.querySelector('.kpi-currency');
-        if (currencySpan) {
-            currencySpan.style.display = kpi.costPerHour !== null ? '' : 'none';
-        }
+        if (currencySpan) currencySpan.style.display = hasCph ? '' : 'none';
+        const unit = document.getElementById('cost-per-hour-unit');
+        if (unit) unit.style.display = hasCph ? '' : 'none';
     }
 };
 
@@ -76,7 +78,9 @@ export const updateKpiTooltips = () => {
     const gameCostTooltip = document.getElementById('game-cost-tooltip');
     if (gameCostTooltip) {
         gameCostTooltip.innerHTML = '<h3 class="font-bold mb-1">游戏支出 Top 10</h3><ul>' +
-            topCost.map(g => `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 18))}</span><strong>${formatCurrency(netCost(g))}</strong></li>`).join('') + '</ul>';
+            (topCost.length > 0
+                ? topCost.map(g => `<li class="flex justify-between gap-3"><span>${escapeHTML((g.name || '').substring(0, 18))}</span><strong>${formatCurrency(netCost(g))}</strong></li>`).join('')
+                : '<li class="text-stone-400">暂无记录</li>') + '</ul>';
     }
 
     // Playtime top 10 (games only)
@@ -84,7 +88,9 @@ export const updateKpiTooltips = () => {
     const playtimeTooltip = document.getElementById('playtime-tooltip');
     if (playtimeTooltip) {
         playtimeTooltip.innerHTML = '<h3 class="font-bold mb-1">游玩时长 Top 10</h3><ul>' +
-            topPlay.map(g => `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 18))}</span><strong>${(g.playTime || 0).toFixed(1)}h</strong></li>`).join('') + '</ul>';
+            (topPlay.length > 0
+                ? topPlay.map(g => `<li class="flex justify-between gap-3"><span>${escapeHTML((g.name || '').substring(0, 18))}</span><strong>${(g.playTime || 0).toFixed(1)}h</strong></li>`).join('')
+                : '<li class="text-stone-400">暂无记录</li>') + '</ul>';
     }
 
     // Cost per hour (most & least expensive)
@@ -95,11 +101,13 @@ export const updateKpiTooltips = () => {
     const mostExpensive = [...gamesCph].sort((a, b) => b.cph - a.cph).slice(0, 5);
     const cphTooltip = document.getElementById('cph-tooltip');
     if (cphTooltip) {
-        cphTooltip.innerHTML =
-            '<h3 class="font-bold mb-1">最高时间成本 Top 5</h3><ul>' +
-            mostExpensive.map(g => `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 20))}</span><strong>${formatCurrency(g.cph)}/h</strong></li>`).join('') +
-            '</ul><h3 class="font-bold mt-2 mb-1">最低时间成本 Top 5</h3><ul>' +
-            cheapest.map(g => `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 20))}</span><strong>${formatCurrency(g.cph)}/h</strong></li>`).join('') + '</ul>';
+        const row = (g) => `<li class="flex justify-between gap-3"><span>${escapeHTML((g.name || '').substring(0, 20))}</span><strong>${formatCurrency(g.cph)}/h</strong></li>`;
+        cphTooltip.innerHTML = (gamesCph.length === 0
+            ? '<p class="text-stone-400">暂无有时长的付费游戏</p>'
+            : '<h3 class="font-bold mb-1">最高时间成本 Top 5</h3><ul>' +
+                mostExpensive.map(row).join('') +
+                '</ul><h3 class="font-bold mt-2 mb-1">最低时间成本 Top 5</h3><ul>' +
+                cheapest.map(row).join('') + '</ul>');
     }
 
     // Unfinished games value
@@ -112,8 +120,8 @@ export const updateKpiTooltips = () => {
     if (unfinishedTooltip) {
         let html = `<div class="grid grid-cols-2 gap-1 mb-2"><div>实体: <strong>${formatCurrency(unfinishedPhysical)}</strong></div><div>数字: <strong>${formatCurrency(unfinishedDigital)}</strong></div></div>`;
         html += '<h3 class="font-bold mt-2 mb-1 border-t border-stone-200 pt-1">最贵未完成 Top 5</h3><ul>';
-        html += topUnfinished.map(g => `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 20))}</span><strong>${formatCurrency(netCost(g))}</strong></li>`).join('');
-        if (topUnfinished.length === 0) html += '<li>无</li>';
+        html += topUnfinished.map(g => `<li class="flex justify-between gap-3"><span>${escapeHTML((g.name || '').substring(0, 20))}</span><strong>${formatCurrency(netCost(g))}</strong></li>`).join('');
+        if (topUnfinished.length === 0) html += '<li class="text-stone-400">暂无记录</li>';
         html += '</ul>';
         unfinishedTooltip.innerHTML = html;
     }
@@ -174,10 +182,13 @@ export const updateKpiTooltips = () => {
         html += '</div>';
 
         // Right: 平台分布
-        html += '<div><h3 class="font-bold mb-1 text-sky-600">平台分布</h3><ul>' +
-            sortedGameCount.map(([platform, count]) =>
-                `<li class="flex justify-between"><span>${escapeHTML(platform)}</span><strong>${count}</strong></li>`
-            ).join('') + '</ul></div>';
+        html += '<div><h3 class="font-bold mb-1 text-sky-700">平台分布</h3>' +
+            (sortedGameCount.length > 0
+                ? '<ul>' + sortedGameCount.map(([platform, count]) =>
+                    `<li class="flex justify-between gap-3"><span>${escapeHTML(platform)}</span><strong>${count}</strong></li>`
+                ).join('') + '</ul>'
+                : '<p class="text-stone-400 text-xs">暂无</p>') +
+            '</div>';
 
         html += '</div>';
         totalGamesTooltip.innerHTML = html;
@@ -197,7 +208,9 @@ export const updateKpiTooltips = () => {
     const totalDramasTooltip = document.getElementById('total-dramas-tooltip');
     if (totalDramasTooltip) {
         totalDramasTooltip.innerHTML = '<h3 class="font-bold mb-1">剧集分类统计</h3><ul>' +
-            sortedDramaCount.map(([sort, count]) => `<li class="flex justify-between"><span>${escapeHTML(sort)}</span><strong>${count} 部</strong></li>`).join('') + '</ul>';
+            (sortedDramaCount.length > 0
+                ? sortedDramaCount.map(([sort, count]) => `<li class="flex justify-between gap-3"><span>${escapeHTML(sort)}</span><strong>${count} 部</strong></li>`).join('')
+                : '<li class="text-stone-400">暂无记录</li>') + '</ul>';
     }
 
     // Drama time top 10
@@ -205,7 +218,9 @@ export const updateKpiTooltips = () => {
     const dramaTimeTooltip = document.getElementById('drama-time-tooltip');
     if (dramaTimeTooltip) {
         dramaTimeTooltip.innerHTML = '<h3 class="font-bold mb-1">观剧时长 Top 10</h3><ul>' +
-            topDramaTime.map(g => `<li class="flex justify-between"><span>${escapeHTML(g.name.substring(0, 18))}</span><strong>${(g.playTime || 0).toFixed(1)}h</strong></li>`).join('') + '</ul>';
+            (topDramaTime.length > 0
+                ? topDramaTime.map(g => `<li class="flex justify-between gap-3"><span>${escapeHTML((g.name || '').substring(0, 18))}</span><strong>${(g.playTime || 0).toFixed(1)}h</strong></li>`).join('')
+                : '<li class="text-stone-400">暂无记录</li>') + '</ul>';
     }
 };
 
@@ -223,9 +238,9 @@ export const setupKpiTooltips = () => {
         const trigger = tooltip.closest('.group');
         if (!trigger) return;
 
-        trigger.addEventListener('mouseenter', () => {
+        const positionTooltip = () => {
             // Measure while invisible — disable transition briefly to avoid flash.
-            // The tooltip is display:none until hover so hidden boxes cannot
+            // The tooltip is display:none until hover/focus so hidden boxes cannot
             // widen the document; force it measurable for this synchronous pass.
             const prevTransition = tooltip.style.transition;
             const prevPointerEvents = tooltip.style.pointerEvents;
@@ -277,12 +292,16 @@ export const setupKpiTooltips = () => {
             tooltip.classList.add(useBelow ? 'kpi-tooltip-below' : 'kpi-tooltip-above');
             if (useRight) tooltip.classList.add('kpi-tooltip-right');
 
-            // Restore transition (CSS :hover handles opacity)
+            // Restore transition (CSS :hover/:focus-within handles opacity)
             tooltip.style.transition = prevTransition;
             tooltip.style.pointerEvents = prevPointerEvents;
             tooltip.style.display = prevDisplay;
             tooltip.style.opacity = '';
-        });
+        };
+
+        trigger.addEventListener('mouseenter', positionTooltip);
+        // Keyboard users get the same edge-aware placement through focus.
+        trigger.addEventListener('focusin', positionTooltip);
     });
 };
 

@@ -16,6 +16,9 @@ export const PROJECT_ID = 'game-data-dashboard';
 export const FIRESTORE_BASE =
     `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
+// A hung proxy/API socket must not stall a scheduled sync forever.
+const REQUEST_TIMEOUT_MS = 30 * 1000;
+
 // ── HTTP (proxy-aware: Clash etc. via CONNECT tunnel) ───────────────────────
 
 function requestDirect(options, url, body) {
@@ -24,6 +27,9 @@ function requestDirect(options, url, body) {
             let data = '';
             res.on('data', (c) => (data += c));
             res.on('end', () => resolve({ status: res.statusCode, body: data }));
+        });
+        req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+            req.destroy(new Error(`request timeout (${REQUEST_TIMEOUT_MS}ms)`));
         });
         req.on('error', reject);
         if (body) req.write(body);
@@ -43,6 +49,9 @@ function requestViaProxy(proxyUrl, url, options, body) {
             path: `${target.hostname}:${port}`,
             headers: { Host: `${target.hostname}:${port}` },
         });
+        connectReq.setTimeout(REQUEST_TIMEOUT_MS, () => {
+            connectReq.destroy(new Error(`proxy CONNECT timeout (${REQUEST_TIMEOUT_MS}ms)`));
+        });
         connectReq.on('connect', (res, socket) => {
             if (res.statusCode !== 200) {
                 socket.destroy();
@@ -60,6 +69,9 @@ function requestViaProxy(proxyUrl, url, options, body) {
                     let data = '';
                     res2.on('data', (c) => (data += c));
                     res2.on('end', () => resolve({ status: res2.statusCode, body: data }));
+                });
+                req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+                    req.destroy(new Error(`request timeout (${REQUEST_TIMEOUT_MS}ms)`));
                 });
                 req.on('error', reject);
                 if (body) req.write(body);
@@ -98,11 +110,18 @@ export function loadAccessToken() {
     return { accessToken: tokens.access_token, refreshToken: tokens.refresh_token || null };
 }
 
+// The Firebase CLI's installed-app OAuth client. This pair ships inside the
+// public firebase-tools package; it is NOT a user secret or private key.
+const FIREBASE_CLI_OAUTH = {
+    clientId: '563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com',
+    clientSecret: 'j9iVZfS8kkCEFUPaAeJV0sAi',
+};
+
 export async function refreshAccessToken(refreshToken) {
     const form = new URLSearchParams({
         refresh_token: refreshToken,
-        client_id: '563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com',
-        client_secret: 'j9iVZfS8kkCEFUPaAeJV0sAi',
+        client_id: FIREBASE_CLI_OAUTH.clientId,
+        client_secret: FIREBASE_CLI_OAUTH.clientSecret,
         grant_type: 'refresh_token',
     });
     const res = await request('https://www.googleapis.com/oauth2/v3/token', {

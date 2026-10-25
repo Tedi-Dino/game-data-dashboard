@@ -1,6 +1,6 @@
 import { items } from '../core/state.js';
 import { escapeHTML } from '../core/utils.js';
-import { openModal, closeModal } from './modals.js';
+import { openModal, closeModal, showToast, onModalClose } from './modals.js';
 import { isAdmin } from './auth.js';
 import { FEATURES } from '../config/constants.js';
 import {
@@ -23,11 +23,13 @@ export const setupPlayNextModal = () => {
     const aiPromptSendBtn = document.getElementById('ai-prompt-send-btn');
     const myBacklogTitle = document.getElementById('my-backlog-title');
     const myBacklogToggleIcon = document.getElementById('my-backlog-toggle-icon');
+    const myBacklogCount = document.getElementById('my-backlog-count');
 
     // --- Local API key settings elements ---
     const settingsToggle = document.getElementById('ai-settings-toggle');
     const settingsPanel = document.getElementById('ai-settings-panel');
     const apiKeyInput = document.getElementById('ai-api-key-input');
+    const apiKeyToggle = document.getElementById('ai-api-key-toggle');
     const apiKeySaveBtn = document.getElementById('ai-api-key-save-btn');
     const apiKeyClearBtn = document.getElementById('ai-api-key-clear-btn');
     const localModeCheckbox = document.getElementById('ai-local-mode-checkbox');
@@ -44,12 +46,17 @@ export const setupPlayNextModal = () => {
 
     // --- Init settings panel state ---
     const refreshSettingsUI = () => {
-        if (!apiKeyInput || !localModeCheckbox || !settingsStatus) return;
+        if (!settingsStatus) return;
         const hasKey = !!getLocalApiKey();
-        apiKeyInput.value = hasKey ? '••••••••' : '';
-        apiKeyInput.placeholder = hasKey ? '已保存 (重新输入以覆盖)' : '粘贴你的 DeepSeek API Key';
-        localModeCheckbox.checked = isLocalMode();
+        if (apiKeyInput) {
+            // Placeholder/prompt follows the saved state. Do not touch the value
+            // here: collapsing and reopening the panel must not erase a key the
+            // user is still typing. The field is cleared on save and on open.
+            apiKeyInput.placeholder = hasKey ? '已保存（输入新 Key 覆盖）' : '粘贴你的 DeepSeek API Key';
+        }
+        if (localModeCheckbox) localModeCheckbox.checked = isLocalMode();
         if (thinkingModeCheckbox) thinkingModeCheckbox.checked = isThinkingMode();
+        settingsStatus.dataset.tone = hasKey ? 'ok' : 'warn';
         if (FEATURES.AI_LOCAL_ONLY) {
             settingsStatus.textContent = hasKey
                 ? '✅ 已配置：直接调用 DeepSeek API（免费套餐不使用 Cloud Function）'
@@ -57,15 +64,29 @@ export const setupPlayNextModal = () => {
             return;
         }
         settingsStatus.textContent = hasKey
-            ? (isLocalMode() ? '✅ 本地模式：直接调用 DeepSeek API' : '🔗 云端模式：通过 Cloud Function 调用（备用Key已配置）')
-            : '⚠️ 未配置本地API Key';
+            ? (isLocalMode() ? '✅ 本地模式：直接调用 DeepSeek API' : '🔗 云端模式：通过 Cloud Function 调用（备用 Key 已配置）')
+            : '⚠️ 未配置本地 API Key';
     };
 
     // Settings toggle
     if (settingsToggle && settingsPanel) {
         settingsToggle.addEventListener('click', () => {
-            settingsPanel.classList.toggle('hidden');
+            const open = settingsPanel.classList.toggle('hidden') === false;
+            settingsToggle.setAttribute('aria-expanded', String(open));
             refreshSettingsUI();
+            if (open) apiKeyInput?.focus();
+        });
+    }
+
+    // Password visibility toggle
+    if (apiKeyToggle && apiKeyInput) {
+        apiKeyToggle.addEventListener('click', () => {
+            const reveal = apiKeyInput.type === 'password';
+            apiKeyInput.type = reveal ? 'text' : 'password';
+            apiKeyToggle.setAttribute('aria-pressed', String(reveal));
+            apiKeyToggle.setAttribute('aria-label', reveal ? '隐藏 API Key' : '显示 API Key');
+            const icon = apiKeyToggle.querySelector('i');
+            if (icon) icon.className = reveal ? 'fas fa-eye-slash' : 'fas fa-eye';
         });
     }
 
@@ -73,10 +94,14 @@ export const setupPlayNextModal = () => {
     if (apiKeySaveBtn && apiKeyInput) {
         apiKeySaveBtn.addEventListener('click', () => {
             const val = apiKeyInput.value.trim();
-            if (!val || val === '••••••••') return;
+            if (!val || val === '••••••••') {
+                showToast('请输入要保存的 API Key', { tone: 'error' });
+                return;
+            }
             setLocalApiKey(val);
-            apiKeyInput.value = '••••••••';
+            apiKeyInput.value = '';
             refreshSettingsUI();
+            showToast('API Key 已保存在本机浏览器', { tone: 'success' });
         });
     }
 
@@ -84,9 +109,9 @@ export const setupPlayNextModal = () => {
     if (apiKeyClearBtn) {
         apiKeyClearBtn.addEventListener('click', () => {
             clearLocalApiKey();
-            if (apiKeyInput) apiKeyInput.value = '';
             setLocalMode(false);
             refreshSettingsUI();
+            showToast('已清除本地 API Key');
         });
     }
 
@@ -106,10 +131,44 @@ export const setupPlayNextModal = () => {
         });
     }
 
+    // AI column visibility follows the current role even if auth changes while
+    // the modal is open.
+    const applyAiVisibility = () => {
+        const aiSection = document.getElementById('ai-section');
+        const aiGrid = aiSection ? aiSection.parentElement : null;
+        const aiAllowed = isAdmin();
+        if (aiSection) aiSection.classList.toggle('hidden', !aiAllowed);
+        if (aiGrid) {
+            aiGrid.classList.toggle('md:grid-cols-2', aiAllowed);
+            aiGrid.classList.toggle('md:grid-cols-1', !aiAllowed);
+        }
+    };
+    document.addEventListener('authchange', () => {
+        if (!playNextModal.classList.contains('hidden')) applyAiVisibility();
+    });
+
+    // --- Backlog toggle (mouse + keyboard) ---
+    if (myBacklogTitle && myPlayNextList && myBacklogToggleIcon) {
+        const toggleBacklog = () => {
+            const collapsed = myPlayNextList.classList.toggle('hidden');
+            myBacklogToggleIcon.classList.toggle('rotate-180', collapsed);
+            myBacklogTitle.setAttribute('aria-expanded', String(!collapsed));
+        };
+        myBacklogTitle.addEventListener('click', toggleBacklog);
+        myBacklogTitle.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            e.preventDefault();
+            toggleBacklog();
+        });
+    }
+
     // --- Open modal ---
     playNextBtn.addEventListener('click', () => {
-        const myBacklogGames = items.filter(i => i.status === 'backlog' && i.type !== 'drama');
-        const myBacklogDramas = items.filter(i => i.status === 'backlog' && i.type === 'drama');
+        const backlog = items
+            .filter(i => i.status === 'backlog' && i.type !== 'hardware')
+            .sort((a, b) => (b.rating || 0) - (a.rating || 0) || String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN'));
+        const myBacklogGames = backlog.filter(i => i.type !== 'drama');
+        const myBacklogDramas = backlog.filter(i => i.type === 'drama');
 
         if (aiRecommendationsList) {
             aiRecommendationsList.classList.add('hidden');
@@ -119,110 +178,120 @@ export const setupPlayNextModal = () => {
         const container = document.getElementById('my-backlog-container');
         if (container) container.classList.remove('hidden');
         if (myPlayNextList) myPlayNextList.classList.remove('hidden');
+        if (myBacklogTitle) myBacklogTitle.setAttribute('aria-expanded', 'true');
         if (myBacklogToggleIcon) myBacklogToggleIcon.classList.remove('rotate-180');
+        if (myBacklogCount) {
+            myBacklogCount.textContent = `(${myBacklogGames.length + myBacklogDramas.length})`;
+        }
 
         if (myPlayNextList) {
             let html = '';
             if (myBacklogGames.length > 0) {
-                html += '<p class="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">🎮 待玩游戏</p>';
-                html += myBacklogGames.map(g => `<p class="p-3 bg-stone-100 rounded-md font-semibold ring-1 ring-stone-200 text-stone-800">${escapeHTML(g.name)}</p>`).join('');
+                html += `<p class="backlog-group-title backlog-group-game">🎮 待玩游戏 · ${myBacklogGames.length}</p>`;
+                html += myBacklogGames.map(g => `<p class="backlog-item">${escapeHTML(g.name)}</p>`).join('');
             }
             if (myBacklogDramas.length > 0) {
-                html += '<p class="text-xs font-semibold text-rose-500 uppercase tracking-wider mt-4 mb-2">📺 待看剧集</p>';
-                html += myBacklogDramas.map(g => `<p class="p-3 bg-rose-50 rounded-md font-semibold ring-1 ring-rose-200 text-stone-800">${escapeHTML(g.name)}</p>`).join('');
+                html += `<p class="backlog-group-title backlog-group-drama">📺 待看剧集 · ${myBacklogDramas.length}</p>`;
+                html += myBacklogDramas.map(g => `<p class="backlog-item backlog-item-drama">${escapeHTML(g.name)}</p>`).join('');
             }
             if (!html) {
-                html = '<p class="text-stone-400 text-center">你还没有待玩/待看的内容。</p>';
+                html = '<div class="empty-state is-visible"><i class="fas fa-mug-hot" aria-hidden="true"></i><p>你还没有待玩/待看的内容。</p></div>';
             }
             myPlayNextList.innerHTML = html;
         }
 
         if (aiPromptInput) aiPromptInput.value = '';
+        // Never carry a typed/revealed key across openings.
+        if (apiKeyInput) {
+            apiKeyInput.value = '';
+            apiKeyInput.type = 'password';
+        }
+        if (apiKeyToggle) {
+            apiKeyToggle.setAttribute('aria-pressed', 'false');
+            apiKeyToggle.setAttribute('aria-label', '显示 API Key');
+            const icon = apiKeyToggle.querySelector('i');
+            if (icon) icon.className = 'fas fa-eye';
+        }
         // Hide settings panel on open
         if (settingsPanel) settingsPanel.classList.add('hidden');
+        if (settingsToggle) settingsToggle.setAttribute('aria-expanded', 'false');
 
         // AI panel is a paid-era surface: on Spark the DeepSeek key lives in the
         // admin's own browser, so a visitor could only ever hit "未配置 API Key".
-        // Hide the whole column instead of advertising it behind a padlock, and
-        // let the backlog list take the full width.
-        const aiSection = document.getElementById('ai-section');
-        const aiGrid = aiSection ? aiSection.parentElement : null;
-        const aiAllowed = isAdmin();
-        if (aiSection) aiSection.classList.toggle('hidden', !aiAllowed);
-        if (aiGrid) {
-            aiGrid.classList.toggle('md:grid-cols-2', aiAllowed);
-            aiGrid.classList.toggle('md:grid-cols-1', !aiAllowed);
-        }
+        applyAiVisibility();
         refreshSettingsUI();
         openModal(playNextModal);
     });
 
     // --- Close modal ---
     if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            cancelAIRequest(); // Cancel any in-flight AI request
-            closeModal(playNextModal);
-        });
+        closeBtn.addEventListener('click', () => closeModal(playNextModal));
     }
-
-    // --- Toggle backlog list ---
-    if (myBacklogTitle && myBacklogToggleIcon) {
-        myBacklogTitle.addEventListener('click', () => {
-            myPlayNextList?.classList.toggle('hidden');
-            myBacklogToggleIcon.classList.toggle('rotate-180');
-        });
-    }
+    // Escape and backdrop clicks must cancel an in-flight request too.
+    onModalClose(playNextModal, () => cancelAIRequest());
 
     // --- AI recommendation request ---
     let aiRequestPending = false;
-    if (aiPromptSendBtn && aiPromptInput) {
-        aiPromptSendBtn.addEventListener('click', async () => {
-            if (aiRequestPending) return;
-            const customPrompt = aiPromptInput.value;
+    const sendRequest = async () => {
+        if (aiRequestPending) return;
+        const customPrompt = aiPromptInput?.value || '';
 
-            aiRequestPending = true;
+        aiRequestPending = true;
+        if (aiPromptSendBtn) {
             aiPromptSendBtn.disabled = true;
+            aiPromptSendBtn.setAttribute('aria-busy', 'true');
+        }
+        if (aiRecommendationsList) {
+            aiRecommendationsList.classList.remove('hidden');
+            aiRecommendationsList.innerHTML = '<div class="flex justify-center items-center h-24"><p class="text-stone-500 animate-pulse">🤖 正在向 AI 咨询中，请稍候…</p></div>';
+        }
+
+        try {
+            const result = await getAIRecommendations(customPrompt);
+
+            if (!aiRecommendationsList) return;
+
+            if (result.error) {
+                aiRecommendationsList.innerHTML = `<div class="ai-error" role="alert">${escapeHTML(result.error)}</div>`;
+            } else if (result.recommendations && result.recommendations.length > 0) {
+                // Collapse backlog to make room for AI results; the title toggle
+                // still restores it.
+                if (myPlayNextList) myPlayNextList.classList.add('hidden');
+                if (myBacklogTitle) myBacklogTitle.setAttribute('aria-expanded', 'false');
+                if (myBacklogToggleIcon) myBacklogToggleIcon.classList.add('rotate-180');
+
+                aiRecommendationsList.innerHTML = result.recommendations
+                    .map(rec => {
+                        const isDrama = rec.type === '剧集';
+                        const icon = isDrama ? '📺' : '🎮';
+                        return `<div class="ai-rec-card${isDrama ? ' ai-rec-card-drama' : ''}"><h4>${icon} ${escapeHTML(rec.name)}</h4><p>${escapeHTML(rec.reason)}</p></div>`;
+                    })
+                    .join('');
+            } else {
+                aiRecommendationsList.innerHTML = '<p class="text-stone-500 text-center py-6">AI 暂时没有找到合适的推荐。</p>';
+            }
+        } catch (error) {
+            console.error('AI recommendation request failed:', error);
             if (aiRecommendationsList) {
-                aiRecommendationsList.classList.remove('hidden');
-                aiRecommendationsList.innerHTML = '<div class="flex justify-center items-center h-24"><p class="text-stone-400 animate-pulse">🤖 正在向AI咨询中，请稍候...</p></div>';
+                aiRecommendationsList.innerHTML = '<div class="ai-error" role="alert">请求失败，请检查网络连接后重试。</div>';
             }
-
-            try {
-                const result = await getAIRecommendations(customPrompt);
-
-                if (!aiRecommendationsList) return;
-
-                if (result.error) {
-                    aiRecommendationsList.innerHTML = `<div class="p-4 bg-red-50 rounded-lg text-red-600 text-center border border-red-200" style="white-space: pre-line">${escapeHTML(result.error)}</div>`;
-                } else if (result.recommendations && result.recommendations.length > 0) {
-                    // Collapse backlog to make room for AI results; toggle still works via click
-                    if (myPlayNextList) myPlayNextList.classList.add('hidden');
-                    if (myBacklogToggleIcon) {
-                        myBacklogToggleIcon.classList.add('rotate-180');
-                        myBacklogToggleIcon.style.opacity = '1';
-                    }
-
-                    aiRecommendationsList.innerHTML = result.recommendations
-                        .map(rec => {
-                            const isDrama = rec.type === '剧集';
-                            const bgColor = isDrama ? 'bg-rose-50' : 'bg-stone-100';
-                            const ringColor = isDrama ? 'ring-rose-200' : 'ring-stone-200';
-                            const icon = isDrama ? '📺' : '🎮';
-                            return `<div class="p-3 ${bgColor} rounded-md ring-1 ${ringColor}"><h4 class="font-bold text-stone-900 text-md">${icon} ${escapeHTML(rec.name)}</h4><p class="text-stone-600 mt-1 text-sm">${escapeHTML(rec.reason)}</p></div>`;
-                        })
-                        .join('');
-                } else {
-                    aiRecommendationsList.innerHTML = '<p class="text-stone-400 text-center">AI暂时没有找到合适的推荐。</p>';
-                }
-            } catch (error) {
-                console.error('AI recommendation request failed:', error);
-                if (aiRecommendationsList) {
-                    aiRecommendationsList.innerHTML = `<div class="p-4 bg-red-50 rounded-lg text-red-600 text-center border border-red-200">请求失败，请检查网络连接后重试。</div>`;
-                }
-            } finally {
-                aiRequestPending = false;
+        } finally {
+            aiRequestPending = false;
+            if (aiPromptSendBtn) {
                 aiPromptSendBtn.disabled = false;
+                aiPromptSendBtn.removeAttribute('aria-busy');
             }
+        }
+    };
+
+    if (aiPromptSendBtn) {
+        aiPromptSendBtn.addEventListener('click', sendRequest);
+    }
+    if (aiPromptInput) {
+        aiPromptInput.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' || e.isComposing) return;
+            e.preventDefault();
+            sendRequest();
         });
     }
 };

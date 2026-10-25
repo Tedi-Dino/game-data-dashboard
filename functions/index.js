@@ -33,6 +33,12 @@ const FUNCTION_LIMITS = {
   steamSync: {cooldownMs: 10 * 60 * 1000, maxPerDay: 12},
 };
 
+// Every outbound request gets a ceiling of its own. The function timeout alone
+// is not enough: a hung Steam/DeepSeek socket would otherwise occupy the single
+// instance (maxInstances: 1) until the platform kills it.
+const DEEPSEEK_TIMEOUT_MS = 45 * 1000;
+const STEAM_TIMEOUT_MS = 20 * 1000;
+
 // `expiresAt` alone changes nothing: Firestore TTL policies are configured in the
 // console, not in this repo. Delete expired quota counters here so they do not
 // accumulate forever (one document per function per admin per day).
@@ -192,6 +198,7 @@ ${customPrompt || "无特定需求，请综合推荐。"}
             temperature: 0.3,
             ...(thinking ? { thinking: { type: "enabled", reasoning_effort: "high" } } : { thinking: { type: "disabled" } }),
           }),
+          timeout: DEEPSEEK_TIMEOUT_MS,
         },
     );
 
@@ -236,7 +243,7 @@ ${customPrompt || "无特定需求，请综合推荐。"}
 
 async function fetchGameAchievements(apiKey, appId) {
   const url = `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key=${apiKey}&steamid=${STEAM_ID}&appid=${appId}&format=json`;
-  const response = await fetch(url);
+  const response = await fetch(url, {timeout: STEAM_TIMEOUT_MS});
   if (!response.ok) return null;
   const data = await response.json();
   const stats = data?.playerstats;
@@ -273,7 +280,7 @@ async function parallelLimit(items, fn, concurrency = 5) {
 
 async function fetchOwnedSteamGames(apiKey) {
   const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${apiKey}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
-  const response = await fetch(url);
+  const response = await fetch(url, {timeout: STEAM_TIMEOUT_MS});
 
   if (!response.ok) {
     const errText = await response.text().catch(() => "");

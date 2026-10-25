@@ -7,6 +7,7 @@ service cloud.firestore {
     }
 
     match /items/{itemId} {
+      // The dashboard is public by design; only the admin UID above may write.
       allow read: if true;
       allow write: if isAdmin();
     }

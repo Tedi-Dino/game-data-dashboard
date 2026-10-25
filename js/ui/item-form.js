@@ -23,7 +23,12 @@ const closeItemModalAndReturnToList = () => {
 
 const ACTIVE_MODE_CLASS = 'bg-amber-600 text-white';
 const INACTIVE_MODE_CLASS = 'text-stone-600 hover:bg-stone-200';
-const BASE_MODE_CLASS = 'flex-1 px-3 py-1.5 font-medium rounded-md transition-colors cursor-pointer';
+const BASE_MODE_CLASS = 'mode-btn flex-1 px-3 py-1.5 font-medium rounded-md transition-colors cursor-pointer';
+
+// Values typed in game mode are restored when the user toggles to 剧集 and back.
+// Cleared whenever a fresh add/edit form is opened.
+let gameSnapshot = null;
+export const resetFormModeMemory = () => { gameSnapshot = null; };
 
 export const setFormMode = (mode) => {
     const formMode = document.getElementById('form-mode');
@@ -36,15 +41,27 @@ export const setFormMode = (mode) => {
     const itemFrom = document.getElementById('item-from');
     const purchasePrice = document.getElementById('purchase-price');
 
-    if (formMode) formMode.value = mode;
-
+    const previousMode = formMode?.value || 'game';
     const isDrama = mode === 'drama';
+
+    // Capture before switching so the fields are not overwritten by drama defaults.
+    if (isDrama && previousMode !== 'drama') {
+        gameSnapshot = {
+            from: itemFrom?.value,
+            purchasePrice: purchasePrice?.value,
+            remarks: document.getElementById('item-remarks')?.value,
+        };
+    }
+
+    if (formMode) formMode.value = mode;
 
     if (modeGameBtn) {
         modeGameBtn.className = `${BASE_MODE_CLASS} ${isDrama ? INACTIVE_MODE_CLASS : ACTIVE_MODE_CLASS}`;
+        modeGameBtn.setAttribute('aria-pressed', String(!isDrama));
     }
     if (modeDramaBtn) {
         modeDramaBtn.className = `${BASE_MODE_CLASS} ${isDrama ? ACTIVE_MODE_CLASS : INACTIVE_MODE_CLASS}`;
+        modeDramaBtn.setAttribute('aria-pressed', String(isDrama));
     }
     if (gameFields) gameFields.classList.toggle('hidden', isDrama);
     if (dramaFields) dramaFields.classList.toggle('hidden', !isDrama);
@@ -56,7 +73,25 @@ export const setFormMode = (mode) => {
         if (purchasePrice) purchasePrice.value = '0';
         const itemRemarks = document.getElementById('item-remarks');
         if (itemRemarks) itemRemarks.value = '';
+        // Keep the auto-calculated readout in sync with whatever episode numbers
+        // are currently in the drama fields (they survive form-mode toggles).
+        const count = parseFloat(document.getElementById('episode-count')?.value);
+        const duration = parseFloat(document.getElementById('episode-duration')?.value);
+        const calculated = document.getElementById('calculated-time');
+        if (calculated) {
+            calculated.textContent = count > 0 && duration > 0
+                ? `${(count * duration / 60).toFixed(2)} 小时`
+                : '-';
+        }
     } else {
+        // Restore what the user had typed instead of leaving 免费/0 behind.
+        if (gameSnapshot) {
+            if (itemFrom && gameSnapshot.from != null) itemFrom.value = gameSnapshot.from;
+            if (purchasePrice && gameSnapshot.purchasePrice != null) purchasePrice.value = gameSnapshot.purchasePrice;
+            const itemRemarks = document.getElementById('item-remarks');
+            if (itemRemarks && gameSnapshot.remarks != null) itemRemarks.value = gameSnapshot.remarks;
+            gameSnapshot = null;
+        }
         const dramaTypeSelect = document.getElementById('drama-type');
         if (dramaTypeSelect) dramaTypeSelect.value = '';
     }
@@ -134,9 +169,10 @@ const readFormData = () => {
         data.steam_override = null;
     }
 
-    // Achievement completion (all game platforms)
+    // Achievement completion (all game platforms). Drama rows never carry it:
+    // the hidden game checkbox would otherwise keep a stale true value.
     const fullyCompletedCheckbox = document.getElementById('fully-completed');
-    data.fullyCompleted = fullyCompletedCheckbox ? fullyCompletedCheckbox.checked : false;
+    data.fullyCompleted = !isDrama && Boolean(fullyCompletedCheckbox?.checked);
 
     return data;
 };

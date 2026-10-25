@@ -2,7 +2,7 @@ import { getChart, removeChart } from '../core/state.js';
 import { destroyChartWithTooltip, isChartAvailable } from '../charts/setup.js';
 import { renderGameDistributionChart } from '../charts/game-distribution.js';
 import { renderMonthlyTrendsChart } from '../charts/monthly-trends.js';
-import { openModal, closeModal } from './modals.js';
+import { openModal, closeModal, onModalClose } from './modals.js';
 
 /**
  * Setup chart control UI: monthly fullscreen, hardware checkbox, physical cost mode selector.
@@ -56,19 +56,29 @@ export const setupChartControls = () => {
             }
 
             requestAnimationFrame(() => {
+                // Escape/backdrop can close the modal before this frame runs.
+                if (fullscreenModal.classList.contains('hidden')) return;
                 if (isChartAvailable()) renderMonthlyTrendsChart(true);
             });
         });
     }
 
+    const closeFullscreen = () => {
+        if (fullscreenContainer) {
+            fullscreenContainer.style = '';
+            fullscreenContainer.classList.remove('w-full', 'h-full');
+        }
+        const chart = getChart('monthlyTrendsFullscreen');
+        if (chart) {
+            destroyChartWithTooltip(chart);
+            removeChart('monthlyTrendsFullscreen');
+        }
+    };
+    // Escape, backdrop clicks and the close button all go through closeModal, so
+    // cleanup belongs on the modal lifecycle rather than one button handler.
+    if (fullscreenModal) onModalClose(fullscreenModal, closeFullscreen);
+
     if (closeFullscreenBtn && fullscreenModal) {
-        closeFullscreenBtn.addEventListener('click', () => {
-            closeModal(fullscreenModal);
-            if (fullscreenContainer) fullscreenContainer.style = '';
-            if (getChart('monthlyTrendsFullscreen')) {
-                destroyChartWithTooltip(getChart('monthlyTrendsFullscreen'));
-                removeChart('monthlyTrendsFullscreen');
-            }
-        });
+        closeFullscreenBtn.addEventListener('click', () => closeModal(fullscreenModal));
     }
 };

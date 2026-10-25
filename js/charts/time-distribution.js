@@ -1,7 +1,7 @@
 import { items } from '../core/state.js';
 import { PLATFORM_COLORS, TIME_TYPE_MAP, TIME_COLOR_MAP, TIME_LABEL_BY_TYPE } from '../config/constants.js';
 import { escapeHTML } from '../core/utils.js';
-import { createExternalTooltip, renderOrUpdateChart } from './setup.js';
+import { createExternalTooltip, renderOrUpdateChart, setChartEmptyState } from './setup.js';
 
 export const renderTimeDistributionChart = () => {
     const rawData = {};
@@ -12,6 +12,10 @@ export const renderTimeDistributionChart = () => {
     const sortedEntries = Object.entries(rawData).filter(([_, v]) => v > 0).sort((a, b) => b[1] - a[1]);
     const el = document.getElementById('time-distribution-chart');
     if (!el) return;
+    setChartEmptyState('time-distribution-empty', sortedEntries.length === 0);
+    el.setAttribute?.('aria-label', sortedEntries.length
+        ? `游戏时间分布饼图：${sortedEntries.map(([label]) => label).join('、')}`
+        : '游戏时间分布饼图：暂无数据');
 
     // No `view` argument needed: the tooltip formatter reads `items` (a live
     // import from state.js) and `dataset.data`, never a captured local.
@@ -51,7 +55,7 @@ export const renderTimeDistributionChart = () => {
                         let html = `<div class="font-bold text-base mb-2 border-b border-stone-200 pb-1 flex justify-between"><span>${escapeHTML(label)}</span><span>${value.toFixed(1)}h (${percentage}%)</span></div>`;
                         html += '<h4 class="font-semibold mt-2 mb-1">时长 Top 5</h4><ul class="text-sm">';
                         topItems.forEach(item => {
-                            html += `<li class="flex justify-between my-1"><span>${escapeHTML(item.name.substring(0, 20))}</span><strong>${(item.playTime || 0).toFixed(1)}h</strong></li>`;
+                            html += `<li class="flex justify-between my-1"><span>${escapeHTML((item.name || '').substring(0, 20))}</span><strong>${(item.playTime || 0).toFixed(1)}h</strong></li>`;
                         });
                         if (topItems.length === 0 || topItems.every(i => !(i.playTime > 0))) {
                             html += '<li>无游玩记录</li>';

@@ -20,6 +20,10 @@ export const setThinkingMode = (enabled) => localStorage.setItem(THINKING_MODE_S
 // Active AbortController for cancelling in-flight requests
 let activeAbortController = null;
 
+// A direct DeepSeek call has no server-side timeout on the free plan. Without
+// this, a stalled socket leaves the modal spinning until the user cancels.
+const AI_REQUEST_TIMEOUT_MS = 60 * 1000;
+
 /**
  * Cancel any in-flight AI request.
  */
@@ -93,7 +97,7 @@ ${customPrompt || "无特定需求，请综合推荐。"}
 /**
  * Call DeepSeek API directly (for local dev / bypass Cloud Function).
  */
-const callDeepSeekDirectly = async (customPrompt, promptData, signal) => {
+const callDeepSeekDirectly = async (customPrompt, promptData, signal, wasTimedOut = () => false) => {
     const apiKey = getLocalApiKey();
     if (!apiKey) {
         return { error: '未配置 DeepSeek API Key。请点击「接下来」窗口右上角的齿轮图标填入 Key 后重试。' };
@@ -135,7 +139,9 @@ const callDeepSeekDirectly = async (customPrompt, promptData, signal) => {
         return parseRecommendations(textContent);
     } catch (error) {
         if (error.name === 'AbortError') {
-            return { error: '请求已取消。' };
+            return { error: wasTimedOut()
+                ? `AI 请求超时（${AI_REQUEST_TIMEOUT_MS / 1000} 秒），请检查网络后重试。`
+                : '请求已取消。' };
         }
         console.error('Direct DeepSeek call failed:', error);
         return { error: `请求DeepSeek API失败: ${error.message}` };
@@ -197,17 +203,22 @@ export const getAIRecommendations = async (customPrompt = '') => {
     cancelAIRequest();
     const controller = new AbortController();
     activeAbortController = controller;
+    let timedOut = false;
+    const timeoutId = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+    }, AI_REQUEST_TIMEOUT_MS);
 
     try {
         // Free tier: the Cloud Function is not deployed, so go straight to the
         // browser-side call instead of burning a request on a guaranteed 404.
         if (FEATURES.AI_LOCAL_ONLY) {
-            return await callDeepSeekDirectly(customPrompt, promptData, controller.signal);
+            return await callDeepSeekDirectly(customPrompt, promptData, controller.signal, () => timedOut);
         }
 
         // If user explicitly set local mode, use direct API call
         if (isLocalMode()) {
-            return await callDeepSeekDirectly(customPrompt, promptData, controller.signal);
+            return await callDeepSeekDirectly(customPrompt, promptData, controller.signal, () => timedOut);
         }
 
         // Otherwise try Cloud Function first
@@ -217,7 +228,7 @@ export const getAIRecommendations = async (customPrompt = '') => {
         // Cloud Function failed — try local API key as fallback
         if (getLocalApiKey()) {
             console.log('Cloud Function unavailable, falling back to direct DeepSeek call...');
-            return await callDeepSeekDirectly(customPrompt, promptData, controller.signal);
+            return await callDeepSeekDirectly(customPrompt, promptData, controller.signal, () => timedOut);
         }
 
         // Neither works — give helpful error
@@ -225,6 +236,7 @@ export const getAIRecommendations = async (customPrompt = '') => {
             error: `${cfResult.error}\n\n💡 本地调试提示：如果你在本地运行此页面，请在设置中填入DeepSeek API Key以直接调用AI。`
         };
     } finally {
+        clearTimeout(timeoutId);
         if (activeAbortController === controller) {
             activeAbortController = null;
         }

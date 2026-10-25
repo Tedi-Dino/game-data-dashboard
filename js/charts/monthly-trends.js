@@ -1,7 +1,7 @@
 import { items, steamPlaytimeMonths, steamPlaytimeStates, steamPlaytimeTracking } from '../core/state.js';
 import { PLATFORM_COLORS, DEFAULT_TREND, TREND_PLATFORM_KEYS, TREND_KEY_BY_TYPE } from '../config/constants.js';
 import { formatCurrency, normalizeMonth, renderStars, escapeHTML, getStartDate, netCost, isUnsoldPhysical, parseLocalDateOnly } from '../core/utils.js';
-import { createExternalTooltip, renderOrUpdateChart } from './setup.js';
+import { createExternalTooltip, renderOrUpdateChart, setChartEmptyState } from './setup.js';
 
 
 // Parse any date-like value. Date-only strings ('YYYY-MM-DD') must be read as
@@ -222,6 +222,10 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
 
     const el = document.getElementById(canvasId);
     if (!el) return;
+    if (!isFullscreen) setChartEmptyState('monthly-trends-empty', sortedMonths.length === 0);
+    el.setAttribute?.('aria-label', sortedMonths.length
+        ? `月度消费与时间统计图，共 ${sortedMonths.length} 个月`
+        : '月度消费与时间统计图：暂无数据');
 
     // No `view` argument needed: this chart's tooltip formatter only reads the
     // live `items` / `steamPlaytime*` imports from state.js, never a local.
@@ -248,7 +252,8 @@ export const renderMonthlyTrendsChart = (isFullscreen = false) => {
                     position: 'left',
                     title: { display: true, text: '支出 (¥)' },
                     grid: { color: 'rgba(0, 0, 0, 0.06)' },
-                    beginAtZero: true
+                    // Resale revenue can make a month net-negative; do not clip it.
+                    beginAtZero: false
                 },
                 y1: {
                     position: 'right',

@@ -1,0 +1,30 @@
+{
+  "_comment": "Template for tools/create_items/create_items.js. Copy to batch.json (gitignored) and replace the examples.",
+  "newItems": [
+    {
+      "id": "x-0001",
+      "name": "示例游戏",
+      "type": "xbox",
+      "sort": "TPS",
+      "status": "passed",
+      "purchaseDate": "2026-01-01",
+      "startDate": "2026-01-01",
+      "passDate": "2026-01-10",
+      "purchasePrice": 0,
+      "from": "subscription",
+      "playTime": 10,
+      "rating": 8,
+      "fullyCompleted": false
+    }
+  ],
+  "updates": [
+    {
+      "fb_id": "REPLACE_WITH_FIRESTORE_DOC_ID",
+      "fields": {
+        "startDate": "2026-01-01",
+        "passDate": "2026-01-10",
+        "rating": 8
+      }
+    }
+  ]
+}

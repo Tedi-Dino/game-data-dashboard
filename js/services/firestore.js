@@ -3,10 +3,17 @@ import { db } from '../config/firebase.js';
 import { setItems } from '../core/state.js';
 import { formatDateTime } from '../core/utils.js';
 import { getCachedItems, setCachedItems, getCachedAt } from '../core/cache.js';
+import { runBulkReplace } from './bulk-replace-core.js';
 
 let itemsCollectionRef = null;
 let unsubscribe = null;
 let metadataUnsubscribe = null;
+
+// Bulk import suppresses intermediate renders, but it must NOT drop the latest
+// snapshot: the final event can arrive while the flag is set, and Firestore will
+// not replay it afterwards. Keep it and apply it when the import finishes.
+let importing = false;
+let deferredSnapshot = null;
 
 // Callback invoked whenever items update (set by main.js)
 let onDataChange = null;
@@ -34,6 +41,14 @@ const clearBanner = () => {
 };
 
 // --- Firestore Items Listener ---
+const applyItemsSnapshot = (snapshot) => {
+    const items = snapshot.docs.map(doc => ({ fb_id: doc.id, ...doc.data() }));
+    setItems(items);
+    setCachedItems(items); // update cache
+    clearBanner(); // live data arrived — drop any cached/failed banner
+    if (onDataChange) { try { onDataChange(); } catch (e) { console.error('onDataChange error:', e); } }
+};
+
 export const setupFirestoreListener = async () => {
     if (unsubscribe) unsubscribe();
     if (!db) {
@@ -56,12 +71,11 @@ export const setupFirestoreListener = async () => {
 
     // Then set up real-time Firestore listener
     unsubscribe = onSnapshot(itemsCollectionRef, (snapshot) => {
-        if (importing) return; // skip partial renders during bulk import
-        const items = snapshot.docs.map(doc => ({ fb_id: doc.id, ...doc.data() }));
-        setItems(items);
-        setCachedItems(items); // update cache
-        clearBanner(); // live data arrived — drop any cached/failed banner
-        if (onDataChange) { try { onDataChange(); } catch (e) { console.error('onDataChange error:', e); } }
+        if (importing) {
+            deferredSnapshot = snapshot; // apply after the bulk import settles
+            return;
+        }
+        applyItemsSnapshot(snapshot);
     }, (error) => {
         console.error('Error fetching data from Firestore: ', error);
         // Latch the failure so metadata's success callback cannot overwrite it.
@@ -121,57 +135,51 @@ export const deleteItem = async (fbId) => {
 };
 
 // --- CSV Import (bulk replace) ---
-let importing = false;
-
 export const bulkReplaceItems = async (newItems) => {
     if (importing) throw new Error('正在导入中，请勿重复操作');
     if (!itemsCollectionRef) throw new Error('Firestore not initialized');
 
-    // Backup current items in case partial failure leaves empty state
-    const snapshot = await getDocs(query(itemsCollectionRef));
-    const backup = snapshot.docs.map(d => ({ fb_id: d.id, ...d.data() }));
-    const BATCH_LIMIT = 400; // conservative: Firestore hard limit is 500
-
+    // The flag is set BEFORE the backup read so no snapshot can slip between
+    // "import started" and "renders suppressed".
     importing = true;
     try {
-        // Delete in chunks
-        const allDocs = snapshot.docs;
-        for (let i = 0; i < allDocs.length; i += BATCH_LIMIT) {
-            const batch = writeBatch(db);
-            allDocs.slice(i, i + BATCH_LIMIT).forEach(d => batch.delete(d.ref));
-            await batch.commit();
-        }
-
-        // Insert in chunks
-        for (let i = 0; i < newItems.length; i += BATCH_LIMIT) {
-            const batch = writeBatch(db);
-            newItems.slice(i, i + BATCH_LIMIT).forEach(item => {
-                const newDocRef = doc(itemsCollectionRef);
-                batch.set(newDocRef, item);
-            });
-            await batch.commit();
-        }
-    } catch (error) {
-        console.error('Bulk replace failed, attempting to restore backup:', error);
-        // Attempt to restore from backup — with its own error handling
-        try {
-            for (let i = 0; i < backup.length; i += BATCH_LIMIT) {
+        await runBulkReplace({
+            newItems,
+            readAll: async () => {
+                const snapshot = await getDocs(query(itemsCollectionRef));
+                return snapshot.docs.map((d) => ({ ref: d.ref, data: d.data() }));
+            },
+            createRef: () => doc(itemsCollectionRef),
+            commitDelete: async (refs) => {
                 const batch = writeBatch(db);
-                backup.slice(i, i + BATCH_LIMIT).forEach(item => {
-                    const ref = doc(itemsCollectionRef, item.fb_id);
-                    // Strip client-side fb_id to keep document data model clean
-                    const { fb_id, ...cleanItem } = item;
-                    batch.set(ref, cleanItem);
-                });
+                refs.forEach((ref) => batch.delete(ref));
                 await batch.commit();
-            }
-            console.warn('Backup restored successfully after failed import.');
-        } catch (restoreError) {
-            console.error('CRITICAL: Backup restore ALSO failed!', restoreError);
-            console.error('Data may be lost. Original error:', error.message);
-        }
+            },
+            commitSet: async (writes) => {
+                const batch = writeBatch(db);
+                writes.forEach(({ ref, data }) => batch.set(ref, data));
+                await batch.commit();
+            },
+        });
+    } catch (error) {
+        // The core has already cleaned up this run's new refs and restored the
+        // backup (or attached cleanup/restore errors to `error`). Do not restore
+        // a second time here.
+        console.error('Bulk replace failed:', error.message);
         throw error;
     } finally {
         importing = false;
+        // The listener intentionally ignored snapshots during the import. Apply
+        // the newest one now so the table/charts cannot get stuck on pre-import
+        // (or mid-delete) data when no further event arrives.
+        if (deferredSnapshot) {
+            const pending = deferredSnapshot;
+            deferredSnapshot = null;
+            try {
+                applyItemsSnapshot(pending);
+            } catch (e) {
+                console.error('Failed to apply deferred snapshot:', e);
+            }
+        }
     }
 };

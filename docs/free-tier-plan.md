@@ -24,6 +24,10 @@
 
 **结论：断的不只是 Cloud Functions** —— 见 §2.1，App Check 强制模式才是让整站空白的真凶。
 
+> 2026-10-25 云 API 核查：`billingEnabled=false`。`firebase functions:list` 仍能
+> 列出三个旧的 **ACTIVE** 函数元数据，但 Cloud Scheduler API 因未结算返回 **403**。
+> 元数据存在不等于有可运行的后端或定时任务，不要据此判断自动同步仍在工作。
+
 ## 2. 失效面
 
 | 功能 | 依赖 | 免费版后果 |
@@ -127,7 +131,9 @@ tools/steam_sync/sync.mjs
 - 写入字段与云函数逐字一致：`items.steam_app_id / steam_last_sync / playTime /
   fullyCompleted`、`metadata/steamSync`、`steamPlaytimeState/*`、
   `steamPlaytimeMonths/*`、`metadata/steamPlaytimeTracking`。
-- 调度：Windows 任务计划程序每天 04:00 运行一次。
+- 调度：可选。需要自动运行时，自行在 Windows 任务计划程序创建；仓库不会创建任务，
+  本机核查也未发现按 `NewGame` / `steam_sync/sync.mjs` 注册的任务。不要假设每日
+  04:00 同步已经存在。
 
 ## 7. 已知数据风险（未在本次修复）
 
@@ -136,7 +142,7 @@ tools/steam_sync/sync.mjs
 中间月份显示为 0。历史数据只能通过 Firebase 控制台或 Admin SDK 手工修正
 （`firestore.rules` 里 `steamPlaytime*` 是 `write: false`）。
 
-本地脚本按日调度可以把窗口压到最小，但无法根除。彻底修复需要每日快照表，属于
+本地脚本若能自行配置按日调度，可以把窗口压到最小，但无法根除。彻底修复需要每日快照表，属于
 数据模型变更，本次不做。
 
 ## 8. 部署与回退
@@ -154,7 +160,8 @@ firebase deploy --only hosting,firestore:rules
 2. `js/config/constants.js` 里把 `FEATURES` 翻回 `{STEAM_SYNC: true, SCHEDULED_SYNC: true, AI_LOCAL_ONLY: false}`
 3. `firebase deploy`（含 functions）
 4. `firebase functions:secrets:set DEEPSEEK_API_KEY` / `STEAM_API_KEY` 重新配置
-5. 停用本机任务计划程序里的 Steam 同步任务，避免两条路径同时写入
+5. 如果你曾经自行创建本机 Steam 同步计划任务，停用它，避免两条路径同时写入；
+   仓库从未自动创建该任务
 6. 确认 reCAPTCHA Enterprise 能签发令牌后，再把 `FEATURES.APP_CHECK` 置 `true`，
    并把 Firestore 的 App Check `enforcementMode` 调回 `ENFORCED`（先确认再强制）
 

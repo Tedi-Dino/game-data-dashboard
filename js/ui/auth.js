@@ -26,9 +26,6 @@ const hash = (str) => {
 
 // Module-scoped current user id. This declaration MUST stay: ES modules run in
 // strict mode, so assigning to an undeclared `userId` throws ReferenceError.
-// A previous refactor deleted it while keeping the accessors, which made
-// updateAuthUI() throw before it could switch the header to the logged-in state
-// — sign-in actually succeeded, the page just never reflected it.
 let userId = null;
 
 const getUserId = () => userId;
@@ -38,13 +35,11 @@ const setUserId = (id) => { userId = id; };
 export const isAdmin = () => userId && ADMIN_UIDS.includes(userId);
 
 // Set both `disabled` (blocks mouse AND keyboard activation) and the visual class.
-// The class alone relied on `pointer-events: none`, which did not stop Tab+Enter.
 const setReadOnlyState = (btn, readOnly) => {
     if (!btn) return;
     if (readOnly) {
         btn.classList.add('readonly-mode-disabled');
         btn.title = '需要管理员权限';
-        // Native <button> support real disabling; div-based controls get aria only.
         if (typeof btn.disabled === 'boolean') btn.disabled = true;
         btn.setAttribute('aria-disabled', 'true');
     } else {
@@ -53,6 +48,38 @@ const setReadOnlyState = (btn, readOnly) => {
         if (typeof btn.disabled === 'boolean') btn.disabled = false;
         btn.removeAttribute('aria-disabled');
     }
+};
+
+const updateRoleBadge = (user) => {
+    const role = document.getElementById('user-role');
+    if (!role) return;
+    if (!user) {
+        role.hidden = true;
+        role.textContent = '';
+        return;
+    }
+    role.hidden = false;
+    role.textContent = isAdmin() ? '管理员' : '只读访客';
+    role.classList.toggle('role-admin', Boolean(isAdmin()));
+    role.classList.toggle('role-visitor', !isAdmin());
+};
+
+// Keep rows rendered while the modal is already open in sync with the new role.
+const syncRenderedRows = (readOnly) => {
+    const tbody = document.getElementById('items-table-body');
+    if (!tbody) return;
+    tbody.querySelectorAll('tr[data-fb_id]').forEach(row => {
+        if (readOnly) {
+            row.removeAttribute('tabindex');
+            row.removeAttribute('aria-label');
+            row.title = '';
+        } else {
+            row.tabIndex = 0;
+            const nameCell = row.querySelector('td:nth-child(2)');
+            row.setAttribute('aria-label', `编辑 ${nameCell ? nameCell.textContent.trim() : ''}`.trim());
+            row.title = '点击或按回车编辑';
+        }
+    });
 };
 
 /**
@@ -67,13 +94,16 @@ const updateUIAccess = () => {
         document.getElementById('add-item-fab'),
         document.getElementById('import-btn'),
         document.getElementById('delete-btn'),
-        document.getElementById('save-btn')
+        document.getElementById('save-btn'),
     ];
 
     const steamSyncBtn = document.getElementById('steam-sync-btn');
 
     if (isReadOnly) {
-        if (fabContainer) fabContainer.classList.add('hidden');
+        if (fabContainer) {
+            fabContainer.classList.add('hidden');
+            fabContainer.classList.remove('open');
+        }
         writeButtons.forEach(btn => setReadOnlyState(btn, true));
         // Do NOT disable pointer events on the table: that also blocked text
         // selection and copying. Row clicks are already gated by isAdmin() in
@@ -93,6 +123,7 @@ const updateUIAccess = () => {
             steamSyncBtn.classList.add('flex');
         }
     }
+    syncRenderedRows(isReadOnly);
 };
 
 /**
@@ -111,6 +142,7 @@ export const updateAuthUI = (user) => {
             } else {
                 userAvatar.src = localAvatarDataUrl(user.displayName, user.uid);
             }
+            userAvatar.alt = `${user.displayName || '用户'}的头像`;
         }
         if (loginBtn) loginBtn.classList.add('hidden');
         if (userInfo) {
@@ -125,5 +157,10 @@ export const updateAuthUI = (user) => {
             userInfo.classList.remove('flex');
         }
     }
+    updateRoleBadge(user);
     updateUIAccess();
+
+    // Other UI modules (AI column, FAB hints) react without importing auth.js
+    // back and creating a cycle.
+    document.dispatchEvent(new CustomEvent('authchange', { detail: { isAdmin: Boolean(isAdmin()) } }));
 };

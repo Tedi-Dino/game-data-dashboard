@@ -93,8 +93,9 @@ export const FEATURES = {
   visitor never sees an entry point that can only fail.
 - Going back to Blaze: restore `"functions": { "source": "functions" }`, flip the
   switches to `{STEAM_SYNC: true, SCHEDULED_SYNC: true, AI_LOCAL_ONLY: false}`,
-  re-set both secrets, disable the local scheduled task, and only then verify
-  App Check tokens work before setting `APP_CHECK: true` + `ENFORCED`.
+  re-set both secrets, disable any local scheduled task you created yourself,
+  and only then verify App Check tokens work before setting `APP_CHECK: true` +
+  `ENFORCED`.
 
 **Do not delete `functions/`.** The code is frozen but still authoritative for
 the Blaze path, and `tools/tests/config-consistency.test.mjs` reads it for the
@@ -223,10 +224,13 @@ Two paths, same maths:
   library, fuzzy-matches local items, binds `steam_app_id`, raises `playTime`
   when `steam_override !== false`, and checks achievements to update
   `fullyCompleted`. `scheduledSteamSync` runs daily at 4:00 AM CST.
-- **Spark (default):** neither function is deployed. The browser only shows the
-  last-sync line, and `node tools/steam_sync/sync.mjs --apply` does the work from
-  this machine (Windows Task Scheduler at 04:00). The in-page sync button is
-  never rendered on this plan.
+- **Spark (default):** the Functions backend is not usable (billing disabled;
+  legacy ACTIVE metadata may still be listed, and Scheduler API returns 403).
+  The browser only shows the last-sync line, and
+  `node tools/steam_sync/sync.mjs --apply` does the work from this machine. Run it
+  manually or create your own scheduled task; the repository does not install
+  one, and this machine has no matching registered task by name/arguments. The
+  in-page sync button is never rendered on this plan.
 
 Both paths share `functions/steam-sync-core.js` (name matching) and
 `functions/steam-playtime.js` (delta maths), so they cannot drift into computing
@@ -279,10 +283,19 @@ asking first.
 tools/
 ├── README.md
 ├── bind_steam_ids/
-│   └── bind_steam_ids.js
+│   ├── bind_steam_ids.js
+│   └── bindings.example.json
 ├── cost_per_hour/
 │   ├── cost_per_hour_trend.py
 │   └── cost_per_hour_trend.png
+├── create_items/
+│   ├── create_items.js
+│   └── batch.example.json
+├── dump_items/
+│   └── dump_items.mjs
+├── history_email_scrub/
+│   ├── history_email_scrub.mjs  # dry-run default; mirror-only email rewrite
+│   └── README.md
 ├── perf_test/
 │   └── (Puppeteer performance test scripts)
 ├── steam_info/
@@ -297,7 +310,8 @@ tools/
 ├── update_unsold_cost/
 │   └── update_unsold_cost.js  (DEPRECATED - see README)
 └── update_unsold_physical_estimates/
-    └── update_unsold_physical_estimates.js
+    ├── update_unsold_physical_estimates.js
+    └── repairs.example.json
 ```
 
 Anything that writes defaults to dry-run; only `--apply` writes. Scripts authenticate
@@ -306,22 +320,42 @@ with the Firebase CLI OAuth token, i.e. project-owner credentials that bypass
 
 Tool notes:
 
+- Real tool batches are **local data files**, not tracked code:
+  `create_items/batch.json`, `bind_steam_ids/bindings.json` and
+  `update_unsold_physical_estimates/repairs.json` are gitignored. Only the
+  `*.example.json` placeholders are committed. Never paste a real batch into
+  docs, issues, or commit messages.
 - `tools/cost_per_hour/cost_per_hour_trend.py` reads the newest
   `game_cost_export_*.csv` and generates a cost-per-hour trend PNG.
-- `tools/bind_steam_ids/bind_steam_ids.js` patches Steam App IDs through the
-  Firebase REST API.
+- `tools/create_items/create_items.js` reads `batch.json` (`--data` for another
+  file) and creates/paches `items`; `newItems` is POSTed, `updates` uses an
+  `updateMask`.
+- `tools/dump_items/dump_items.mjs` is read-only and prints one line per item.
+  `--json` defaults to `tools/dump_items/out/`, which is gitignored.
+- `tools/bind_steam_ids/bind_steam_ids.js` patches Steam App IDs from
+  `bindings.json` through the Firebase REST API.
 - `tools/steam_info/steam_info.py` fetches Steam profile/library data into CSV
-  files under `tools/steam_info/output/`.
+  files under `tools/steam_info/output/` (gitignored).
 - `tools/steam_sync/sync.mjs` replaces Cloud Scheduler on the Spark plan. It
   dry-runs by default, reads `STEAM_API_KEY` from the env or
   `tools/steam_sync/.env`, and writes through the Firestore REST API with the
-  Firebase CLI token. `--games-file` runs it offline against a fixture.
-- `tools/tests/` contains unit tests for core logic (`netCost`, CSV parsing,
-  date parsing, AI JSON parsing) using Node's built-in `node:test`.
+  Firebase CLI token. `--games-file` runs it offline against a fixture. All
+  outbound requests time out after 30 seconds. The repo does not create a local
+  scheduled task.
+- `tools/history_email_scrub/` rewrites only author/committer emails, dry-run by
+  default, and refuses `--apply` outside a bare disposable mirror. It never
+  prints existing addresses and does not purge clones/caches. See its README.
+- `tools/tests/` contains unit tests for core logic (`netCost`, CSV parsing and
+  import limits, bulk-replace rollback, date parsing, AI JSON parsing) using
+  Node's built-in `node:test`.
 - `tools/update_unsold_cost/update_unsold_cost.js` is **DEPRECATED**. It violates
   the current database rule (see its README for details).
 - `tools/update_unsold_physical_estimates/update_unsold_physical_estimates.js`
   dry-runs by default and repairs the accidental migration that wrote the
-  display-only 30 yuan estimate into Firestore `purchasePrice`. The intended
-  rule is: database `purchasePrice` stays real; frontend `netCost(item)` applies
-  the 30 yuan display estimate for unsold physical cartridges.
+  display-only 30 yuan estimate into Firestore `purchasePrice`; its doc-id ->
+  price table lives in the gitignored `repairs.json`. The intended rule is:
+  database `purchasePrice` stays real; frontend `netCost(item)` applies the
+  30 yuan display estimate for unsold physical cartridges.
+- CSV import (browser) is capped at 5 MB / 5000 rows, rejects invalid dates,
+  out-of-range numbers, duplicate headers/ids and control characters, and
+  exports guard leading `= + - @` text against spreadsheet formula injection.

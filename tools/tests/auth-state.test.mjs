@@ -28,12 +28,18 @@ const makeEl = () => {
       add: (c) => classes.add(c),
       remove: (c) => classes.delete(c),
       contains: (c) => classes.has(c),
+      toggle: (c, force) => (force ? classes.add(c) : classes.delete(c)),
     },
     disabled: false,
     title: "",
     src: "",
+    hidden: false,
+    textContent: "",
+    tabIndex: -1,
     setAttribute() {},
     removeAttribute() {},
+    querySelector: () => null,
+    querySelectorAll: () => [],
   };
 };
 
@@ -64,6 +70,13 @@ const loadAuthModule = (adminUid) => {
     document: {
       getElementById: (id) => els[id] || null,
       querySelector: (sel) => els[sel] || null,
+      dispatchEvent: () => true,
+    },
+    CustomEvent: class CustomEvent {
+      constructor(type, init = {}) {
+        this.type = type;
+        this.detail = init.detail;
+      }
     },
     __els: els,
     __exports: {},

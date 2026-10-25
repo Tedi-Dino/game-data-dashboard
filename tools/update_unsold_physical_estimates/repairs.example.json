@@ -1,0 +1,6 @@
+{
+  "_comment": "Template for update_unsold_physical_estimates.js. Copy to repairs.json (gitignored): [firestoreDocId, realPurchasePrice].",
+  "repairs": [
+    ["REPLACE_WITH_20_CHAR_FIRESTORE_ID", 188]
+  ]
+}

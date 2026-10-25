@@ -7,7 +7,7 @@
 | 文件 | 内容 |
 | --- | --- |
 | [`free-tier-plan.md`](free-tier-plan.md) | Spark 免费套餐的能力边界、`FEATURES` 开关设计、本地 Steam 同步替代方案、回 Blaze 的步骤 |
-| [`firebase-security.md`](firebase-security.md) | 安全模型：Firestore 规则边界、App Check 为何保持 UNENFORCED、本地同步脚本的特权 |
+| [`firebase-security.md`](firebase-security.md) | 安全模型：Firestore 规则边界、App Check 为何保持 UNENFORCED、本地同步脚本的特权、CSV/AI 客户端防护与仓库密钥卫生 |
 | [`ai-recommendation-contract.md`](ai-recommendation-contract.md) | AI 推荐的提示词与 JSON 输出契约，前端与云函数两份提示词必须逐字一致 |
 
 ## 存档

@@ -50,7 +50,7 @@
 | Google 登录 | ✅ | — |
 | Firestore 实时同步（50k 读 / 20k 写 每天） | ✅ | — |
 | 图表、KPI、CSV 导入导出 | ✅ | — |
-| Steam 数据同步 | 🖥️ 本机 `tools/steam_sync/sync.mjs` + 任务计划程序 | ☁️ 页内一键同步 + 每日 04:00 云端定时 |
+| Steam 数据同步 | 🖥️ 本机手动运行 `tools/steam_sync/sync.mjs`（可自行加计划任务，仓库不创建） | ☁️ 页内一键同步 + Blaze 代码中的每日 04:00 云端任务（需计费部署） |
 | AI 推荐 | 🖥️ 浏览器直连 DeepSeek，Key 存在本机，仅管理员可见 | ☁️ 云函数持 Key（当前实现仍只对管理员开放） |
 | App Check | ❌ 关闭（国内取不到 reCAPTCHA 令牌） | ⚠️ 需先验证令牌可签发 |
 
@@ -189,13 +189,16 @@ js/
    node tools/steam_sync/sync.mjs           # 预演，不写库
    node tools/steam_sync/sync.mjs --apply   # 实际写入
    ```
-   需要在 `tools/steam_sync/.env` 里配置 `STEAM_API_KEY`（[申请地址](https://steamcommunity.com/dev/apikey)），
-   再用 Windows 任务计划程序设为每天 04:00 运行。详见 `docs/free-tier-plan.md`。
+   需要在 `tools/steam_sync/.env` 里配置 `STEAM_API_KEY`（[申请地址](https://steamcommunity.com/dev/apikey)）。
+   如需每天自动运行，请自行用 Windows 任务计划程序创建；仓库不会创建任务，本机核查
+   也未发现按 `NewGame` / `steam_sync/sync.mjs` 注册的任务。详见 `docs/free-tier-plan.md`。
 
 > 💡 **可选：升级回 Blaze（付费）**（非默认路线）：在 `firebase.json` 补回
 > `"functions": { "source": "functions" }`，把 `js/config/constants.js` 的
-> `FEATURES` 开关翻回去，重新配置两个函数密钥，并停用本机的同步任务。
+> `FEATURES` 开关翻回去，重新配置两个函数密钥，并停用你自行创建的本机同步任务。
 > 前端无需改动——Steam 同步按钮、AI 云端模式会随开关自动恢复显示。
+> 注意：即使 `functions:list` 仍列出旧的 ACTIVE 元数据，计费关闭时 Scheduler API
+> 返回 403，不能据此认为云端定时任务仍在运行。
 
 -----
 

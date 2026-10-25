@@ -24,7 +24,25 @@
       "screenshots/**",
       "docs/**",
       "design.md",
-      "*.csv"
+      "*.csv",
+      "**/*.csv",
+      "**/*.md",
+      "**/*.mjs",
+      "**/*.py",
+      "**/*.bat",
+      "**/*.sh",
+      "**/*.json",
+      "**/*.map",
+      "**/*.txt",
+      "**/*.zip",
+      "**/*.png",
+      "**/*.jpg",
+      "**/*.jpeg",
+      "**/*.gif",
+      "**/*.svg",
+      "**/*.ico",
+      "**/*.woff",
+      "**/*.woff2"
     ],
     "headers": [
       {

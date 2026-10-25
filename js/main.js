@@ -3,7 +3,7 @@ import { auth } from './config/firebase.js';
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
 
 // Core
-import { items, steamPlaytimeMonths, steamPlaytimeStates, steamPlaytimeTracking, setSortConfig } from './core/state.js';
+import { items, steamPlaytimeMonths, steamPlaytimeStates, steamPlaytimeTracking } from './core/state.js';
 import { formatDateTime, toLocalISODate } from './core/utils.js';
 import { FEATURES } from './config/constants.js';
 
@@ -20,10 +20,16 @@ import { renderMonthlyTrendsChart } from './charts/monthly-trends.js';
 
 // UI
 import { updateAuthUI } from './ui/auth.js';
-import { openModal, closeModal, showAlert } from './ui/modals.js';
+import { closeModal, showAlert, showToast } from './ui/modals.js';
 import { setupFab } from './ui/fab.js';
 import { updateDashboardKPIs, updateKpiTooltips, setupKpiTooltips } from './ui/dashboard.js';
-import { renderItemsList, updateSortHeaders, setupSortHeaders, setupListSearch, setupDetailColsToggle, setupItemsTableClick } from './ui/data-table.js';
+import {
+    renderItemsList, setupSortHeaders, setupListSearch,
+    setupDetailColsToggle, setupItemsTableClick, setupListFilterBar,
+    setupListPagination, openListModal,
+} from './ui/data-table.js';
+import { setupKpiFilters } from './ui/kpi-filters.js';
+import { buildChartSignature, buildItemsHash } from './ui/chart-signature.js';
 import { setupItemForm } from './ui/item-form.js';
 import { setupPlayNextModal } from './ui/play-next.js';
 import { setupOnThisDay } from './ui/on-this-day.js';
@@ -34,10 +40,29 @@ import { setupSteamPlaytimeListener } from './services/steam-playtime.js';
 
 // --- Render all charts (with per-chart error isolation) ---
 const getSteamPlaytimeHash = () => JSON.stringify({
-    tracking: steamPlaytimeTracking?.lastCompletedAt?.seconds || steamPlaytimeTracking?.lastCompletedAt || null,
+    tracking: {
+        initializedAt: steamPlaytimeTracking?.initializedAt?.seconds || steamPlaytimeTracking?.initializedAt || null,
+        lastCompletedAt: steamPlaytimeTracking?.lastCompletedAt?.seconds || steamPlaytimeTracking?.lastCompletedAt || null,
+    },
     months: Array.from(steamPlaytimeMonths.entries()).map(([month, data]) => [month, data?.updatedAt?.seconds || data?.updatedAt || null, data?.trackedTotalMinutes || 0, data?.minutesByApp || {}]),
-    states: Array.from(steamPlaytimeStates.entries()).map(([appId, state]) => [appId, state?.lastObservedAt?.seconds || state?.lastObservedAt || null, state?.initialTotalMinutes || 0]),
+    // Every field the monthly chart reads from a per-app state. Missing any of
+    // these would let an updated Steam baseline stay stale on screen.
+    states: Array.from(steamPlaytimeStates.entries()).map(([appId, state]) => [
+        appId,
+        state?.firstSeenMode || null,
+        state?.initialObservedAt?.seconds || state?.initialObservedAt || null,
+        state?.lastObservedAt?.seconds || state?.lastObservedAt || null,
+        state?.initialTotalMinutes || 0,
+    ]),
 });
+
+const CHART_RENDERERS = {
+    cost: renderCostDistributionChart,
+    time: renderTimeDistributionChart,
+    scatter: renderGameDistributionChart,
+    monthly: renderMonthlyTrendsChart,
+    genre: renderGameSortChart,
+};
 
 // Accepts a precomputed Steam hash so updateDashboard only stringifies it once
 // instead of once here plus once per chart.
@@ -46,35 +71,17 @@ const renderCharts = (steamHash) => {
     // throwing: KPIs, tables and auth must keep working.
     if (!isChartAvailable()) return;
 
-    // Per-chart data signatures — only rebuild charts whose data changed.
-    // Signature fields must cover EVERY field the chart reads, or main.js skips
-    // the re-render and the chart silently shows stale data.
-    const chartConfigs = [
-    // cost: netCost() reads type/sellDate; tooltip reads name
-    { name: 'cost', fn: renderCostDistributionChart, fields: ['purchasePrice','sellPrice','type','sellDate','from','remarks','name'] },
-    // time: tooltip reads name
-    { name: 'time', fn: renderTimeDistributionChart, fields: ['playTime','type','status','name'] },
-    // scatter: y-value depends on isUnsoldPhysical -> sellDate, absent sellPrice
-    { name: 'scatter', fn: renderGameDistributionChart, fields: ['playTime','purchasePrice','sellPrice','rating','type','name','from','remarks','sellDate'] },
-    // monthly: tooltip renders stars -> rating
-    { name: 'monthly', fn: renderMonthlyTrendsChart, fields: ['playTime','purchasePrice','sellPrice','type','status','purchaseDate','startDate','sellDate','passDate','name','episodeCount','episodeDuration','rating'] },
-    // genre: playTime drives the sector size itself — Steam daily sync updates it
-    { name: 'genre', fn: renderGameSortChart, fields: ['sort','type','playTime','name','rating'] },
-    ];
-
     if (!window._chartHashes) window._chartHashes = {};
+    const todayKey = toLocalISODate(new Date());
 
-    for (const { name, fn, fields } of chartConfigs) {
-        // Unfinished games amortize up to "now", so the monthly chart also depends
-        // on the wall clock (see monthly-trends.js `new Date()` end dates). Fold
-        // today's date into the signature so a page left open past midnight recalcs.
-        const todayKey = toLocalISODate(new Date());
-        const sig = items.map(i => fields.map(f => i[f] ?? '').join('|')).join(',')
-            + (name === 'monthly' ? `|steam:${steamHash}|today:${todayKey}` : '');
+    for (const [name, fn] of Object.entries(CHART_RENDERERS)) {
+        const sig = buildChartSignature(items, name, steamHash, todayKey);
         if (window._chartHashes[name] === sig) continue;
-        window._chartHashes[name] = sig;
         try {
             fn();
+            // Only remember the signature after a successful render: a chart that
+            // threw once must get another chance on the next data update.
+            window._chartHashes[name] = sig;
         } catch (e) {
             console.error(`Chart "${name}" render failed:`, e);
         }
@@ -83,15 +90,24 @@ const renderCharts = (steamHash) => {
 
 // --- Full dashboard update (called after Firestore data changes) ---
 let lastItemsHash = '';
+let skeletonFallbackTimer = null;
+
+const clearSkeleton = () => {
+    document.body.classList.remove('skeleton-loading');
+    if (skeletonFallbackTimer) {
+        clearTimeout(skeletonFallbackTimer);
+        skeletonFallbackTimer = null;
+    }
+};
 
 const updateDashboard = () => {
-    document.body.classList.remove('skeleton-loading');
+    clearSkeleton();
     updateDashboardKPIs();
     updateKpiTooltips();
 
     // Only re-render charts if data actually changed
     const steamHash = getSteamPlaytimeHash();
-    const newHash = items.map(i => i.fb_id + '|' + i.playTime + '|' + i.purchasePrice + '|' + i.sellPrice + '|' + i.rating + '|' + i.status + '|' + i.type + '|' + i.sort + '|' + i.fullyCompleted + '|' + i.purchaseDate + '|' + i.startDate + '|' + i.sellDate + '|' + i.passDate + '|' + i.name + '|' + i.from + '|' + i.episodeCount + '|' + i.episodeDuration + '|' + (i.remarks || '')).join(',') + '|' + steamHash;
+    const newHash = buildItemsHash(items, steamHash);
     if (newHash !== lastItemsHash) {
         lastItemsHash = newHash;
         renderCharts(steamHash);
@@ -161,8 +177,13 @@ const setupModalBackdrop = (modalId) => {
 
 // --- Initialization ---
 const initApp = () => {
-    // Never let a failed CDN asset keep the page on its loading skeleton.
-    document.body.classList.remove('skeleton-loading');
+    // Keep the skeleton until the first data snapshot, but never let a failed CDN
+    // asset or Firestore listener leave the page on it forever.
+    skeletonFallbackTimer = setTimeout(() => {
+        if (!document.body.classList.contains('skeleton-loading')) return;
+        clearSkeleton();
+        showToast('数据加载时间较长，请检查网络连接后刷新。', { tone: 'error', timeout: 6000 });
+    }, 8000);
 
     // Chart.js comes from a CDN (index.html) — guard every use of the global.
     if (typeof Chart !== 'undefined') {
@@ -173,7 +194,26 @@ const initApp = () => {
         }
     } else {
         console.warn('Chart.js unavailable — charts disabled, dashboard still functional.');
+        document.querySelectorAll('.chart-card').forEach(card => card.classList.add('chart-unavailable'));
     }
+
+    // Online/offline banner. Firestore keeps working from cache while offline, so
+    // this is informational rather than blocking.
+    const appStatus = document.getElementById('app-status');
+    const updateNetworkStatus = (online) => {
+        if (!appStatus) return;
+        appStatus.textContent = online
+            ? ''
+            : '当前离线：页面展示缓存数据，新增或修改会在恢复网络后同步。';
+        appStatus.classList.toggle('is-visible', !online);
+        appStatus.dataset.tone = online ? 'ok' : 'warn';
+    };
+    window.addEventListener('offline', () => updateNetworkStatus(false));
+    window.addEventListener('online', () => {
+        updateNetworkStatus(true);
+        showToast('网络已恢复', { tone: 'success' });
+    });
+    if (navigator.onLine === false) updateNetworkStatus(false);
 
     // Auth buttons
     document.getElementById('login-btn')?.addEventListener('click', signInWithGoogle);
@@ -185,8 +225,11 @@ const initApp = () => {
     setupCSVHandlers();
     setupSortHeaders();
     setupListSearch();
+    setupListFilterBar();
+    setupListPagination();
     setupDetailColsToggle();
     setupItemsTableClick();
+    setupKpiFilters();
     setupPlayNextModal();
     setupOnThisDay();
     setupChartControls();
@@ -294,14 +337,7 @@ const initApp = () => {
 
     // View all button
     document.getElementById('view-all-btn')?.addEventListener('click', () => {
-        const title = document.getElementById('list-modal-title');
-        const searchInput = document.getElementById('list-search-input');
-        if (title) title.textContent = '数据详情';
-        if (searchInput) searchInput.value = '';
-        setSortConfig('_default', 'desc');
-        renderItemsList();
-        updateSortHeaders();
-        openModal(document.getElementById('list-modal'));
+        openListModal(null);
     });
 
     // Smart tooltip positioning (viewport-aware)

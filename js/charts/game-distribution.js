@@ -1,7 +1,7 @@
 import { items } from '../core/state.js';
 import { PLATFORM_META, PLATFORM_COLORS, TIME_LABEL_BY_TYPE } from '../config/constants.js';
 import { escapeHTML, formatCurrency, netCost, renderStars, effectiveRemarks, isUnsoldPhysical, UNSOLD_PHYSICAL_ESTIMATE_REMARK } from '../core/utils.js';
-import { createExternalTooltip, renderOrUpdateChart } from './setup.js';
+import { createExternalTooltip, renderOrUpdateChart, setChartEmptyState } from './setup.js';
 
 // Platform grouping: item.type -> display label + color key.
 // Derived from PLATFORM_META instead of a local copy — the local copy had already
@@ -107,6 +107,10 @@ export const renderGameDistributionChart = () => {
 
     const el = document.getElementById('game-distribution-chart');
     if (!el) return;
+    setChartEmptyState('game-distribution-empty', filtered.length === 0);
+    el.setAttribute?.('aria-label', filtered.length
+        ? `价格与游玩时长的散点分布图，共 ${filtered.length} 款游戏`
+        : '价格与游玩时长的散点分布图：暂无已游玩数据');
     // No `view` argument needed: the tooltip formatter reads everything off the
     // raw data point (`pt`) and the live `items` import.
     renderOrUpdateChart('gameDistribution', el, {
@@ -127,7 +131,9 @@ export const renderGameDistributionChart = () => {
                 },
                 y: {
                     title: { display: true, text: useEstimatedPhysicalCost ? '净花费 (¥，未售实体按30元预估)' : '实际净花费 (¥)' },
-                    beginAtZero: true,
+                    // Negative net cost is meaningful (sold for more than paid). Keep
+                    // the scale automatic instead of clipping those points at zero.
+                    beginAtZero: false,
                     grid: { color: 'rgba(0,0,0,0.05)' },
                     ticks: { callback: (v) => '¥' + Math.round(v) },
                 },
@@ -146,7 +152,7 @@ export const renderGameDistributionChart = () => {
                         const meta = PLATFORM_META.find(p => p.type === pt.type);
                         const platformLabel = meta?.label || TIME_LABEL_BY_TYPE[pt.type] || '其他';
                         const platformColor = PLATFORM_COLORS[meta?.colorKey] || '#9ca3af';
-                        let html = `<div class="font-bold text-base mb-1">${icon} ${escapeHTML(pt.name)}</div>` +
+                        let html = `<div class="font-bold text-base mb-1">${icon} ${escapeHTML(pt.name || '')}</div>` +
                             `<div class="text-xs text-stone-500 mb-1"><span class="inline-block w-2 h-2 rounded-full mr-1 align-middle" style="background-color:${platformColor}"></span>${escapeHTML(platformLabel)}</div>` +
                             `<div class="text-sm">时长: <strong>${pt.x.toFixed(1)}h</strong></div>` +
                             `<div class="text-sm">${pt.isEstimatedCost ? '估算净花费' : '实际净花费'}: <strong>${formatCurrency(pt.y)}</strong></div>`;

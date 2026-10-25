@@ -8,9 +8,14 @@
  * - Display-only effective spending for unsold physical cartridges is handled
  *   in the frontend by netCost(item), not by changing Firestore data.
  *
+ * The doc-id -> real-price table is local data (default repairs.json,
+ * gitignored), not code. Copy repairs.example.json to repairs.json and fill it
+ * from a known-good backup before running.
+ *
  * Usage:
  *   node tools/update_unsold_physical_estimates/update_unsold_physical_estimates.js
  *   node tools/update_unsold_physical_estimates/update_unsold_physical_estimates.js --apply
+ *   node tools/update_unsold_physical_estimates/update_unsold_physical_estimates.js --data other.json
  */
 
 const fs = require('fs');
@@ -19,15 +24,58 @@ const https = require('https');
 
 const PROJECT_ID = 'game-data-dashboard';
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+const REQUEST_TIMEOUT_MS = 30 * 1000;
 const APPLY = process.argv.includes('--apply');
 
-const RESTORE_PURCHASE_PRICES = new Map([
-  ['7DJ2ltL4Ej2MMKtHEx4O', 134.7],
-  ['9GYFd9Xb4RiLQEBe9Wej', 134.7],
-  ['FIIzXaw8OqATVXYZhxrP', 290],
-  ['bQhYclJW23Bby5PdNnZt', 188],
-  ['zA72veAK23RZKe6mG5Kr', 225],
-]);
+function argValue(name, fallback) {
+  const i = process.argv.indexOf(name);
+  if (i >= 0) {
+    const value = process.argv[i + 1];
+    if (!value || value.startsWith('--')) throw new Error(`${name} 需要一个文件路径`);
+    return value;
+  }
+  const prefixed = process.argv.find((a) => a.startsWith(`${name}=`));
+  return prefixed ? prefixed.slice(name.length + 1) : fallback;
+}
+
+const DATA_PATH = path.resolve(
+  argValue('--data', path.join(__dirname, 'repairs.json'))
+);
+
+function loadRepairs() {
+  if (!fs.existsSync(DATA_PATH)) {
+    throw new Error(
+      `找不到 ${DATA_PATH}\n` +
+      '把 tools/update_unsold_physical_estimates/repairs.example.json 复制为 repairs.json 后填写；' +
+      '真实修复表含个人购买价格，已被 .gitignore 忽略。'
+    );
+  }
+  let data;
+  try {
+    data = JSON.parse(fs.readFileSync(DATA_PATH, 'utf8'));
+  } catch (err) {
+    throw new Error(`${DATA_PATH} 不是合法 JSON: ${err.message}`);
+  }
+  if (!data || !Array.isArray(data.repairs)) {
+    throw new Error('repairs.json 必须包含 repairs 数组');
+  }
+  const map = new Map();
+  data.repairs.forEach((entry, index) => {
+    if (!Array.isArray(entry) || entry.length !== 2) {
+      throw new Error(`repairs[${index}] 应为 [fb_id, realPrice]`);
+    }
+    const [fbId, price] = entry;
+    if (typeof fbId !== 'string' || !/^[A-Za-z0-9_-]{10,}$/.test(fbId)) {
+      throw new Error(`repairs[${index}] fb_id 非法`);
+    }
+    if (typeof price !== 'number' || !Number.isFinite(price) || price < 0) {
+      throw new Error(`repairs[${index}] 价格必须是非负数字`);
+    }
+    if (map.has(fbId)) throw new Error(`repairs 中 fb_id 重复: ${fbId}`);
+    map.set(fbId, price);
+  });
+  return map;
+}
 
 function loadAccessToken() {
   const configPath = path.join(
@@ -54,6 +102,9 @@ function httpsRequest(url, options, body) {
           reject(new Error(`HTTP ${res.statusCode}: ${data.slice(0, 500)}`));
         }
       });
+    });
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      req.destroy(new Error(`request timeout (${REQUEST_TIMEOUT_MS}ms)`));
     });
     req.on('error', reject);
     if (body) req.write(body);
@@ -97,12 +148,14 @@ async function patchPurchasePrice(fbId, purchasePrice, accessToken) {
 
 async function main() {
   console.log(APPLY ? '[APPLY] Restoring real purchase prices.' : '[DRY RUN] No writes will be made.');
+  const repairs = loadRepairs();
+  console.log(`Repairs file: ${DATA_PATH} (${repairs.size} entries)\n`);
   const accessToken = loadAccessToken();
 
   let alreadyOk = 0;
   let changed = 0;
 
-  for (const [fbId, realPrice] of RESTORE_PURCHASE_PRICES.entries()) {
+  for (const [fbId, realPrice] of repairs.entries()) {
     const doc = await getItem(fbId, accessToken);
     const fields = doc.fields || {};
     const currentPrice = fieldValue(fields.purchasePrice);
@@ -126,6 +179,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(error);
+  console.error(error.message || error);
   process.exit(1);
 });

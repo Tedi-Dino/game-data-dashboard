@@ -5,20 +5,33 @@ import { setChart, getChart } from '../core/state.js';
 // failure throws and takes Firestore listeners / KPI rendering down with it.
 export const isChartAvailable = () => typeof Chart !== 'undefined';
 
+/** Toggle the visible empty-state message that sits over a canvas. */
+export const setChartEmptyState = (emptyId, isEmpty) => {
+    const el = typeof emptyId === 'string' ? document.getElementById(emptyId) : emptyId;
+    if (el) el.hidden = !isEmpty;
+};
+
 // Initialize Chart.js defaults
 export const setupChartDefaults = () => {
     if (!isChartAvailable()) return;
 
-    Chart.defaults.color = '#2d2927';
-    Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.08)';
+    Chart.defaults.color = '#57534e';
+    Chart.defaults.borderColor = 'rgba(41, 37, 36, 0.08)';
+    Chart.defaults.font.family = "'Inter', 'Noto Sans SC', system-ui, sans-serif";
+    Chart.defaults.font.size = 11;
     Chart.defaults.plugins.legend.position = 'bottom';
+    Chart.defaults.plugins.legend.labels.usePointStyle = true;
+    Chart.defaults.plugins.legend.labels.boxWidth = 8;
+    Chart.defaults.plugins.legend.labels.boxHeight = 8;
+    Chart.defaults.plugins.legend.labels.padding = 10;
     Chart.defaults.plugins.tooltip.backgroundColor = '#ffffff';
-    Chart.defaults.plugins.tooltip.borderColor = 'transparent';
+    Chart.defaults.plugins.tooltip.borderColor = '#e0d9d3';
     Chart.defaults.plugins.tooltip.titleColor = '#1c1917';
-    Chart.defaults.plugins.tooltip.bodyColor = '#2d2927';
+    Chart.defaults.plugins.tooltip.bodyColor = '#292524';
     Chart.defaults.plugins.tooltip.borderWidth = 1;
     Chart.defaults.plugins.tooltip.padding = 10;
     Chart.defaults.plugins.tooltip.titleFont = { weight: 'bold' };
+    Chart.defaults.plugins.tooltip.cornerRadius = 8;
 
     // Global plug-in: misty cyan gradient indicating cost-performance direction
     // on scatter/price-time charts (bottom-right = best value)
@@ -55,8 +68,9 @@ export const createExternalTooltip = (formatter) => {
         if (!tooltipEl) {
             tooltipEl = document.createElement('div');
             tooltipEl.id = tipId;
-            tooltipEl.className = 'fixed bg-white text-stone-800 text-sm rounded-lg p-3 pointer-events-none w-72';
-            tooltipEl.style.boxShadow = '0 10px 30px rgba(0,0,0,0.06)';
+            tooltipEl.className = 'chart-tooltip fixed bg-white text-stone-800 text-sm rounded-lg p-3 pointer-events-none w-72';
+            tooltipEl.style.boxShadow = '0 16px 40px rgba(41, 37, 36, 0.16)';
+            tooltipEl.style.maxWidth = 'calc(100vw - 1rem)';
             tooltipEl.style.opacity = '0';
             tooltipEl.style.transition = 'opacity 100ms ease';
             tooltipEl.style.zIndex = getComputedStyle(document.documentElement).getPropertyValue('--z-chart-tooltip').trim();
