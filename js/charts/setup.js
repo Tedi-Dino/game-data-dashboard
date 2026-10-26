@@ -15,8 +15,8 @@ export const setChartEmptyState = (emptyId, isEmpty) => {
 export const setupChartDefaults = () => {
     if (!isChartAvailable()) return;
 
-    Chart.defaults.color = '#57534e';
-    Chart.defaults.borderColor = 'rgba(41, 37, 36, 0.08)';
+    Chart.defaults.color = '#52605a';
+    Chart.defaults.borderColor = 'rgba(38, 49, 45, 0.09)';
     Chart.defaults.font.family = "'Inter', 'Noto Sans SC', system-ui, sans-serif";
     Chart.defaults.font.size = 11;
     Chart.defaults.plugins.legend.position = 'bottom';
@@ -25,9 +25,9 @@ export const setupChartDefaults = () => {
     Chart.defaults.plugins.legend.labels.boxHeight = 8;
     Chart.defaults.plugins.legend.labels.padding = 10;
     Chart.defaults.plugins.tooltip.backgroundColor = '#ffffff';
-    Chart.defaults.plugins.tooltip.borderColor = '#e0d9d3';
-    Chart.defaults.plugins.tooltip.titleColor = '#1c1917';
-    Chart.defaults.plugins.tooltip.bodyColor = '#292524';
+    Chart.defaults.plugins.tooltip.borderColor = '#e3e9e5';
+    Chart.defaults.plugins.tooltip.titleColor = '#26312d';
+    Chart.defaults.plugins.tooltip.bodyColor = '#3c4a44';
     Chart.defaults.plugins.tooltip.borderWidth = 1;
     Chart.defaults.plugins.tooltip.padding = 10;
     Chart.defaults.plugins.tooltip.titleFont = { weight: 'bold' };

@@ -245,16 +245,33 @@ test('markup: charts provide an empty-state element and accessible labels', () =
     assert.match(html, /id="monthly-trends-chart"[^>]*aria-label="[^"]+"/);
 });
 
-test('layout: desktop KPI row is 4/4/4 and charts use an 8/4 main-secondary split', () => {
+test('layout: desktop overview is the restored 6-column, two-row arrangement', () => {
     const html = read('../../index.html');
     const openingTag = (id) => html.match(new RegExp(`<section[^>]*id="${id}"[^>]*>`))?.[0] || '';
 
-    for (const id of ['kpi-card-1', 'kpi-card-2', 'kpi-card-3']) {
-        assert.match(openingTag(id), /xl:col-span-4/, `${id} must share the overview row`);
-    }
-    assert.match(openingTag('chart-card-3'), /xl:col-span-8/, 'monthly trend is the main chart');
-    assert.match(openingTag('chart-card-2'), /xl:col-span-4/, 'scatter chart is secondary');
-    assert.match(openingTag('chart-card-all-doughnuts'), /xl:col-span-12/, 'doughnuts share one strip');
+    // Row 1: cost KPI (1 col) + doughnuts (3 cols) + scatter (2 cols).
+    assert.match(openingTag('kpi-card-1'), /xl:col-span-1/, 'cost KPI opens the top row');
+    assert.match(openingTag('kpi-card-1'), /xl:row-start-1/, 'cost KPI sits on the top row');
+    assert.match(openingTag('chart-card-all-doughnuts'), /xl:col-span-3/, 'doughnuts sit beside the cost KPI');
+    assert.match(openingTag('chart-card-all-doughnuts'), /xl:col-start-2/, 'doughnuts start in column 2');
+    assert.match(openingTag('chart-card-all-doughnuts'), /xl:row-start-1/, 'doughnuts sit on the top row');
+    assert.match(openingTag('chart-card-2'), /xl:col-span-2/, 'scatter closes the top row');
+    assert.match(openingTag('chart-card-2'), /xl:col-start-5/, 'scatter starts in column 5');
+    assert.match(openingTag('chart-card-2'), /xl:row-start-1/, 'scatter sits on the top row');
+
+    // Row 2: games KPI + drama KPI + monthly trend.
+    assert.match(openingTag('kpi-card-2'), /xl:col-span-1/);
+    assert.match(openingTag('kpi-card-2'), /xl:row-start-2/);
+    assert.match(openingTag('kpi-card-3'), /xl:col-span-1/);
+    assert.match(openingTag('kpi-card-3'), /xl:row-start-2/);
+    assert.match(openingTag('chart-card-3'), /xl:col-span-4/, 'monthly trend closes the bottom row');
+    assert.match(openingTag('chart-card-3'), /xl:col-start-3/, 'monthly trend starts in column 3');
+    assert.match(openingTag('chart-card-3'), /xl:row-start-2/);
+
+    // Tablet (768-1279) stacks the charts full width in the pre-restore order.
+    assert.match(openingTag('chart-card-all-doughnuts'), /md:row-start-2/);
+    assert.match(openingTag('chart-card-2'), /md:row-start-3/);
+    assert.match(openingTag('chart-card-3'), /md:row-start-4/);
 
     // DOM order drives the phone reading order: the main chart must come first.
     const monthly = html.indexOf('id="chart-card-3"');

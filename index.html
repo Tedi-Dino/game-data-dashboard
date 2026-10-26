@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#f5f0ed">
+    <meta name="theme-color" content="#f4f6f4">
     <meta name="description" content="影音游戏仪表盘：统计游戏与剧集的消费、游玩时长和收藏进度。">
     <title>🎬 影音游戏仪表盘</title>
 
@@ -98,7 +98,7 @@ window.cdnLoadError = function(name) {
         <!-- Main Content -->
         <main id="main-content" class="dashboard-grid pb-24 xl:pb-2 flex-grow" tabindex="-1">
             <!-- KPI: 消费总览 -->
-            <section id="kpi-card-1" class="card kpi-card p-4 card-animation md:col-span-3 xl:col-span-4 xl:row-start-1" aria-labelledby="kpi-cost-heading">
+            <section id="kpi-card-1" class="card kpi-card p-4 card-animation md:col-span-2 xl:col-span-1 xl:row-start-1" aria-labelledby="kpi-cost-heading">
                 <h2 id="kpi-cost-heading" class="kpi-card-title">💰 消费总览</h2>
                 <div class="kpi-metrics flex-grow">
                     <div class="kpi-metric kpi-main" data-kpi-filter="all" role="button" tabindex="0" aria-label="查看全部消费记录">
@@ -131,7 +131,7 @@ window.cdnLoadError = function(name) {
             </section>
 
             <!-- KPI: 游戏时长总览 -->
-            <section id="kpi-card-2" class="card kpi-card p-4 card-animation md:col-span-3 xl:col-span-4 xl:row-start-1" aria-labelledby="kpi-games-heading">
+            <section id="kpi-card-2" class="card kpi-card p-4 card-animation md:col-span-2 xl:col-span-1 xl:row-start-2" aria-labelledby="kpi-games-heading">
                 <h2 id="kpi-games-heading" class="kpi-card-title">🎮 游戏时长总览</h2>
                 <div class="kpi-metrics kpi-metrics-2 flex-grow">
                     <div class="relative group kpi-metric" data-kpi-filter="games" role="button" tabindex="0" aria-label="查看全部游戏记录">
@@ -166,7 +166,7 @@ window.cdnLoadError = function(name) {
             </section>
 
             <!-- KPI: 剧集时长总览 -->
-            <section id="kpi-card-3" class="card kpi-card p-4 card-animation md:col-span-6 xl:col-span-4 xl:row-start-1" aria-labelledby="kpi-dramas-heading">
+            <section id="kpi-card-3" class="card kpi-card p-4 card-animation md:col-span-2 xl:col-span-1 xl:row-start-2" aria-labelledby="kpi-dramas-heading">
                 <h2 id="kpi-dramas-heading" class="kpi-card-title">📺 剧集时长总览</h2>
                 <div class="kpi-metrics kpi-metrics-3 flex-grow">
                     <div class="relative group kpi-metric kpi-main" data-kpi-filter="dramas" role="button" tabindex="0" aria-label="查看剧集记录">
@@ -193,7 +193,7 @@ window.cdnLoadError = function(name) {
             </section>
 
             <!-- Chart: Monthly Trends -->
-            <section id="chart-card-3" class="card chart-card chart-card-main p-4 card-animation md:col-span-6 xl:col-span-8 xl:row-start-2" aria-labelledby="monthly-heading">
+            <section id="chart-card-3" class="card chart-card chart-card-main p-4 card-animation md:col-span-6 md:row-start-4 xl:col-span-4 xl:col-start-3 xl:row-start-2" aria-labelledby="monthly-heading">
                 <div class="flex justify-between items-center gap-4 mb-2 flex-wrap">
                     <h2 id="monthly-heading" class="chart-card-title">🗓️ 月度消费与时间统计</h2>
                     <div class="flex items-center space-x-4">
@@ -213,7 +213,7 @@ window.cdnLoadError = function(name) {
             </section>
 
             <!-- Chart: Price-Time Scatter -->
-            <section id="chart-card-2" class="card chart-card chart-card-side p-4 card-animation md:col-span-6 xl:col-span-4 xl:row-start-2" aria-labelledby="scatter-heading">
+            <section id="chart-card-2" class="card chart-card chart-card-side p-4 card-animation md:col-span-6 md:row-start-3 xl:col-span-2 xl:col-start-5 xl:row-start-1" aria-labelledby="scatter-heading">
                 <div class="flex justify-between items-center gap-2 mb-2 flex-wrap">
                     <h2 id="scatter-heading" class="chart-card-title">📈 价格-时间分布</h2>
                     <div class="flex items-center space-x-1">
@@ -231,7 +231,7 @@ window.cdnLoadError = function(name) {
             </section>
 
             <!-- Charts: Three Doughnuts -->
-            <section id="chart-card-all-doughnuts" class="card chart-card chart-card-distribution p-4 card-animation md:col-span-6 xl:col-span-12 xl:row-start-3" aria-labelledby="doughnuts-heading">
+            <section id="chart-card-all-doughnuts" class="card chart-card chart-card-distribution p-4 card-animation md:col-span-6 md:row-start-2 xl:col-span-3 xl:col-start-2 xl:row-start-1" aria-labelledby="doughnuts-heading">
                 <h2 id="doughnuts-heading" class="chart-card-title mb-2">📊 消费、时间与爱好统计</h2>
                 <div class="flex-grow doughnut-grid">
                     <div class="relative flex flex-col doughnut-item-1">

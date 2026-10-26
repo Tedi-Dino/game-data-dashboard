@@ -119,9 +119,17 @@ admin UID, AI prompt and Steam ID assertions.
 
 ## Design System
 
-The page uses a warm Tailwind Stone base (`#f5f0ed`) with Amber accent
-(`#d97706`). Platform colors are muted warm pastels derived from brand colors;
-see `js/config/constants.js` (`PLATFORM_COLORS`) and `design.md`.
+The page uses a fog-white base (`#f4f6f4`) with a sage accent (`#527b65`).
+Platform colors are muted pastels derived from brand colors; see
+`js/config/constants.js` (`PLATFORM_COLORS`) and `design.md`.
+
+Desktop overview (>= 1280px) is the restored six-column, two-row dashboard:
+row 1 is `消费总览` + `消费、时间与爱好统计` (three rings) + `价格-时间分布`;
+row 2 is `游戏时长总览` + `剧集时长总览` + `月度消费与时间统计`. Both rows are
+`50fr` shares of the viewport, so the page fits without scrolling down to
+1280x720; a short-screen media query tightens the KPI cards so they never push
+a row taller than its share. Phones (< 768px) keep the compact single-column
+layout, and 768-1279px stacks the charts full width below the KPI row.
 
 Chart conventions:
 
